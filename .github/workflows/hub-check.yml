@@ -21,7 +21,7 @@ jobs:
     - name: add entry
       working-directory: plugin-hub
       run: |
-        printf 'repository=https://github.com/%s.git\ncommit=%s\n' "$GITHUB_REPOSITORY" "$GITHUB_SHA" > plugins/codex-navigator
+        printf 'repository=https://github.com/%s.git\ncommit=%s\n' "$GITHUB_REPOSITORY" bb66d51638ae3e11e34351ad110a9b10d9036d9a > plugins/codex-navigator
         cat plugins/codex-navigator
         git -c user.name=ci -c user.email=ci@example.com add plugins/codex-navigator
         git -c user.name=ci -c user.email=ci@example.com commit -qm "Add Codex Navigator"
