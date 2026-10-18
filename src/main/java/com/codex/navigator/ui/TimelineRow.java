@@ -11,6 +11,7 @@ import java.awt.event.MouseEvent;
 import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 
 /** One stop on a goal's path, threaded to its neighbours by a fine vertical line. */
@@ -67,14 +68,21 @@ class TimelineRow extends JPanel
 				@Override
 				public void mouseExited(MouseEvent e)
 				{
-					hover = false;
-					repaint();
+					if (!contains(SwingUtilities.convertPoint(e.getComponent(), e.getPoint(), TimelineRow.this)))
+					{
+						hover = false;
+						repaint();
+					}
 				}
 
 				@Override
 				public void mouseReleased(MouseEvent e)
 				{
-					onClick.run();
+					if (SwingUtilities.isLeftMouseButton(e)
+						&& contains(SwingUtilities.convertPoint(e.getComponent(), e.getPoint(), TimelineRow.this)))
+					{
+						onClick.run();
+					}
 				}
 			};
 			addMouseListener(mouse);

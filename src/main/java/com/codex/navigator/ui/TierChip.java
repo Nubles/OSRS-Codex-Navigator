@@ -11,6 +11,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.RoundRectangle2D;
 import javax.swing.JComponent;
+import javax.swing.SwingUtilities;
 
 /** A diary tier as a small seal: filled when done, lit when ready, dim when locked. */
 class TierChip extends JComponent
@@ -48,7 +49,10 @@ class TierChip extends JComponent
 			@Override
 			public void mouseReleased(MouseEvent e)
 			{
-				onClick.run();
+				if (SwingUtilities.isLeftMouseButton(e) && contains(e.getPoint()))
+				{
+					onClick.run();
+				}
 			}
 		});
 	}
@@ -64,12 +68,20 @@ class TierChip extends JComponent
 		RoundRectangle2D shape = new RoundRectangle2D.Float(0.5f, 0.5f, w - 1, h - 1, 7, 7);
 		g.setColor(status == Step.Status.DONE ? Theme.alpha(c, 50) : Theme.INK_DEEP);
 		g.fill(shape);
-		if (status != Step.Status.DONE && progress > 0)
+		if (status == Step.Status.BLOCKED && progress > 0)
 		{
-			g.setClip(shape);
-			g.setColor(Theme.alpha(c, 40));
-			g.fillRect(0, (int) (h * (1 - progress)), w, h);
-			g.setClip(null);
+			// A hairline gauge along the foot of the seal: how much of the requirements are met.
+			int inset = 5;
+			int barW = w - inset * 2;
+			g.setColor(Theme.alpha(Theme.STROKE, 200));
+			g.fillRect(inset, h - 4, barW, 1);
+			g.setColor(Theme.alpha(c, 200));
+			g.fillRect(inset, h - 4, (int) Math.round(barW * Math.min(1, progress)), 1);
+		}
+		else if (status == Step.Status.READY)
+		{
+			g.setColor(Theme.alpha(c, 26));
+			g.fill(shape);
 		}
 		g.setColor(Theme.alpha(c, hover ? 230 : 140));
 		g.draw(shape);
@@ -83,7 +95,8 @@ class TierChip extends JComponent
 		}
 		else
 		{
-			String pct = Math.round(progress * 100) + "%";
+			// Ready means every listed requirement is met and only the tasks remain, which no percentage can measure.
+			String pct = status == Step.Status.READY ? "Tasks" : Math.round(progress * 100) + "%";
 			g.setColor(c);
 			g.drawString(pct, (w - fm.stringWidth(pct)) / 2, h / 2 + fm.getAscent() / 2 + 6);
 		}

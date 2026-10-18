@@ -50,6 +50,8 @@ public final class Recommender
 	}
 
 	private static final int ALMOST_THERE_LEVELS = 6;
+	/** How far along a diary's requirements must be to count as within reach. */
+	static final double WITHIN_REACH = 0.5;
 
 	private final Planner planner;
 	private final CodexData data;
@@ -79,7 +81,7 @@ public final class Recommender
 		List<Pick> picks = new ArrayList<>();
 		for (QuestDef q : data.quests())
 		{
-			if ((q.miniquest && !includeMiniquests) || account.quest(q.name) != QuestState.NOT_STARTED)
+			if (!eligible(q, account, includeMiniquests))
 			{
 				continue;
 			}
@@ -101,7 +103,7 @@ public final class Recommender
 		List<Pick> picks = new ArrayList<>();
 		for (QuestDef q : data.quests())
 		{
-			if ((q.miniquest && !includeMiniquests) || account.quest(q.name) != QuestState.NOT_STARTED)
+			if (!eligible(q, account, includeMiniquests))
 			{
 				continue;
 			}
@@ -136,19 +138,39 @@ public final class Recommender
 		return picks.size() > limit ? new ArrayList<>(picks.subList(0, limit)) : picks;
 	}
 
-	/** Unfinished diary tiers, the closest to done first. */
+	/**
+	 * Unfinished diary tiers that are genuinely close, the closest first. Diaries are members content,
+	 * so a free world gets none, and tiers under {@link #WITHIN_REACH} of their requirements are left out.
+	 */
 	public List<Plan> closestDiaries(AccountSnapshot account, int limit)
 	{
 		List<Plan> plans = new ArrayList<>();
+		if (!account.isMembers())
+		{
+			return plans;
+		}
 		for (DiaryDef d : data.diaries())
 		{
 			if (!account.diaryDone(d.name))
 			{
-				plans.add(planner.plan(Goal.diary(d.name), account));
+				Plan plan = planner.plan(Goal.diary(d.name), account);
+				if (plan.getProgress() >= WITHIN_REACH)
+				{
+					plans.add(plan);
+				}
 			}
 		}
-		plans.sort(Comparator.comparingDouble(Plan::getProgress).reversed());
+		plans.sort(Comparator.comparingDouble(Plan::getProgress).reversed()
+			.thenComparingInt(p -> data.diary(p.getGoal().getName()).tierRank()));
 		return plans.size() > limit ? new ArrayList<>(plans.subList(0, limit)) : plans;
+	}
+
+	/** Not started, allowed by the miniquest setting, and startable on the current world. */
+	private boolean eligible(QuestDef q, AccountSnapshot account, boolean includeMiniquests)
+	{
+		return (!q.miniquest || includeMiniquests)
+			&& account.quest(q.name) == QuestState.NOT_STARTED
+			&& (account.isMembers() || data.isFree(q));
 	}
 
 	private static String reason(QuestDef q, int unlocks)

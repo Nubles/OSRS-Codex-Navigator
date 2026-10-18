@@ -77,8 +77,8 @@ public final class Planner
 		}
 		Set<String> closure = new LinkedHashSet<>();
 		collect(quest.name, closure);
-		String subtitle = (quest.miniquest ? "Miniquest" : quest.difficulty + " quest")
-			+ (quest.points > 0 ? " · " + quest.points + " QP" : "");
+		String subtitle = (quest.miniquest ? "Miniquest" : quest.difficulty == null ? "Quest" : quest.difficulty)
+			+ (quest.points > 0 ? " · " + quest.points + "\u00a0QP" : "");
 		return build(goal, quest.name, subtitle, account.questDone(quest.name), closure,
 			new EnumMap<>(Skill.class), 0, 0, false, account);
 	}
@@ -104,7 +104,7 @@ public final class Planner
 		}
 		Map<Skill, Integer> own = new EnumMap<>(Skill.class);
 		addSkills(own, diary.skills);
-		return build(goal, diary.name + " Diary", diary.area + " achievement diary", account.diaryDone(diary.name),
+		return build(goal, diary.name + " Diary", "Achievement diary", account.diaryDone(diary.name),
 			closure, own, diary.questPoints, diary.combatLevel, true, account);
 	}
 
@@ -215,7 +215,8 @@ public final class Planner
 
 		double progress = complete ? 1 : items == 0 ? 0 : Math.min(0.99, score / items);
 		Step next = complete ? null : next(path, skills, questPointTarget, combatTarget, diaryTasks, title, account);
-		return new Plan(goal, title, subtitle, complete, progress, path, skills, next, questsDone, questsTotal);
+		return new Plan(goal, title, subtitle, complete, progress, path, skills, next, questsDone, questsTotal,
+			questPointTarget, combatTarget);
 	}
 
 	private Step next(List<Step> path, List<SkillGap> skills, int questPointTarget, int combatTarget,

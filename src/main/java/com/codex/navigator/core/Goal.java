@@ -64,12 +64,16 @@ public final class Goal
 			return null;
 		}
 		String prefix = key.substring(0, split);
-		String name = key.substring(split + 1);
+		String name = key.substring(split + 1).trim();
 		for (Type type : Type.values())
 		{
 			if (type.prefix.equals(prefix))
 			{
-				return type == Type.QUEST_CAPE ? QUEST_CAPE : new Goal(type, name);
+				if (type == Type.QUEST_CAPE)
+				{
+					return QUEST_CAPE;
+				}
+				return name.isEmpty() ? null : new Goal(type, name);
 			}
 		}
 		return null;

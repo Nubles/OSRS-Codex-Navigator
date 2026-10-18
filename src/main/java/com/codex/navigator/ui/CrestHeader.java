@@ -27,7 +27,7 @@ public class CrestHeader extends JPanel
 
 	private final ProgressRing ring = new ProgressRing(60, 6f);
 	private final JLabel name = Ui.label("Codex", Theme.title(), Theme.GOLD_BRIGHT);
-	private final JLabel summary = Ui.label("Log in to open your codex", Theme.small(), Theme.TEXT_MUTED);
+	private final JLabel summary = Ui.label("Your account compass", Theme.small(), Theme.TEXT_MUTED);
 	private final Ledger quests = new Ledger("Quests");
 	private final Ledger diaries = new Ledger("Diaries");
 	private final Ledger combat = new Ledger("Combat tasks");
@@ -88,13 +88,14 @@ public class CrestHeader extends JPanel
 		name.setText(in && account.getPlayerName() != null ? account.getPlayerName() : "Codex");
 		summary.setText(in
 			? "Total " + NUMBER.format(account.totalLevel()) + "  ·  Combat " + account.getCombatLevel()
-			: "Log in to open your codex");
-		quests.set(questDone, questTotal);
-		diaries.set(diaryDone, diaryTotal);
-		combat.set(caDone, caTotal);
+			: "Your account compass");
+		quests.set(questDone, questTotal, in);
+		diaries.set(diaryDone, diaryTotal, in);
+		combat.set(caDone, caTotal, in);
 
 		double overall = !in ? 0 : (ratio(questDone, questTotal) + ratio(diaryDone, diaryTotal) + ratio(caDone, caTotal)) / 3;
 		ring.setProgress(overall, in && overall >= 1, true);
+		ring.setCenterText(in ? null : "Log in", Theme.TEXT_MUTED);
 		ring.setToolTipText("Account completion across quests, diaries and combat achievement tasks");
 	}
 
@@ -148,9 +149,10 @@ public class CrestHeader extends JPanel
 			setPreferredSize(new Dimension(10, 17));
 		}
 
-		void set(int done, int total)
+		void set(int done, int total, boolean known)
 		{
-			count.setText(done + "/" + total);
+			count.setText((known ? String.valueOf(done) : "-") + "/" + total);
+			count.setForeground(known ? Theme.TEXT : Theme.TEXT_FAINT);
 			bar.setProgress(ratio(done, total), total > 0 && done >= total, true);
 		}
 	}

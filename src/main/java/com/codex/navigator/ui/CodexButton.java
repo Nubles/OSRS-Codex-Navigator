@@ -11,6 +11,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.RoundRectangle2D;
 import javax.swing.JComponent;
+import javax.swing.SwingUtilities;
 
 /** A gilt-edged button; the primary style is filled, the quiet style is just an outline. */
 public class CodexButton extends JComponent
@@ -52,6 +53,10 @@ public class CodexButton extends JComponent
 			@Override
 			public void mousePressed(MouseEvent e)
 			{
+				if (!SwingUtilities.isLeftMouseButton(e))
+				{
+					return;
+				}
 				pressed = true;
 				repaint();
 			}

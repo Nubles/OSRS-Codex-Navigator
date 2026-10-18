@@ -26,4 +26,6 @@ interface Navigation
 	void open(Goal goal);
 
 	void showTab(int tab);
+
+	void showAtlas(int list);
 }

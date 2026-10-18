@@ -8,6 +8,7 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
@@ -26,6 +27,14 @@ public final class CodexData
 {
 	public static final String[] COMBAT_ACHIEVEMENT_TIERS = {"Easy", "Medium", "Hard", "Elite", "Master", "Grandmaster"};
 
+	/** Quests a free-to-play account can do; everything else needs membership. */
+	private static final Set<String> FREE_QUESTS = new HashSet<>(Arrays.asList(
+		"Below Ice Mountain", "Black Knights' Fortress", "Cook's Assistant", "The Corsair Curse", "Demon Slayer",
+		"Doric's Quest", "Dragon Slayer I", "Ernest the Chicken", "Goblin Diplomacy", "Imp Catcher", "The Ides of Milk",
+		"The Knight's Sword", "Learning the Ropes", "Misthalin Mystery", "Pirate's Treasure", "Prince Ali Rescue",
+		"The Restless Ghost", "Romeo & Juliet", "Rune Mysteries", "Sheep Shearer", "Shield of Arrav", "Vampyre Slayer",
+		"Witch's Potion", "X Marks the Spot"));
+
 	private static final class Raw
 	{
 		List<QuestDef> quests;
@@ -37,6 +46,8 @@ public final class CodexData
 	private final Map<String, DiaryDef> diaries = new LinkedHashMap<>();
 	private final Map<String, Integer> combatAchievementTasks;
 	private final Map<String, Integer> unlocks = new HashMap<>();
+	private final Map<String, List<String>> questsNeeding = new HashMap<>();
+	private final Map<String, List<String>> diariesNeeding = new HashMap<>();
 
 	public CodexData(List<QuestDef> questList, List<DiaryDef> diaryList, Map<String, Integer> caTasks)
 	{
@@ -81,6 +92,7 @@ public final class CodexData
 			for (String p : q.prereqs)
 			{
 				dependents.computeIfAbsent(p, k -> new HashSet<>()).add("q:" + q.name);
+				questsNeeding.computeIfAbsent(p, k -> new ArrayList<>()).add(q.name);
 			}
 		}
 		for (DiaryDef d : diaries.values())
@@ -88,6 +100,7 @@ public final class CodexData
 			for (String p : d.quests)
 			{
 				dependents.computeIfAbsent(p, k -> new HashSet<>()).add("d:" + d.name);
+				diariesNeeding.computeIfAbsent(p, k -> new ArrayList<>()).add(d.name);
 			}
 		}
 		for (String name : quests.keySet())
@@ -133,6 +146,30 @@ public final class CodexData
 	public int unlockCount(String quest)
 	{
 		return unlocks.getOrDefault(quest, 0);
+	}
+
+	/** Quests that list this one as a direct prerequisite, in data order. */
+	public List<String> questsNeeding(String quest)
+	{
+		return questsNeeding.getOrDefault(quest, Collections.emptyList());
+	}
+
+	/** Diary tiers that list this quest as a requirement, in data order. */
+	public List<String> diariesNeeding(String quest)
+	{
+		return diariesNeeding.getOrDefault(quest, Collections.emptyList());
+	}
+
+	/** True for the quests a free-to-play account can start. */
+	public boolean isFree(QuestDef quest)
+	{
+		return FREE_QUESTS.contains(quest.name);
+	}
+
+	/** The free quest names, for checking the list against the data. */
+	public static Set<String> freeQuestNames()
+	{
+		return Collections.unmodifiableSet(FREE_QUESTS);
 	}
 
 	public int combatAchievementTasks(String tier)

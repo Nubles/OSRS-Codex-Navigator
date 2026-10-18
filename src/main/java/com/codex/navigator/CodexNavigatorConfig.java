@@ -23,7 +23,7 @@ public interface CodexNavigatorConfig extends Config
 	@ConfigItem(
 		keyName = "suggestWithoutFocus",
 		name = "Suggest when unfocused",
-		description = "With no goal pinned, the overlay shows the best quest you can start right now",
+		description = "With no goal pinned, the overlay suggests the best quest you can start right now",
 		position = 2
 	)
 	default boolean suggestWithoutFocus()
@@ -38,6 +38,17 @@ public interface CodexNavigatorConfig extends Config
 		position = 3
 	)
 	default boolean includeMiniquests()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "announceCompletions",
+		name = "Announce finished goals",
+		description = "Posts a line in your chatbox the moment a pinned goal is complete",
+		position = 4
+	)
+	default boolean announceCompletions()
 	{
 		return true;
 	}

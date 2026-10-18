@@ -12,7 +12,9 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BooleanSupplier;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
@@ -41,7 +43,7 @@ public class NavigatorPanel extends PluginPanel implements Navigation
 	private final Map<Skill, BufferedImage> iconCache = new EnumMap<>(Skill.class);
 
 	private final CrestHeader crest = new CrestHeader();
-	private final Segmented tabs = new Segmented(true, "Compass", "Goals", "Atlas");
+	private final Segmented tabs = new Segmented(true, "Compass", "Goals", "Atlas").notifyOnReselect();
 	private final CardLayout cards = new CardLayout();
 	private final JPanel content = new JPanel(cards);
 	private final JScrollPane compass = scroller(new StackPanel(6, 8));
@@ -50,9 +52,14 @@ public class NavigatorPanel extends PluginPanel implements Navigation
 	private final JScrollPane detail = scroller(new StackPanel(6, 8));
 
 	private final Deque<Goal> history = new ArrayDeque<>();
+	/** Views whose content is out of date; each is rebuilt only when it is next on screen. */
+	private final Set<String> stale = new HashSet<>();
 	private AccountSnapshot account = AccountSnapshot.empty();
 	private Goal detailGoal;
 	private boolean showCompleted;
+	private boolean showMetLevels;
+	private String visible = TABS[0];
+	private boolean active;
 
 	public NavigatorPanel(Planner planner, Recommender recommender, GoalStore goals, SkillIconManager skillIcons,
 		BooleanSupplier includeMiniquests)
@@ -86,8 +93,9 @@ public class NavigatorPanel extends PluginPanel implements Navigation
 		add(content, BorderLayout.CENTER);
 
 		tabs.onChange(this::showTab);
-		goals.addListener(() -> SwingUtilities.invokeLater(this::rebuildAll));
-		rebuildAll();
+		goals.addListener(() -> SwingUtilities.invokeLater(this::refreshViews));
+		crest.update(account, planner.getData());
+		refreshViews();
 	}
 
 	static JScrollPane scroller(JComponent view)
@@ -107,20 +115,64 @@ public class NavigatorPanel extends PluginPanel implements Navigation
 	{
 		account = snapshot;
 		crest.update(snapshot, planner.getData());
-		rebuildAll();
+		refreshViews();
 	}
 
-	private void rebuildAll()
+	/** Marks every view out of date and rebuilds the one on screen, if the panel is open. */
+	public void refreshViews()
 	{
-		replace(compass, CompassView.build(this));
-		replace(goalsView, GoalsView.build(this));
-		atlas.rebuild();
-		if (detailGoal != null)
+		stale.add(TABS[0]);
+		stale.add(TABS[1]);
+		stale.add(TABS[2]);
+		stale.add(DETAIL);
+		rebuildVisible();
+	}
+
+	@Override
+	public void onActivate()
+	{
+		active = true;
+		rebuildVisible();
+	}
+
+	@Override
+	public void onDeactivate()
+	{
+		active = false;
+	}
+
+	/** Rebuilds only what is on screen, so a closed panel or a hidden tab costs nothing per update. */
+	private void rebuildVisible()
+	{
+		if (!active || !stale.remove(visible))
 		{
-			replace(detail, DetailView.build(this, detailGoal, showCompleted, this::back, this::toggleCompleted));
+			return;
+		}
+		switch (visible)
+		{
+			case "compass":
+				replace(compass, CompassView.build(this));
+				break;
+			case "goals":
+				replace(goalsView, GoalsView.build(this));
+				break;
+			case "atlas":
+				atlas.rebuild();
+				break;
+			default:
+				if (detailGoal != null)
+				{
+					replace(detail, buildDetail());
+				}
 		}
 		revalidate();
 		repaint();
+	}
+
+	private JComponent buildDetail()
+	{
+		return DetailView.build(this, detailGoal, showCompleted, showMetLevels, this::back, this::toggleCompleted,
+			this::toggleMetLevels);
 	}
 
 	private static void replace(JScrollPane scroll, JComponent view)
@@ -136,7 +188,22 @@ public class NavigatorPanel extends PluginPanel implements Navigation
 		detailGoal = null;
 		history.clear();
 		tabs.setSelected(tab, false);
-		cards.show(content, TABS[tab]);
+		show(TABS[tab]);
+	}
+
+	/** Shows the Atlas on one of its lists: 0 quests, 1 diaries, 2 combat achievements. */
+	@Override
+	public void showAtlas(int list)
+	{
+		atlas.showList(list);
+		showTab(2);
+	}
+
+	private void show(String card)
+	{
+		visible = card;
+		cards.show(content, card);
+		rebuildVisible();
 	}
 
 	@Override
@@ -146,9 +213,17 @@ public class NavigatorPanel extends PluginPanel implements Navigation
 		{
 			history.push(detailGoal);
 		}
+		showDetail(goal);
+	}
+
+	private void showDetail(Goal goal)
+	{
 		detailGoal = goal;
 		showCompleted = false;
-		detail.setViewportView(DetailView.build(this, goal, false, this::back, this::toggleCompleted));
+		showMetLevels = false;
+		visible = DETAIL;
+		stale.remove(DETAIL);
+		detail.setViewportView(buildDetail());
 		detail.getVerticalScrollBar().setValue(0);
 		cards.show(content, DETAIL);
 	}
@@ -160,16 +235,19 @@ public class NavigatorPanel extends PluginPanel implements Navigation
 			showTab(tabs.getSelected());
 			return;
 		}
-		detailGoal = history.pop();
-		showCompleted = false;
-		detail.setViewportView(DetailView.build(this, detailGoal, false, this::back, this::toggleCompleted));
-		detail.getVerticalScrollBar().setValue(0);
+		showDetail(history.pop());
 	}
 
 	private void toggleCompleted()
 	{
 		showCompleted = !showCompleted;
-		replace(detail, DetailView.build(this, detailGoal, showCompleted, this::back, this::toggleCompleted));
+		replace(detail, buildDetail());
+	}
+
+	private void toggleMetLevels()
+	{
+		showMetLevels = !showMetLevels;
+		replace(detail, buildDetail());
 	}
 
 	@Override

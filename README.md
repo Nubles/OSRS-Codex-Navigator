@@ -13,11 +13,17 @@ It is the first plugin in the **Codex** suite: a family of RuneLite plugins that
 ## What it does
 
 - **Account crest.** One ring for your whole account, plus ledgers for quests, diaries and combat achievement tasks.
-- **Compass.** Your focus goal and its next step, followed by quests in progress, the quests worth starting right now (ranked by how much they unlock), quests held back by only a few levels, and your closest diaries.
-- **Goals.** Pin any quest, diary tier or the quest cape. The first pin is your focus; every goal shows its progress and next step.
+- **Compass.** Your focus goal and its next step, followed by quests in progress, the quests worth starting right now (ranked by how much they unlock), quests held back by only a few levels, and the diaries within reach.
+- **Goals.** Pin any quest, diary tier or the quest cape. The first pin is your focus; every goal shows its progress and next step. Finished goals move to a Completed list, and a line in your chatbox tells you the moment one is done.
 - **Atlas.** Search and filter every quest, see each area's diary tiers as seals, and track combat achievement tiers.
-- **Path pages.** Open any goal to see every level it needs with live bars, and every quest on the way as a timeline: done, in progress, ready, or blocked and by what.
+- **Path pages.** Open any goal to see every level, quest point and combat level it still needs with live bars, every quest on the way as a timeline (done, in progress, ready, or blocked and by what), and for a quest, what finishing it leads to.
 - **In-game plaque.** A small overlay with your focus and its next step. With nothing pinned it suggests the best quest to start.
+
+### Good to know
+
+- **Diaries.** The client tells the Codex which diary tiers are complete, but not which of their tasks you have done. Once every level and quest a tier needs is met, the Codex says **Tasks** rather than showing a 99% it cannot measure.
+- **Free worlds.** On a free-to-play world, only free quests are suggested and diaries are left out, since they cannot be started there.
+- **Logged out.** Goals you pin while logged out are added to your account's goals when you next log in.
 
 <p align="center">
   <img src="docs/screenshots/9-overlay.png" width="300" alt="Focus overlay">
@@ -25,7 +31,16 @@ It is the first plugin in the **Codex** suite: a family of RuneLite plugins that
 
 ## Rules posture
 
-Codex Navigator only reads client state you can already see (quest states, varbits, levels) and draws its own panel and overlay. It does not click, move items, change menus, send chat or touch the network. Nothing leaves your computer, and pinned goals are saved per account in your RuneLite profile.
+Codex Navigator only reads client state you can already see (quest states, varbits, levels) and draws its own panel and overlay. It does not click, move items, change menus, send chat messages or touch the network; the only thing it writes to the chatbox is an optional line that only you can see. Nothing leaves your computer, and pinned goals are saved per account (and per game mode, such as Leagues) in your RuneLite profile.
+
+## Settings
+
+| Setting | Default | What it does |
+| --- | --- | --- |
+| Show focus in game | On | The in-game plaque with your focus and its next step. |
+| Suggest when unfocused | On | With nothing pinned, the plaque suggests the best quest to start. |
+| Include miniquests | On | Lists and suggests miniquests alongside quests. |
+| Announce finished goals | On | A chatbox line the moment a pinned goal is complete. |
 
 ## Data
 

@@ -42,6 +42,11 @@ public final class Ui
 	{
 		for (Component child : root.getComponents())
 		{
+			if (child instanceof CodexButton)
+			{
+				// A button inside a clickable card does its own thing; it must not also open the card.
+				continue;
+			}
 			child.addMouseListener(adapter);
 			if (child instanceof Container)
 			{

@@ -30,7 +30,7 @@ public class NextStepBox extends JPanel
 		text.setOpaque(false);
 		text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
 		text.add(Ui.label(step == null ? "COMPLETE" : "NEXT STEP", Theme.small(), Theme.GOLD));
-		String title = step == null ? "Nothing left to do here" : verb(step) + step.getTitle();
+		String title = step == null ? "Goal reached. Unpin it or pick a new focus." : verb(step) + step.getTitle();
 		JLabel titleLabel = Ui.wrapped(title, Theme.body(), Theme.TEXT, textWidth);
 		text.add(titleLabel);
 		if (step != null && step.getDetail() != null && !step.getDetail().isEmpty())
@@ -40,7 +40,7 @@ public class NextStepBox extends JPanel
 		add(text, BorderLayout.CENTER);
 	}
 
-	private static String verb(Step step)
+	static String verb(Step step)
 	{
 		if (step.getKind() != Step.Kind.QUEST)
 		{

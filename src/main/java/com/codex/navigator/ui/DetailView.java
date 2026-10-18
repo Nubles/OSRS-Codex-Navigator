@@ -1,9 +1,13 @@
 package com.codex.navigator.ui;
 
+import com.codex.navigator.core.AccountSnapshot;
 import com.codex.navigator.core.Goal;
 import com.codex.navigator.core.Plan;
+import com.codex.navigator.core.Planner;
 import com.codex.navigator.core.SkillGap;
 import com.codex.navigator.core.Step;
+import com.codex.navigator.data.CodexData;
+import com.codex.navigator.data.QuestDef;
 import java.awt.BorderLayout;
 import java.awt.Cursor;
 import java.awt.FlowLayout;
@@ -12,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
@@ -25,7 +30,11 @@ final class DetailView
 	{
 	}
 
-	static StackPanel build(Navigation nav, Goal goal, boolean showCompleted, Runnable back, Runnable toggleCompleted)
+	/** Met levels beyond this many fold away behind a toggle, so the levels still to train lead. */
+	private static final int MET_SHOWN = 3;
+
+	static StackPanel build(Navigation nav, Goal goal, boolean showCompleted, boolean showMet, Runnable back,
+		Runnable toggleCompleted, Runnable toggleMet)
 	{
 		Plan plan = nav.planner().plan(goal, nav.account());
 		StackPanel stack = new StackPanel(6, 8);
@@ -47,22 +56,11 @@ final class DetailView
 
 		stack.add(hero(nav, plan));
 
-		if (!plan.getSkills().isEmpty())
+		requirements(stack, nav, plan, showMet, toggleMet);
+		if (goal.getType() == Goal.Type.DIARY && !plan.isComplete())
 		{
-			int unmet = 0;
-			for (SkillGap gap : plan.getSkills())
-			{
-				unmet += gap.isMet() ? 0 : 1;
-			}
-			stack.add(new SectionHeader("Levels", unmet == 0 ? "all met" : unmet + " to train"));
-			Card skills = new Card(new BorderLayout());
-			StackPanel list = new StackPanel(5, 0);
-			for (SkillGap gap : plan.getSkills())
-			{
-				list.add(skillRow(nav, gap));
-			}
-			skills.add(list, BorderLayout.CENTER);
-			stack.add(skills);
+			stack.add(GoalCard.hint("The Codex checks a diary's levels and quests. Its tasks are listed in the "
+				+ "in-game Achievement Diary journal, and the tier ticks off here once the game marks it complete."));
 		}
 
 		List<Step> path = plan.getPath();
@@ -115,7 +113,127 @@ final class DetailView
 			pathCard.add(rows, BorderLayout.CENTER);
 			stack.add(pathCard);
 		}
+
+		if (goal.getType() == Goal.Type.QUEST)
+		{
+			leadsTo(stack, nav, goal.getName());
+		}
 		return stack;
+	}
+
+	/** Every level, quest point and combat level the goal still asks for, unmet ones first. */
+	private static void requirements(StackPanel stack, Navigation nav, Plan plan, boolean showMet, Runnable toggleMet)
+	{
+		AccountSnapshot account = nav.account();
+		List<JPanel> unmetRows = new ArrayList<>();
+		List<JPanel> metRows = new ArrayList<>();
+		for (SkillGap gap : plan.getSkills())
+		{
+			(gap.isMet() ? metRows : unmetRows).add(skillRow(nav, gap));
+		}
+		if (plan.getQuestPointTarget() > 0)
+		{
+			int have = account.getQuestPoints();
+			int need = plan.getQuestPointTarget();
+			(have >= need ? metRows : unmetRows).add(meterRow(null, "Quest points", have, need,
+				Math.min(1, have / (double) need), have >= need ? null : (need - have) + " more quest points"));
+		}
+		if (plan.getCombatTarget() > 0)
+		{
+			int have = account.getCombatLevel();
+			int need = plan.getCombatTarget();
+			(have >= need ? metRows : unmetRows).add(meterRow(null, "Combat level", have, need,
+				Math.min(1, have / (double) need), null));
+		}
+		if (unmetRows.isEmpty() && metRows.isEmpty())
+		{
+			return;
+		}
+		stack.add(new SectionHeader("Requirements", unmetRows.isEmpty() ? "all met" : unmetRows.size() + " to go"));
+		Card card = new Card(new BorderLayout());
+		StackPanel list = new StackPanel(5, 0);
+		for (JPanel row : unmetRows)
+		{
+			list.add(row);
+		}
+		boolean fold = metRows.size() > MET_SHOWN && !unmetRows.isEmpty();
+		if (fold && !showMet)
+		{
+			list.add(toggle("Show " + metRows.size() + " met", toggleMet));
+		}
+		else
+		{
+			for (JPanel row : metRows)
+			{
+				list.add(row);
+			}
+			if (fold)
+			{
+				list.add(toggle("Hide " + metRows.size() + " met", toggleMet));
+			}
+		}
+		card.add(list, BorderLayout.CENTER);
+		stack.add(card);
+	}
+
+	/** The quests and diary tiers that list this quest as a requirement: what finishing it opens up. */
+	private static void leadsTo(StackPanel stack, Navigation nav, String quest)
+	{
+		CodexData data = nav.planner().getData();
+		AccountSnapshot account = nav.account();
+		List<String> quests = data.questsNeeding(quest);
+		List<String> diaries = data.diariesNeeding(quest);
+		List<JComponent> rows = new ArrayList<>();
+		for (String name : quests)
+		{
+			QuestDef def = data.quest(name);
+			if (def == null || (def.miniquest && !nav.includeMiniquests()))
+			{
+				continue;
+			}
+			Step step = nav.planner().questStep(def, account);
+			String detail = step.getStatus() == Step.Status.BLOCKED ? step.getDetail() : CompassView.subtitle(def);
+			rows.add(Row.of(step.getStatus(), name, detail, null, null, () -> nav.open(Goal.quest(name))));
+		}
+		for (String name : diaries)
+		{
+			Plan plan = nav.planner().plan(Goal.diary(name), account);
+			Step.Status status = plan.isComplete() ? Step.Status.DONE
+				: plan.isAwaitingTasks() ? Step.Status.READY : Step.Status.BLOCKED;
+			String detail = plan.isComplete() ? "Diary complete" : plan.isAwaitingTasks() ? "Requirements met"
+				: "Diary  ·  " + Math.round(plan.getProgress() * 100) + "% of requirements";
+			rows.add(Row.of(status, plan.getTitle(), detail, null, null, () -> nav.open(Goal.diary(name))));
+		}
+		// With miniquests hidden, a quest that only leads to miniquests gets no section rather than an empty one.
+		if (rows.isEmpty())
+		{
+			return;
+		}
+		int total = data.unlockCount(quest);
+		stack.add(new SectionHeader("Leads to", total > rows.size() ? total + " in all" : null));
+		for (JComponent row : rows)
+		{
+			stack.add(row);
+		}
+	}
+
+	private static JLabel toggle(String text, Runnable action)
+	{
+		JLabel toggle = Ui.label(text, Theme.small(), Theme.GOLD);
+		toggle.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+		toggle.setBorder(new EmptyBorder(2, 24, 0, 0));
+		toggle.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mouseReleased(MouseEvent e)
+			{
+				if (toggle.contains(e.getPoint()))
+				{
+					action.run();
+				}
+			}
+		});
+		return toggle;
 	}
 
 	private static Card hero(Navigation nav, Plan plan)
@@ -135,7 +253,11 @@ final class DetailView
 		middle.setOpaque(false);
 		ProgressRing ring = new ProgressRing(74, 7f);
 		ring.setProgress(plan.getProgress(), plan.isComplete(), true);
-		if (plan.getQuestsTotal() > 1)
+		if (plan.isAwaitingTasks())
+		{
+			ring.setCenterText("Tasks left");
+		}
+		else if (plan.getQuestsTotal() > 1)
 		{
 			ring.setCaption(plan.getQuestsDone() + "/" + plan.getQuestsTotal());
 		}
@@ -176,14 +298,22 @@ final class DetailView
 
 	private static JPanel skillRow(Navigation nav, SkillGap gap)
 	{
+		return meterRow(nav.skillIcon(gap.getSkill()), gap.getSkill().getName(), gap.getCurrent(), gap.getTarget(),
+			gap.fraction(), gap.isMet() ? null : Planner.formatXp(gap.xpToGo()) + " xp to go");
+	}
+
+	/** An icon, a name, "current / target" and a slim bar; met rows fade back and turn green. */
+	private static JPanel meterRow(BufferedImage icon, String name, int current, int target, double fraction, String tip)
+	{
+		boolean met = current >= target;
 		JPanel row = new JPanel(new BorderLayout(6, 2));
 		row.setOpaque(false);
-		BufferedImage icon = nav.skillIcon(gap.getSkill());
 		JLabel iconLabel = new JLabel();
 		if (icon != null)
 		{
 			iconLabel.setIcon(new ImageIcon(icon));
 		}
+		iconLabel.setHorizontalAlignment(JLabel.CENTER);
 		iconLabel.setPreferredSize(new java.awt.Dimension(18, 18));
 		row.add(iconLabel, BorderLayout.WEST);
 
@@ -191,17 +321,16 @@ final class DetailView
 		right.setOpaque(false);
 		JPanel line = new JPanel(new BorderLayout());
 		line.setOpaque(false);
-		line.add(Ui.label(gap.getSkill().getName(), Theme.small(), gap.isMet() ? Theme.TEXT_MUTED : Theme.TEXT), BorderLayout.WEST);
-		line.add(Ui.label(gap.getCurrent() + " / " + gap.getTarget(), Theme.small(), gap.isMet() ? Theme.GREEN : Theme.GOLD),
-			BorderLayout.EAST);
+		line.add(Ui.label(name, Theme.small(), met ? Theme.TEXT_MUTED : Theme.TEXT), BorderLayout.WEST);
+		line.add(Ui.label(current + " / " + target, Theme.small(), met ? Theme.GREEN : Theme.GOLD), BorderLayout.EAST);
 		right.add(line, BorderLayout.NORTH);
 		ProgressBar bar = new ProgressBar(4);
-		bar.setProgress(gap.fraction(), gap.isMet(), false);
+		bar.setProgress(fraction, met, false);
 		right.add(bar, BorderLayout.CENTER);
 		row.add(right, BorderLayout.CENTER);
-		if (!gap.isMet())
+		if (tip != null)
 		{
-			row.setToolTipText(com.codex.navigator.core.Planner.formatXp(gap.xpToGo()) + " xp to go");
+			row.setToolTipText(tip);
 		}
 		return row;
 	}
