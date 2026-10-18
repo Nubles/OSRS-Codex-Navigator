@@ -60,19 +60,36 @@ public final class GoalStore
 	/** Replaces the list from saved keys without saving it back. */
 	public void load(List<String> keys)
 	{
+		load(keys, null);
+	}
+
+	/**
+	 * Replaces the list from saved keys, then adds any {@code extra} goals that are not already there,
+	 * such as pins made while logged out. Saves only when an extra goal was actually added.
+	 */
+	public void load(List<String> keys, List<String> extra)
+	{
 		goals.clear();
-		if (keys != null)
+		addAll(keys);
+		int before = goals.size();
+		addAll(extra);
+		changed(goals.size() > before);
+	}
+
+	private void addAll(List<String> keys)
+	{
+		if (keys == null)
 		{
-			for (String key : keys)
+			return;
+		}
+		for (String key : keys)
+		{
+			Goal goal = key == null ? null : Goal.fromKey(key);
+			if (goal != null && !goals.contains(goal))
 			{
-				Goal goal = Goal.fromKey(key);
-				if (goal != null && !goals.contains(goal))
-				{
-					goals.add(goal);
-				}
+				goals.add(goal);
 			}
 		}
-		changed(false);
 	}
 
 	public List<String> keys()

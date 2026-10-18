@@ -11,6 +11,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.RoundRectangle2D;
 import javax.swing.JComponent;
+import javax.swing.SwingUtilities;
 
 /** A diary tier as a small seal: filled when done, lit when ready, dim when locked. */
 class TierChip extends JComponent
@@ -48,7 +49,10 @@ class TierChip extends JComponent
 			@Override
 			public void mouseReleased(MouseEvent e)
 			{
-				onClick.run();
+				if (SwingUtilities.isLeftMouseButton(e) && contains(e.getPoint()))
+				{
+					onClick.run();
+				}
 			}
 		});
 	}
@@ -83,7 +87,8 @@ class TierChip extends JComponent
 		}
 		else
 		{
-			String pct = Math.round(progress * 100) + "%";
+			// Ready means every listed requirement is met and only the tasks remain, which no percentage can measure.
+			String pct = status == Step.Status.READY ? "Tasks" : Math.round(progress * 100) + "%";
 			g.setColor(c);
 			g.drawString(pct, (w - fm.stringWidth(pct)) / 2, h / 2 + fm.getAscent() / 2 + 6);
 		}

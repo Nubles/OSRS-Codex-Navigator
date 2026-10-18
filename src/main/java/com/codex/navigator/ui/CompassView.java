@@ -10,6 +10,7 @@ import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.util.List;
 import javax.swing.BoxLayout;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 
@@ -57,6 +58,10 @@ final class CompassView
 		if (!ready.isEmpty())
 		{
 			stack.add(new SectionHeader("Ready now"));
+			if (!account.isMembers())
+			{
+				stack.add(GoalCard.hint("On a free world, so only free quests are suggested."));
+			}
 			for (Recommender.Pick pick : ready)
 			{
 				QuestDef q = pick.getQuest();
@@ -80,7 +85,7 @@ final class CompassView
 		List<Plan> diaries = rec.closestDiaries(account, 3);
 		if (!diaries.isEmpty())
 		{
-			stack.add(new SectionHeader("Closest diaries"));
+			stack.add(new SectionHeader("Diaries within reach"));
 			for (Plan plan : diaries)
 			{
 				stack.add(diaryRow(nav, plan));
@@ -102,15 +107,24 @@ final class CompassView
 		JPanel line = new JPanel(new BorderLayout());
 		line.setOpaque(false);
 		line.add(Ui.label(plan.getTitle().replace(" Diary", ""), Theme.body(), Theme.TEXT), BorderLayout.WEST);
-		line.add(Ui.label(Math.round(plan.getProgress() * 100) + "%", Theme.small(), Theme.TEXT_MUTED), BorderLayout.EAST);
+		boolean tasks = plan.isAwaitingTasks();
+		line.add(tasks ? new Pill("Reqs met", Theme.TEAL)
+			: Ui.label(Math.round(plan.getProgress() * 100) + "%", Theme.small(), Theme.TEXT_MUTED), BorderLayout.EAST);
 		card.add(line, BorderLayout.NORTH);
 		ProgressBar bar = new ProgressBar(4);
 		bar.setProgress(plan.getProgress(), false, false);
 		card.add(bar, BorderLayout.CENTER);
 		Step next = plan.getNext();
-		if (next != null)
+		if (tasks)
 		{
-			card.add(Ui.label("Next: " + next.getTitle(), Theme.small(), Theme.TEXT_MUTED), BorderLayout.SOUTH);
+			card.add(Ui.label("Only the diary tasks are left", Theme.small(), Theme.TEXT_MUTED), BorderLayout.SOUTH);
+		}
+		else if (next != null)
+		{
+			JLabel label = Ui.label("Next: " + NextStepBox.verb(next) + next.getTitle(), Theme.small(), Theme.TEXT_MUTED);
+			label.setToolTipText(label.getText());
+			label.setMinimumSize(new java.awt.Dimension(10, label.getPreferredSize().height));
+			card.add(label, BorderLayout.SOUTH);
 		}
 		card.onClick(() -> nav.open(plan.getGoal()));
 		return card;

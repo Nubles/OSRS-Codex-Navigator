@@ -84,6 +84,12 @@ final class AtlasView extends JPanel
 		add(scroll, BorderLayout.CENTER);
 	}
 
+	/** Switches to one of the lists: 0 quests, 1 diaries, 2 combat achievements. */
+	void showList(int list)
+	{
+		kind.setSelected(list, true);
+	}
+
 	void rebuild()
 	{
 		int position = scroll.getVerticalScrollBar().getValue();

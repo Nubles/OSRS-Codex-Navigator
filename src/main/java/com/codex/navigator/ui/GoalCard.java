@@ -17,38 +17,62 @@ final class GoalCard
 
 	static Card build(Navigation nav, Plan plan, boolean focus, boolean showActions)
 	{
+		boolean done = plan.isComplete();
 		Card card = new Card(new BorderLayout(0, 8));
 		card.setBorder(new EmptyBorder(10, 10, 10, 10));
-		card.highlighted(focus);
-		card.accent(plan.isComplete() ? Theme.GREEN : Theme.progressColor(plan.getProgress()));
+		card.highlighted(focus && !done);
+		card.accent(done ? Theme.GREEN : plan.isAwaitingTasks() ? Theme.TEAL : Theme.progressColor(plan.getProgress()));
 
 		JPanel top = new JPanel(new BorderLayout(10, 0));
 		top.setOpaque(false);
-		ProgressRing ring = new ProgressRing(focus ? 50 : 40, focus ? 5f : 4f);
-		ring.setProgress(plan.getProgress(), plan.isComplete(), false);
+		int size = done && !focus ? 30 : focus ? 50 : 40;
+		ProgressRing ring = new ProgressRing(size, focus ? 5f : 4f);
+		ring.setProgress(plan.getProgress(), done, false);
+		if (plan.isAwaitingTasks())
+		{
+			ring.setCenterText("Tasks");
+		}
 		JPanel ringHolder = new JPanel(new BorderLayout());
 		ringHolder.setOpaque(false);
 		ringHolder.add(ring, BorderLayout.NORTH);
 		top.add(ringHolder, BorderLayout.WEST);
 
+		int textWidth = 168 - size - (done && !focus && showActions ? 56 : 0);
 		JPanel text = new JPanel();
 		text.setOpaque(false);
 		text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
 		if (focus)
 		{
-			text.add(Ui.label("FOCUS", Theme.small(), Theme.GOLD));
+			text.add(Ui.label(done ? "FOCUS  ·  COMPLETE" : "FOCUS", Theme.small(), done ? Theme.GREEN : Theme.GOLD));
 		}
-		text.add(Ui.wrapped(plan.getTitle(), Theme.title(), Theme.GOLD_BRIGHT, focus ? 124 : 136));
-		String sub = plan.getSubtitle();
-		if (plan.getQuestsTotal() > 1)
+		if (done && !focus)
 		{
-			sub += "  ·  " + plan.getQuestsDone() + "/" + plan.getQuestsTotal() + " quests";
+			JLabel title = Ui.label(plan.getTitle(), Theme.title(), Theme.TEXT_MUTED);
+			title.setToolTipText(plan.getTitle());
+			title.setMinimumSize(new java.awt.Dimension(10, title.getPreferredSize().height));
+			text.add(title);
 		}
-		text.add(Ui.wrapped(sub, Theme.small(), Theme.TEXT_MUTED, focus ? 124 : 136));
+		else
+		{
+			text.add(Ui.wrapped(plan.getTitle(), Theme.title(), Theme.GOLD_BRIGHT, textWidth));
+		}
+		if (done)
+		{
+			text.add(Ui.label("Complete", Theme.small(), Theme.GREEN));
+		}
+		else
+		{
+			text.add(Ui.wrapped(plan.getSubtitle(), Theme.small(), Theme.TEXT_MUTED, textWidth));
+			if (plan.getQuestsTotal() > 1)
+			{
+				text.add(Ui.label(plan.getQuestsDone() + " of " + plan.getQuestsTotal() + " quests done", Theme.small(),
+					Theme.TEXT_FAINT));
+			}
+		}
 		top.add(text, BorderLayout.CENTER);
 		card.add(top, BorderLayout.NORTH);
 
-		if (focus || !plan.isComplete())
+		if (!done || focus)
 		{
 			card.add(new NextStepBox(plan.getNext(), 150), BorderLayout.CENTER);
 		}
@@ -57,12 +81,23 @@ final class GoalCard
 		{
 			JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
 			actions.setOpaque(false);
-			if (!focus)
+			if (!focus && !done)
 			{
-				actions.add(new CodexButton("Focus", false, () -> nav.goals().makeFocus(plan.getGoal())));
+				actions.add(new CodexButton("Make focus", false, () -> nav.goals().makeFocus(plan.getGoal())));
 			}
 			actions.add(new CodexButton("Unpin", false, () -> nav.goals().toggle(plan.getGoal())));
-			card.add(actions, BorderLayout.SOUTH);
+			if (done && !focus)
+			{
+				// A finished goal shrinks to one line: ring, name and its Unpin button side by side.
+				JPanel holder = new JPanel(new BorderLayout());
+				holder.setOpaque(false);
+				holder.add(actions, BorderLayout.NORTH);
+				top.add(holder, BorderLayout.EAST);
+			}
+			else
+			{
+				card.add(actions, BorderLayout.SOUTH);
+			}
 		}
 		card.onClick(() -> nav.open(plan.getGoal()));
 		return card;

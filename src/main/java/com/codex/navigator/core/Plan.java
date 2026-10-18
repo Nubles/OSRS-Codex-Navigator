@@ -16,10 +16,20 @@ public final class Plan
 	private final Step next;
 	private final int questsDone;
 	private final int questsTotal;
+	private final int questPointTarget;
+	private final int combatTarget;
 
 	public Plan(Goal goal, String title, String subtitle, boolean complete, double progress, List<Step> path,
 		List<SkillGap> skills, Step next, int questsDone, int questsTotal)
 	{
+		this(goal, title, subtitle, complete, progress, path, skills, next, questsDone, questsTotal, 0, 0);
+	}
+
+	public Plan(Goal goal, String title, String subtitle, boolean complete, double progress, List<Step> path,
+		List<SkillGap> skills, Step next, int questsDone, int questsTotal, int questPointTarget, int combatTarget)
+	{
+		this.questPointTarget = questPointTarget;
+		this.combatTarget = combatTarget;
 		this.goal = goal;
 		this.title = title;
 		this.subtitle = subtitle;
@@ -84,5 +94,26 @@ public final class Plan
 	public int getQuestsTotal()
 	{
 		return questsTotal;
+	}
+
+	/** The quest points still needed somewhere on the path, or 0 when nothing asks for any. */
+	public int getQuestPointTarget()
+	{
+		return questPointTarget;
+	}
+
+	/** The combat level still needed somewhere on the path, or 0 when nothing asks for one. */
+	public int getCombatTarget()
+	{
+		return combatTarget;
+	}
+
+	/**
+	 * True for a diary whose every listed requirement is met: only the in-game tasks remain, which the
+	 * client does not expose, so its progress is an estimate rather than a measured percentage.
+	 */
+	public boolean isAwaitingTasks()
+	{
+		return !complete && next != null && next.getKind() == Step.Kind.DIARY_TASKS;
 	}
 }

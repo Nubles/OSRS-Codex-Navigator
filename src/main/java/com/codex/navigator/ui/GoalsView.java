@@ -4,6 +4,7 @@ import com.codex.navigator.core.Goal;
 import com.codex.navigator.core.Plan;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
+import java.util.ArrayList;
 import java.util.List;
 import javax.swing.BoxLayout;
 import javax.swing.JPanel;
@@ -39,15 +40,31 @@ final class GoalsView
 			return stack;
 		}
 
-		stack.add(new SectionHeader("Pinned", String.valueOf(goals.size())));
-		boolean first = true;
+		Goal focus = nav.goals().focus();
+		List<Plan> open = new ArrayList<>();
+		List<Plan> finished = new ArrayList<>();
 		for (Goal goal : goals)
 		{
 			Plan plan = nav.planner().plan(goal, nav.account());
-			stack.add(GoalCard.build(nav, plan, first, true));
-			first = false;
+			(plan.isComplete() && !goal.equals(focus) ? finished : open).add(plan);
 		}
-		stack.add(GoalCard.hint("Your focus also shows in game. Turn the overlay off in the plugin settings."));
+		if (!open.isEmpty())
+		{
+			stack.add(new SectionHeader("Pinned", String.valueOf(open.size())));
+			for (Plan plan : open)
+			{
+				stack.add(GoalCard.build(nav, plan, plan.getGoal().equals(focus), true));
+			}
+		}
+		if (!finished.isEmpty())
+		{
+			stack.add(new SectionHeader("Completed", String.valueOf(finished.size())));
+			for (Plan plan : finished)
+			{
+				stack.add(GoalCard.build(nav, plan, false, true));
+			}
+		}
+		stack.add(GoalCard.hint("Your focus also shows in game, and the chatbox tells you when a goal is done. Both can be turned off in the plugin settings."));
 		return stack;
 	}
 }

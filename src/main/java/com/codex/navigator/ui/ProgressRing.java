@@ -18,6 +18,7 @@ public class ProgressRing extends JComponent
 	private final float thickness;
 	private final Animator animator = new Animator(this);
 	private String caption;
+	private String centerText;
 	private boolean complete;
 
 	public ProgressRing(int diameter, float thickness)
@@ -37,6 +38,16 @@ public class ProgressRing extends JComponent
 		animator.set(Math.max(0, Math.min(1, progress)), animate);
 	}
 
+	/**
+	 * Words in place of the percentage, such as "Tasks" for a diary whose measurable requirements are all
+	 * met: a 99% there would promise more precision than the client can give.
+	 */
+	public void setCenterText(String text)
+	{
+		this.centerText = text;
+		repaint();
+	}
+
 	/** A small line under the percentage, for rings large enough to hold it. */
 	public void setCaption(String caption)
 	{
@@ -54,7 +65,7 @@ public class ProgressRing extends JComponent
 		float size = diameter - inset * 2;
 
 		// Inner well: a faint radial glow tinted by progress.
-		Color glow = complete ? Theme.GREEN : Theme.progressColor(value);
+		Color glow = complete ? Theme.GREEN : centerText != null ? Theme.TEAL : Theme.progressColor(value);
 		float r = size / 2f;
 		g.setPaint(new RadialGradientPaint(diameter / 2f, diameter / 2f, r,
 			new float[]{0f, 1f}, new Color[]{Theme.alpha(glow, 40), Theme.alpha(Theme.INK_DEEP, 0)}));
@@ -83,8 +94,8 @@ public class ProgressRing extends JComponent
 		g.setColor(Theme.alpha(Theme.GOLD_DIM, 90));
 		g.draw(new Ellipse2D.Float(0.5f, 0.5f, diameter - 1, diameter - 1));
 
-		g.setFont(diameter >= 48 ? Theme.title() : Theme.small());
-		String text = Math.round(value * 100) + "%";
+		g.setFont(diameter >= 48 && centerText == null ? Theme.title() : Theme.small());
+		String text = centerText != null ? centerText : Math.round(value * 100) + "%";
 		FontMetrics fm = g.getFontMetrics();
 		if (complete)
 		{
@@ -98,7 +109,7 @@ public class ProgressRing extends JComponent
 		}
 		if (text != null)
 		{
-			drawShadowed(g, text, (diameter - fm.stringWidth(text)) / 2, textY, Theme.TEXT);
+			drawShadowed(g, text, (diameter - fm.stringWidth(text)) / 2, textY, centerText != null ? Theme.TEAL : Theme.TEXT);
 		}
 
 		if (caption != null && diameter >= 60)

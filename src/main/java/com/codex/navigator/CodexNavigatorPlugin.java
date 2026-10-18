@@ -16,17 +16,20 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.google.inject.Provides;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.swing.SwingUtilities;
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.Player;
 import net.runelite.api.Quest;
 import net.runelite.api.QuestState;
 import net.runelite.api.Skill;
+import net.runelite.api.WorldType;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.StatChanged;
@@ -34,6 +37,10 @@ import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.gameval.VarPlayerID;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.client.callback.ClientThread;
+import net.runelite.client.chat.ChatColorType;
+import net.runelite.client.chat.ChatMessageBuilder;
+import net.runelite.client.chat.ChatMessageManager;
+import net.runelite.client.chat.QueuedMessage;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
@@ -58,10 +65,16 @@ public class CodexNavigatorPlugin extends Plugin
 	}.getType();
 	/** Varbits can change many times a second; refresh at most this often while they do. */
 	private static final int REFRESH_TICKS = 2;
+	/** Reading every quest runs a client script per quest, so re-read them at most this often. */
+	private static final int QUEST_TICKS = 5;
+	/** Experience changes with every action while skilling; republish for it alone at most this often. */
+	private static final int XP_ONLY_TICKS = 10;
+	/** Varbits settle over the first ticks after login; completions seen then are not announced. */
+	private static final int WARMUP_TICKS = 8;
 
-	private static final String[] DIARY_AREAS = {"Ardougne", "Desert", "Falador", "Fremennik", "Kandarin", "Karamja",
+	static final String[] DIARY_AREAS = {"Ardougne", "Desert", "Falador", "Fremennik", "Kandarin", "Karamja",
 		"Kourend", "Lumbridge", "Morytania", "Varrock", "Western", "Wilderness"};
-	private static final String[] DIARY_TIERS = {"Easy", "Medium", "Hard", "Elite"};
+	static final String[] DIARY_TIERS = {"Easy", "Medium", "Hard", "Elite"};
 	// Complete flags per area, in DIARY_TIERS order. Karamja's first three tiers have no
 	// complete flag, so their reward-claimed flags stand in, as Quest Helper does.
 	private static final int[][] DIARY_VARBITS = {
@@ -102,24 +115,40 @@ public class CodexNavigatorPlugin extends Plugin
 	private SkillIconManager skillIconManager;
 
 	@Inject
+	private ChatMessageManager chatMessageManager;
+
+	@Inject
 	private Gson gson;
 
 	@Inject
 	private CodexNavigatorConfig config;
 
-	private final GoalStore goals = new GoalStore();
 	private final FocusOverlay overlay = new FocusOverlay();
 	private final Map<String, Quest> questsByName = new HashMap<>();
+	/** Last quest states read from the client; reused between the throttled quest reads. */
+	private final Map<String, QuestState> questCache = new HashMap<>();
+	/** Whether each pinned goal was complete at the last publish, to announce the moment one finishes. */
+	private final Map<Goal, Boolean> completion = new HashMap<>();
 
+	private GoalStore goals;
 	private Planner planner;
 	private Recommender recommender;
 	private NavigatorPanel panel;
 	private NavigationButton navButton;
 
 	private volatile AccountSnapshot snapshot = AccountSnapshot.empty();
+	/** Pins made while no RuneScape profile was active; merged into the profile at the next login. */
+	private volatile List<String> offlinePins;
 	private int lastSignature;
+	private int lastStructure;
+	private AccountSnapshot heldBack;
 	private boolean dirty;
-	private int ticksSinceRefresh;
+	private boolean questsPending;
+	private int tick;
+	private int lastRefreshTick;
+	private int lastQuestTick = -QUEST_TICKS;
+	private int lastPublishTick;
+	private int loginTick;
 
 	@Provides
 	CodexNavigatorConfig provideConfig(ConfigManager configManager)
@@ -138,7 +167,9 @@ public class CodexNavigatorPlugin extends Plugin
 			questsByName.put(quest.getName(), quest);
 		}
 
-		goals.setSaver(keys -> configManager.setRSProfileConfiguration(CodexNavigatorConfig.GROUP, GOALS_KEY, gson.toJson(keys)));
+		// A fresh store each start, so listeners from a previous run of the plugin never pile up.
+		goals = new GoalStore();
+		goals.setSaver(this::saveGoals);
 		goals.addListener(this::updateOverlay);
 		loadGoals();
 
@@ -152,8 +183,14 @@ public class CodexNavigatorPlugin extends Plugin
 		clientToolbar.addNavigation(navButton);
 		overlayManager.add(overlay);
 
-		dirty = true;
-		clientThread.invokeLater(this::refresh);
+		clientThread.invokeLater(() ->
+		{
+			if (client.getGameState() == GameState.LOGGED_IN)
+			{
+				markLogin();
+				refresh();
+			}
+		});
 	}
 
 	@Override
@@ -161,10 +198,17 @@ public class CodexNavigatorPlugin extends Plugin
 	{
 		overlayManager.remove(overlay);
 		clientToolbar.removeNavigation(navButton);
+		overlay.setView(null);
 		questsByName.clear();
+		questCache.clear();
+		completion.clear();
 		snapshot = AccountSnapshot.empty();
 		lastSignature = 0;
+		lastStructure = 0;
+		heldBack = null;
+		offlinePins = null;
 		panel = null;
+		goals = null;
 	}
 
 	@Subscribe
@@ -173,17 +217,26 @@ public class CodexNavigatorPlugin extends Plugin
 		GameState state = event.getGameState();
 		if (state == GameState.LOGGED_IN)
 		{
+			if (!snapshot.isLoggedIn())
+			{
+				markLogin();
+			}
 			dirty = true;
+			questsPending = true;
 		}
 		else if (state == GameState.LOGIN_SCREEN)
 		{
-			publish(AccountSnapshot.empty());
+			questCache.clear();
+			completion.clear();
+			heldBack = null;
+			publish(AccountSnapshot.empty(), true);
 		}
 	}
 
 	@Subscribe
 	public void onRuneScapeProfileChanged(RuneScapeProfileChanged event)
 	{
+		completion.clear();
 		loadGoals();
 	}
 
@@ -197,26 +250,45 @@ public class CodexNavigatorPlugin extends Plugin
 	public void onVarbitChanged(VarbitChanged event)
 	{
 		dirty = true;
+		questsPending = true;
 	}
 
 	@Subscribe
 	public void onConfigChanged(ConfigChanged event)
 	{
-		if (CodexNavigatorConfig.GROUP.equals(event.getGroup()) && !GOALS_KEY.equals(event.getKey()))
+		if (!CodexNavigatorConfig.GROUP.equals(event.getGroup()) || GOALS_KEY.equals(event.getKey()))
 		{
-			lastSignature = 0;
-			dirty = true;
+			return;
+		}
+		updateOverlay();
+		NavigatorPanel target = panel;
+		if (target != null)
+		{
+			SwingUtilities.invokeLater(target::refreshViews);
 		}
 	}
 
 	@Subscribe
-	public void onGameTick(GameTick tick)
+	public void onGameTick(GameTick event)
 	{
-		ticksSinceRefresh++;
-		if (dirty && ticksSinceRefresh >= REFRESH_TICKS)
+		tick++;
+		if (dirty && tick - lastRefreshTick >= REFRESH_TICKS)
 		{
 			refresh();
 		}
+		else if (heldBack != null && tick - lastPublishTick >= XP_ONLY_TICKS)
+		{
+			AccountSnapshot next = heldBack;
+			heldBack = null;
+			publish(next, true);
+		}
+	}
+
+	private void markLogin()
+	{
+		loginTick = tick;
+		questsPending = true;
+		dirty = true;
 	}
 
 	private void loadGoals()
@@ -234,40 +306,66 @@ public class CodexNavigatorPlugin extends Plugin
 				keys = null;
 			}
 		}
-		goals.load(keys);
+		List<String> extra = configManager.getRSProfileKey() != null ? offlinePins : null;
+		if (extra != null)
+		{
+			offlinePins = null;
+		}
+		GoalStore store = goals;
+		if (store != null)
+		{
+			store.load(keys, extra);
+		}
+	}
+
+	/**
+	 * Saves pinned goals to the active RuneScape profile. With no profile (logged out) there is nowhere
+	 * to save them yet, so they are held and merged into the profile at the next login.
+	 */
+	private void saveGoals(List<String> keys)
+	{
+		if (configManager.getRSProfileKey() == null)
+		{
+			offlinePins = new ArrayList<>(keys);
+			return;
+		}
+		configManager.setRSProfileConfiguration(CodexNavigatorConfig.GROUP, GOALS_KEY, gson.toJson(keys));
 	}
 
 	/** Reads the account on the client thread and hands it to the panel if anything changed. */
 	private void refresh()
 	{
 		dirty = false;
-		ticksSinceRefresh = 0;
+		lastRefreshTick = tick;
 		if (client.getGameState() != GameState.LOGGED_IN)
 		{
 			return;
 		}
-		AccountSnapshot.Builder b = new AccountSnapshot.Builder().loggedIn(true);
+		AccountSnapshot.Builder b = new AccountSnapshot.Builder().loggedIn(true)
+			.members(client.getWorldType().contains(WorldType.MEMBERS));
 		Player local = client.getLocalPlayer();
-		if (local != null)
+		if (local != null && local.getName() != null)
 		{
 			b.playerName(local.getName()).combatLevel(local.getCombatLevel());
+		}
+		else
+		{
+			// The local player arrives a tick or two after login; look again soon.
+			dirty = true;
 		}
 		for (Skill skill : Skill.values())
 		{
 			b.skill(skill, client.getRealSkillLevel(skill), client.getSkillExperience(skill));
 		}
-		for (QuestDef def : planner.getData().quests())
+		if (questsPending && (questCache.isEmpty() || tick - lastQuestTick >= QUEST_TICKS))
 		{
-			Quest quest = questsByName.get(def.name);
-			if (quest != null)
-			{
-				QuestState state = quest.getState(client);
-				if (state != null)
-				{
-					b.quest(def.name, state);
-				}
-			}
+			readQuests();
 		}
+		else if (questsPending)
+		{
+			dirty = true;
+		}
+		questCache.forEach(b::quest);
 		b.questPoints(client.getVarpValue(VarPlayerID.QP));
 		for (int area = 0; area < DIARY_AREAS.length; area++)
 		{
@@ -284,18 +382,51 @@ public class CodexNavigatorPlugin extends Plugin
 			b.combatAchievements(CodexData.COMBAT_ACHIEVEMENT_TIERS[i], client.getVarbitValue(COMBAT_ACHIEVEMENT_VARBITS[i]));
 		}
 		b.combatAchievementPoints(client.getVarbitValue(VarbitID.CA_POINTS));
-		publish(b.build());
+		publish(b.build(), false);
 	}
 
-	private void publish(AccountSnapshot next)
+	private void readQuests()
+	{
+		questsPending = false;
+		lastQuestTick = tick;
+		for (QuestDef def : planner.getData().quests())
+		{
+			Quest quest = questsByName.get(def.name);
+			if (quest != null)
+			{
+				QuestState state = quest.getState(client);
+				if (state != null)
+				{
+					questCache.put(def.name, state);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Hands a new snapshot to the overlay and panel. A change that only moves experience is held back
+	 * and published at most every few seconds, so skilling does not rebuild the panel every tick.
+	 */
+	private void publish(AccountSnapshot next, boolean force)
 	{
 		int signature = next.signature();
 		if (signature == lastSignature)
 		{
+			heldBack = null;
 			return;
 		}
+		int structure = next.structureSignature();
+		if (!force && structure == lastStructure && tick - lastPublishTick < XP_ONLY_TICKS)
+		{
+			heldBack = next;
+			return;
+		}
+		heldBack = null;
 		lastSignature = signature;
+		lastStructure = structure;
+		lastPublishTick = tick;
 		snapshot = next;
+		announceCompletions(next);
 		updateOverlay();
 		NavigatorPanel target = panel;
 		if (target != null)
@@ -304,21 +435,59 @@ public class CodexNavigatorPlugin extends Plugin
 		}
 	}
 
+	/** Posts a chat line the moment a pinned goal is finished, once varbits have settled after login. */
+	private void announceCompletions(AccountSnapshot account)
+	{
+		GoalStore store = goals;
+		if (store == null || !account.isLoggedIn() || account.getPlayerName() == null)
+		{
+			return;
+		}
+		boolean settled = tick - loginTick >= WARMUP_TICKS;
+		for (Goal goal : store.goals())
+		{
+			Plan plan = planner.plan(goal, account);
+			Boolean before = completion.put(goal, plan.isComplete());
+			if (settled && plan.isComplete() && Boolean.FALSE.equals(before) && config.announceCompletions())
+			{
+				String message = new ChatMessageBuilder()
+					.append(ChatColorType.HIGHLIGHT)
+					.append("Codex: ")
+					.append(ChatColorType.NORMAL)
+					.append(plan.getTitle() + " complete. Open the Codex to pick your next goal.")
+					.build();
+				chatMessageManager.queue(QueuedMessage.builder()
+					.type(ChatMessageType.CONSOLE)
+					.runeLiteFormattedMessage(message)
+					.build());
+			}
+		}
+	}
+
 	private void updateOverlay()
 	{
 		AccountSnapshot account = snapshot;
-		if (!config.showOverlay() || !account.isLoggedIn() || planner == null)
+		GoalStore store = goals;
+		if (!config.showOverlay() || !account.isLoggedIn() || planner == null || store == null)
 		{
 			overlay.setView(null);
 			return;
 		}
-		Goal focus = goals.focus();
+		Goal focus = store.focus();
 		if (focus != null)
 		{
 			Plan plan = planner.plan(focus, account);
 			Step next = plan.getNext();
-			overlay.setView(new FocusOverlay.View("CODEX  ·  FOCUS", plan.getTitle(), plan.getProgress(),
-				next == null ? "Complete" : stepText(next)));
+			if (plan.isComplete())
+			{
+				overlay.setView(new FocusOverlay.View("CODEX  ·  COMPLETE", plan.getTitle(), 1,
+					"Pick your next goal in the Codex"));
+			}
+			else
+			{
+				overlay.setView(new FocusOverlay.View("CODEX  ·  FOCUS", plan.getTitle(), plan.getProgress(),
+					next == null ? null : stepText(next)));
+			}
 			return;
 		}
 		if (config.suggestWithoutFocus())
@@ -335,7 +504,7 @@ public class CodexNavigatorPlugin extends Plugin
 		overlay.setView(null);
 	}
 
-	private static String stepText(Step step)
+	static String stepText(Step step)
 	{
 		if (step.getKind() == Step.Kind.QUEST)
 		{

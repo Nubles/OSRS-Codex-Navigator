@@ -11,6 +11,7 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.RoundRectangle2D;
 import java.util.function.IntConsumer;
 import javax.swing.JComponent;
+import javax.swing.SwingUtilities;
 
 /**
  * Tabs drawn as one engraved strip: the chosen segment is lit from below by a
@@ -24,6 +25,7 @@ public class Segmented extends JComponent
 	private int selected;
 	private int hover = -1;
 	private IntConsumer listener;
+	private boolean reselect;
 
 	public Segmented(boolean large, String... labels)
 	{
@@ -58,7 +60,18 @@ public class Segmented extends JComponent
 			@Override
 			public void mousePressed(MouseEvent e)
 			{
-				setSelected(indexAt(e.getX()), true);
+				if (!SwingUtilities.isLeftMouseButton(e))
+				{
+					return;
+				}
+				int index = indexAt(e.getX());
+				boolean changed = index != selected;
+				setSelected(index, false);
+				// Fire on a click of the segment already chosen too, so it can close a page opened over it.
+				if (listener != null && (changed || reselect))
+				{
+					listener.accept(index);
+				}
 			}
 		};
 		addMouseListener(mouse);
@@ -68,6 +81,13 @@ public class Segmented extends JComponent
 	public void onChange(IntConsumer listener)
 	{
 		this.listener = listener;
+	}
+
+	/** Also notify when the chosen segment is clicked again. */
+	public Segmented notifyOnReselect()
+	{
+		reselect = true;
+		return this;
 	}
 
 	public int getSelected()

@@ -5,6 +5,7 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import net.runelite.api.Experience;
 import net.runelite.api.QuestState;
@@ -26,6 +27,7 @@ public final class AccountSnapshot
 	private final int questPoints;
 	private final int combatLevel;
 	private final int combatAchievementPoints;
+	private final boolean members;
 
 	private AccountSnapshot(Builder b)
 	{
@@ -39,6 +41,7 @@ public final class AccountSnapshot
 		questPoints = b.questPoints;
 		combatLevel = b.combatLevel;
 		combatAchievementPoints = b.combatAchievementPoints;
+		members = b.members;
 	}
 
 	public static AccountSnapshot empty()
@@ -122,11 +125,26 @@ public final class AccountSnapshot
 		return combatAchievementPoints;
 	}
 
+	/** False on a free-to-play world, where members quests cannot be started. */
+	public boolean isMembers()
+	{
+		return members;
+	}
+
 	/** Changes whenever anything the panel shows changes, so unchanged ticks can be skipped. */
 	public int signature()
 	{
-		return java.util.Objects.hash(loggedIn, playerName, levels, xp, quests, diariesDone, combatAchievementsDone,
-			questPoints, combatLevel, combatAchievementPoints);
+		return Objects.hash(structureSignature(), xp);
+	}
+
+	/**
+	 * Everything but raw experience. Experience ticks up with every action while skilling, so the
+	 * plugin republishes promptly only when this part changes and throttles experience-only updates.
+	 */
+	public int structureSignature()
+	{
+		return Objects.hash(loggedIn, playerName, levels, quests, diariesDone, combatAchievementsDone,
+			questPoints, combatLevel, combatAchievementPoints, members);
 	}
 
 	public static final class Builder
@@ -141,6 +159,7 @@ public final class AccountSnapshot
 		private int questPoints;
 		private int combatLevel = 3;
 		private int combatAchievementPoints;
+		private boolean members = true;
 
 		public Builder loggedIn(boolean value)
 		{
@@ -200,6 +219,12 @@ public final class AccountSnapshot
 		public Builder combatAchievementPoints(int value)
 		{
 			combatAchievementPoints = value;
+			return this;
+		}
+
+		public Builder members(boolean value)
+		{
+			members = value;
 			return this;
 		}
 
