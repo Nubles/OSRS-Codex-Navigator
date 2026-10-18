@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
@@ -182,12 +183,7 @@ final class DetailView
 		AccountSnapshot account = nav.account();
 		List<String> quests = data.questsNeeding(quest);
 		List<String> diaries = data.diariesNeeding(quest);
-		if (quests.isEmpty() && diaries.isEmpty())
-		{
-			return;
-		}
-		int total = data.unlockCount(quest);
-		stack.add(new SectionHeader("Leads to", total > quests.size() + diaries.size() ? total + " in all" : null));
+		List<JComponent> rows = new ArrayList<>();
 		for (String name : quests)
 		{
 			QuestDef def = data.quest(name);
@@ -197,7 +193,7 @@ final class DetailView
 			}
 			Step step = nav.planner().questStep(def, account);
 			String detail = step.getStatus() == Step.Status.BLOCKED ? step.getDetail() : CompassView.subtitle(def);
-			stack.add(Row.of(step.getStatus(), name, detail, null, null, () -> nav.open(Goal.quest(name))));
+			rows.add(Row.of(step.getStatus(), name, detail, null, null, () -> nav.open(Goal.quest(name))));
 		}
 		for (String name : diaries)
 		{
@@ -206,7 +202,18 @@ final class DetailView
 				: plan.isAwaitingTasks() ? Step.Status.READY : Step.Status.BLOCKED;
 			String detail = plan.isComplete() ? "Diary complete" : plan.isAwaitingTasks() ? "Requirements met"
 				: "Diary  ·  " + Math.round(plan.getProgress() * 100) + "% of requirements";
-			stack.add(Row.of(status, plan.getTitle(), detail, null, null, () -> nav.open(Goal.diary(name))));
+			rows.add(Row.of(status, plan.getTitle(), detail, null, null, () -> nav.open(Goal.diary(name))));
+		}
+		// With miniquests hidden, a quest that only leads to miniquests gets no section rather than an empty one.
+		if (rows.isEmpty())
+		{
+			return;
+		}
+		int total = data.unlockCount(quest);
+		stack.add(new SectionHeader("Leads to", total > rows.size() ? total + " in all" : null));
+		for (JComponent row : rows)
+		{
+			stack.add(row);
 		}
 	}
 

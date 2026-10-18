@@ -1,6 +1,7 @@
 package com.codex.navigator;
 
 import com.codex.navigator.core.AccountSnapshot;
+import com.codex.navigator.core.CompletionWatch;
 import com.codex.navigator.core.Goal;
 import com.codex.navigator.core.GoalStore;
 import com.codex.navigator.core.Plan;
@@ -131,8 +132,8 @@ public class CodexNavigatorPlugin extends Plugin
 	private final Map<String, Quest> questsByName = new HashMap<>();
 	/** Last quest states read from the client; reused between the throttled quest reads. */
 	private final Map<String, QuestState> questCache = new HashMap<>();
-	/** Whether each pinned goal was complete at the last publish, to announce the moment one finishes. */
-	private final Map<Goal, Boolean> completion = new HashMap<>();
+	/** Compares each publish with the one before, to announce the moment a pinned goal finishes. */
+	private final CompletionWatch completion = new CompletionWatch();
 
 	private GoalStore goals;
 	private Planner planner;
@@ -204,7 +205,7 @@ public class CodexNavigatorPlugin extends Plugin
 		overlay.setView(null);
 		questsByName.clear();
 		questCache.clear();
-		completion.clear();
+		completion.reset();
 		snapshot = AccountSnapshot.empty();
 		gate.reset();
 		heldBack = null;
@@ -230,7 +231,7 @@ public class CodexNavigatorPlugin extends Plugin
 		{
 			questCache.clear();
 			lastQuestPoints = -1;
-			completion.clear();
+			completion.reset();
 			heldBack = null;
 			publish(AccountSnapshot.empty(), true);
 		}
@@ -239,7 +240,7 @@ public class CodexNavigatorPlugin extends Plugin
 	@Subscribe
 	public void onRuneScapeProfileChanged(RuneScapeProfileChanged event)
 	{
-		completion.clear();
+		completion.reset();
 		loadGoals();
 	}
 
@@ -457,24 +458,23 @@ public class CodexNavigatorPlugin extends Plugin
 		{
 			return;
 		}
-		boolean settled = tick - loginTick >= WARMUP_TICKS;
-		for (Goal goal : store.goals())
+		List<Plan> finished = completion.finished(planner, store.goals(), account);
+		if (tick - loginTick < WARMUP_TICKS || !config.announceCompletions())
 		{
-			Plan plan = planner.plan(goal, account);
-			Boolean before = completion.put(goal, plan.isComplete());
-			if (settled && plan.isComplete() && Boolean.FALSE.equals(before) && config.announceCompletions())
-			{
-				String message = new ChatMessageBuilder()
-					.append(ChatColorType.HIGHLIGHT)
-					.append("Codex: ")
-					.append(ChatColorType.NORMAL)
-					.append(plan.getTitle() + " complete. Open the Codex to pick your next goal.")
-					.build();
-				chatMessageManager.queue(QueuedMessage.builder()
-					.type(ChatMessageType.CONSOLE)
-					.runeLiteFormattedMessage(message)
-					.build());
-			}
+			return;
+		}
+		for (Plan plan : finished)
+		{
+			String message = new ChatMessageBuilder()
+				.append(ChatColorType.HIGHLIGHT)
+				.append("Codex: ")
+				.append(ChatColorType.NORMAL)
+				.append(plan.getTitle() + " complete. Open the Codex to pick your next goal.")
+				.build();
+			chatMessageManager.queue(QueuedMessage.builder()
+				.type(ChatMessageType.CONSOLE)
+				.runeLiteFormattedMessage(message)
+				.build());
 		}
 	}
 

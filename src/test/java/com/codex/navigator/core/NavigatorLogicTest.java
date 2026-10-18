@@ -196,4 +196,32 @@ public class NavigatorLogicTest
 			assertEquals(d.area + " " + d.tier, d.name);
 		}
 	}
+
+	@Test
+	public void goalPinnedMidSessionIsAnnouncedWhenFinished()
+	{
+		CompletionWatch watch = new CompletionWatch();
+		Goal cook = Goal.quest("Cook's Assistant");
+		List<Goal> none = Collections.emptyList();
+		List<Goal> pinned = Collections.singletonList(cook);
+		// Published before the goal was pinned; nothing publishes between the pin and the finish.
+		assertTrue(watch.finished(planner, none, fresh().quest(cook.getName(), QuestState.IN_PROGRESS).build()).isEmpty());
+		List<Plan> done = watch.finished(planner, pinned, fresh().quest(cook.getName(), QuestState.FINISHED).build());
+		assertEquals(1, done.size());
+		assertEquals(cook, done.get(0).getGoal());
+	}
+
+	@Test
+	public void goalFinishedWhileUnpinnedIsNotAnnouncedOnRepin()
+	{
+		CompletionWatch watch = new CompletionWatch();
+		Goal cook = Goal.quest("Cook's Assistant");
+		List<Goal> pinned = Collections.singletonList(cook);
+		watch.finished(planner, pinned, fresh().build());
+		watch.finished(planner, Collections.emptyList(), fresh().quest(cook.getName(), QuestState.FINISHED).build());
+		assertTrue(watch.finished(planner, pinned, fresh().quest(cook.getName(), QuestState.FINISHED).questPoints(1).build())
+			.isEmpty());
+		watch.reset();
+		assertTrue(watch.finished(planner, pinned, fresh().quest(cook.getName(), QuestState.FINISHED).build()).isEmpty());
+	}
 }
