@@ -31,7 +31,7 @@ It is the first plugin in the **Codex** suite: a family of RuneLite plugins that
 
 ## Rules posture
 
-Codex Navigator only reads client state you can already see (quest states, varbits, levels) and draws its own panel and overlay. It does not click, move items, change menus, send chat or touch the network. Nothing leaves your computer, and pinned goals are saved per account (and per game mode, such as Leagues) in your RuneLite profile.
+Codex Navigator only reads client state you can already see (quest states, varbits, levels) and draws its own panel and overlay. It does not click, move items, change menus, send chat messages or touch the network; the only thing it writes to the chatbox is an optional line that only you can see. Nothing leaves your computer, and pinned goals are saved per account (and per game mode, such as Leagues) in your RuneLite profile.
 
 ## Settings
 
