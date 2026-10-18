@@ -19,6 +19,7 @@ public class ProgressRing extends JComponent
 	private final Animator animator = new Animator(this);
 	private String caption;
 	private String centerText;
+	private Color centerColor = Theme.TEAL;
 	private boolean complete;
 
 	public ProgressRing(int diameter, float thickness)
@@ -44,7 +45,13 @@ public class ProgressRing extends JComponent
 	 */
 	public void setCenterText(String text)
 	{
+		setCenterText(text, Theme.TEAL);
+	}
+
+	public void setCenterText(String text, Color color)
+	{
 		this.centerText = text;
+		this.centerColor = color;
 		repaint();
 	}
 
@@ -65,7 +72,7 @@ public class ProgressRing extends JComponent
 		float size = diameter - inset * 2;
 
 		// Inner well: a faint radial glow tinted by progress.
-		Color glow = complete ? Theme.GREEN : centerText != null ? Theme.TEAL : Theme.progressColor(value);
+		Color glow = complete ? Theme.GREEN : centerText != null ? centerColor : Theme.progressColor(value);
 		float r = size / 2f;
 		g.setPaint(new RadialGradientPaint(diameter / 2f, diameter / 2f, r,
 			new float[]{0f, 1f}, new Color[]{Theme.alpha(glow, 40), Theme.alpha(Theme.INK_DEEP, 0)}));
@@ -109,7 +116,7 @@ public class ProgressRing extends JComponent
 		}
 		if (text != null)
 		{
-			drawShadowed(g, text, (diameter - fm.stringWidth(text)) / 2, textY, centerText != null ? Theme.TEAL : Theme.TEXT);
+			drawShadowed(g, text, (diameter - fm.stringWidth(text)) / 2, textY, centerText != null ? centerColor : Theme.TEXT);
 		}
 
 		if (caption != null && diameter >= 60)

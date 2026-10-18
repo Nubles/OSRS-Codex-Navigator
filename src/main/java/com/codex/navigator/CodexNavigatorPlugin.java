@@ -5,6 +5,7 @@ import com.codex.navigator.core.Goal;
 import com.codex.navigator.core.GoalStore;
 import com.codex.navigator.core.Plan;
 import com.codex.navigator.core.Planner;
+import com.codex.navigator.core.PublishGate;
 import com.codex.navigator.core.Recommender;
 import com.codex.navigator.core.Step;
 import com.codex.navigator.data.CodexData;
@@ -65,8 +66,11 @@ public class CodexNavigatorPlugin extends Plugin
 	}.getType();
 	/** Varbits can change many times a second; refresh at most this often while they do. */
 	private static final int REFRESH_TICKS = 2;
-	/** Reading every quest runs a client script per quest, so re-read them at most this often. */
-	private static final int QUEST_TICKS = 5;
+	/**
+	 * Reading every quest runs a client script per quest, so while varbits churn they are re-read at most
+	 * this often. A change in quest points (a quest finished) triggers a read straight away.
+	 */
+	private static final int QUEST_TICKS = 25;
 	/** Experience changes with every action while skilling; republish for it alone at most this often. */
 	private static final int XP_ONLY_TICKS = 10;
 	/** Varbits settle over the first ticks after login; completions seen then are not announced. */
@@ -139,16 +143,15 @@ public class CodexNavigatorPlugin extends Plugin
 	private volatile AccountSnapshot snapshot = AccountSnapshot.empty();
 	/** Pins made while no RuneScape profile was active; merged into the profile at the next login. */
 	private volatile List<String> offlinePins;
-	private int lastSignature;
-	private int lastStructure;
+	private final PublishGate gate = new PublishGate(XP_ONLY_TICKS);
 	private AccountSnapshot heldBack;
 	private boolean dirty;
 	private boolean questsPending;
 	private int tick;
 	private int lastRefreshTick;
 	private int lastQuestTick = -QUEST_TICKS;
-	private int lastPublishTick;
 	private int loginTick;
+	private int lastQuestPoints = -1;
 
 	@Provides
 	CodexNavigatorConfig provideConfig(ConfigManager configManager)
@@ -203,8 +206,7 @@ public class CodexNavigatorPlugin extends Plugin
 		questCache.clear();
 		completion.clear();
 		snapshot = AccountSnapshot.empty();
-		lastSignature = 0;
-		lastStructure = 0;
+		gate.reset();
 		heldBack = null;
 		offlinePins = null;
 		panel = null;
@@ -227,6 +229,7 @@ public class CodexNavigatorPlugin extends Plugin
 		else if (state == GameState.LOGIN_SCREEN)
 		{
 			questCache.clear();
+			lastQuestPoints = -1;
 			completion.clear();
 			heldBack = null;
 			publish(AccountSnapshot.empty(), true);
@@ -276,7 +279,7 @@ public class CodexNavigatorPlugin extends Plugin
 		{
 			refresh();
 		}
-		else if (heldBack != null && tick - lastPublishTick >= XP_ONLY_TICKS)
+		else if (heldBack != null && gate.due(tick))
 		{
 			AccountSnapshot next = heldBack;
 			heldBack = null;
@@ -357,6 +360,22 @@ public class CodexNavigatorPlugin extends Plugin
 		{
 			b.skill(skill, client.getRealSkillLevel(skill), client.getSkillExperience(skill));
 		}
+		int questPoints = client.getVarpValue(VarPlayerID.QP);
+		if (questPoints != lastQuestPoints)
+		{
+			boolean first = lastQuestPoints < 0;
+			lastQuestPoints = questPoints;
+			questsPending = true;
+			lastQuestTick = -QUEST_TICKS;
+			if (!first)
+			{
+				readQuests();
+				// The quest's own state can land a tick after its points; look once more shortly.
+				questsPending = true;
+				dirty = true;
+				lastQuestTick = tick - QUEST_TICKS + 3;
+			}
+		}
 		if (questsPending && (questCache.isEmpty() || tick - lastQuestTick >= QUEST_TICKS))
 		{
 			readQuests();
@@ -366,7 +385,7 @@ public class CodexNavigatorPlugin extends Plugin
 			dirty = true;
 		}
 		questCache.forEach(b::quest);
-		b.questPoints(client.getVarpValue(VarPlayerID.QP));
+		b.questPoints(questPoints);
 		for (int area = 0; area < DIARY_AREAS.length; area++)
 		{
 			for (int tier = 0; tier < DIARY_TIERS.length; tier++)
@@ -409,22 +428,17 @@ public class CodexNavigatorPlugin extends Plugin
 	 */
 	private void publish(AccountSnapshot next, boolean force)
 	{
-		int signature = next.signature();
-		if (signature == lastSignature)
-		{
-			heldBack = null;
-			return;
-		}
-		int structure = next.structureSignature();
-		if (!force && structure == lastStructure && tick - lastPublishTick < XP_ONLY_TICKS)
+		PublishGate.Decision decision = gate.offer(next, tick, force);
+		if (decision == PublishGate.Decision.HOLD)
 		{
 			heldBack = next;
 			return;
 		}
 		heldBack = null;
-		lastSignature = signature;
-		lastStructure = structure;
-		lastPublishTick = tick;
+		if (decision == PublishGate.Decision.SKIP)
+		{
+			return;
+		}
 		snapshot = next;
 		announceCompletions(next);
 		updateOverlay();

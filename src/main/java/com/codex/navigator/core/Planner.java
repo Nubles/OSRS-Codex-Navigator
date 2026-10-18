@@ -77,7 +77,7 @@ public final class Planner
 		}
 		Set<String> closure = new LinkedHashSet<>();
 		collect(quest.name, closure);
-		String subtitle = (quest.miniquest ? "Miniquest" : quest.difficulty + " quest")
+		String subtitle = (quest.miniquest ? "Miniquest" : quest.difficulty == null ? "Quest" : quest.difficulty)
 			+ (quest.points > 0 ? " · " + quest.points + "\u00a0QP" : "");
 		return build(goal, quest.name, subtitle, account.questDone(quest.name), closure,
 			new EnumMap<>(Skill.class), 0, 0, false, account);

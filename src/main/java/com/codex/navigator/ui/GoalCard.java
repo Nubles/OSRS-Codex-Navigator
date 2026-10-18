@@ -37,7 +37,7 @@ final class GoalCard
 		ringHolder.add(ring, BorderLayout.NORTH);
 		top.add(ringHolder, BorderLayout.WEST);
 
-		int textWidth = 168 - size - (done && !focus && showActions ? 56 : 0);
+		int textWidth = 168 - size;
 		JPanel text = new JPanel();
 		text.setOpaque(false);
 		text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
@@ -56,7 +56,8 @@ final class GoalCard
 		{
 			text.add(Ui.wrapped(plan.getTitle(), Theme.title(), Theme.GOLD_BRIGHT, textWidth));
 		}
-		if (done)
+		boolean compact = done && !focus;
+		if (done && !(compact && showActions))
 		{
 			text.add(Ui.label("Complete", Theme.small(), Theme.GREEN));
 		}
@@ -86,13 +87,16 @@ final class GoalCard
 				actions.add(new CodexButton("Make focus", false, () -> nav.goals().makeFocus(plan.getGoal())));
 			}
 			actions.add(new CodexButton("Unpin", false, () -> nav.goals().toggle(plan.getGoal())));
-			if (done && !focus)
+			if (compact)
 			{
-				// A finished goal shrinks to one line: ring, name and its Unpin button side by side.
-				JPanel holder = new JPanel(new BorderLayout());
-				holder.setOpaque(false);
-				holder.add(actions, BorderLayout.NORTH);
-				top.add(holder, BorderLayout.EAST);
+				// A finished goal shrinks to its ring, its name, and "Complete" beside the Unpin button.
+				JPanel line = new JPanel(new BorderLayout());
+				line.setOpaque(false);
+				line.setAlignmentX(JPanel.LEFT_ALIGNMENT);
+				line.add(Ui.label("Complete", Theme.small(), Theme.GREEN), BorderLayout.WEST);
+				line.add(actions, BorderLayout.EAST);
+				text.add(line);
+				card.setBorder(new EmptyBorder(8, 10, 8, 10));
 			}
 			else
 			{

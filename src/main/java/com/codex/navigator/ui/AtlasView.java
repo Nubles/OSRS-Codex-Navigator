@@ -142,6 +142,10 @@ final class AtlasView extends JPanel
 		}
 		steps.sort(Comparator.comparingInt((Step s) -> order(s.getStatus())).thenComparing(Step::getTitle));
 		stack.add(new SectionHeader(FILTERS[filter.getSelected()] + " quests", String.valueOf(steps.size())));
+		if (!account.isLoggedIn())
+		{
+			stack.add(GoalCard.hint("Log in to see your own progress. Until then every quest reads as untouched."));
+		}
 		for (Step step : steps)
 		{
 			QuestDef quest = defs.get(step.getTitle());
