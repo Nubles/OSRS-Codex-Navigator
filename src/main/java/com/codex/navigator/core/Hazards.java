@@ -63,7 +63,7 @@ public final class Hazards
 		boss("Song of the Elves", "Ends with the Fragment of Seren");
 		boss("Sins of the Father", "Ends with Vanstrom Klause");
 		boss("Horror from the Deep", "Ends with the Dagannoth Mother");
-		boss("Underground Pass", "Traps and falls the whole way through");
+		boss("Underground Pass", "Kalrag and three demons, with traps along the way");
 		boss("Haunted Mine", "Treus Dayth, a level 95 ghost");
 		boss("The Fremennik Isles", "Ends with the Ice Troll King");
 		boss("Shilo Village", "Nazastarool, fought in three forms");
@@ -77,7 +77,7 @@ public final class Hazards
 		wilderness("Devious Minds", "A trip through the Abyss, reached from the Wilderness");
 		wilderness("Enter the Abyss", "Starts with the Zamorak Mage in the Wilderness");
 		wilderness("Mage Arena I", "Kolodion, deep in the Wilderness");
-		wilderness("Mage Arena II", "Three demons across the deep Wilderness");
+		wilderness("Mage Arena II", "Three god bosses across the deep Wilderness");
 		wilderness("Curse of the Empty Lord", "Visits across the Wilderness");
 	}
 

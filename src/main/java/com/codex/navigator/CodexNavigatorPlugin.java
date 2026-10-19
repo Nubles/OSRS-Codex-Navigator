@@ -410,6 +410,11 @@ public class CodexNavigatorPlugin extends Plugin
 		if (boardDeferred && settled())
 		{
 			boardDeferred = false;
+			// The quests cached during the login churn may predate their varbits, and are otherwise not read again
+			// for QUEST_TICKS: read them now, so the first board written is a settled one.
+			questsPending = true;
+			lastQuestTick = tick - QUEST_TICKS;
+			refresh();
 			writeBoard();
 		}
 		if (dirty && tick - lastRefreshTick >= REFRESH_TICKS)
