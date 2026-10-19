@@ -6,6 +6,7 @@ import com.codex.navigator.core.Effort;
 import com.codex.navigator.core.Goal;
 import com.codex.navigator.core.Hazards;
 import com.codex.navigator.core.Plan;
+import com.codex.navigator.core.PlayTime;
 import com.codex.navigator.core.Recommender;
 import com.codex.navigator.core.Road;
 import com.codex.navigator.core.SkillGap;
@@ -13,8 +14,12 @@ import com.codex.navigator.core.Step;
 import com.codex.navigator.data.QuestDef;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
+import java.awt.image.BufferedImage;
+import java.time.ZoneId;
 import java.util.List;
+import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
@@ -43,13 +48,22 @@ final class CompassView
 		if (focus != null)
 		{
 			Plan plan = nav.planner().plan(focus, account);
-			stack.add(GoalCard.build(nav, plan, true, false));
-			// The road to the focus: every quest on the way as a stop, with a flag at the goal.
+			// The road to the focus: every quest on the way as a stop, with a flag at the goal. When it is drawn,
+			// the day goes on its flag rather than on the card.
 			Road road = Road.of(plan, account.isOneLife(), ROAD_STOPS);
+			stack.add(GoalCard.build(nav, plan, true, false, road == null));
 			if (road != null)
 			{
-				stack.add(new SectionHeader("The road", plan.getQuestsDone() + "/" + plan.getQuestsTotal()));
-				stack.add(new RoadCard(nav, road, plan.getTitle(), DetailView.whenText(nav, plan)));
+				// The focus card above already says how many are done and the play left, so the road counts what
+				// is still ahead and its flag carries the day.
+				int ahead = Math.max(0, plan.getQuestsTotal() - plan.getQuestsDone());
+				stack.add(new SectionHeader("The road", ahead + " to go"));
+				String flag = DetailView.flagText(nav, plan);
+				stack.add(new RoadCard(nav, road, plan.getTitle(), flag));
+				if (nav.share() != null)
+				{
+					stack.add(shareRow(nav, plan, road));
+				}
 			}
 		}
 		else
@@ -145,6 +159,47 @@ final class CompassView
 	}
 
 	/** "Goal" for a pick on a goal's path, or on one life the risk a quest asks for; null for neither. */
+	/** Save and copy buttons for the road card, with what became of the last one under them. */
+	private static JComponent shareRow(Navigation nav, Plan plan, Road road)
+	{
+		JPanel row = new JPanel(new BorderLayout(0, 4));
+		row.setOpaque(false);
+		JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+		buttons.setOpaque(false);
+		buttons.add(new CodexButton("Save road card", false, () -> shareRoad(nav, plan, road, true)));
+		buttons.add(Box.createHorizontalStrut(6));
+		buttons.add(new CodexButton("Copy", false, () -> shareRoad(nav, plan, road, false)));
+		row.add(buttons, BorderLayout.NORTH);
+		if (nav.shareNote() != null)
+		{
+			row.add(Ui.wrapped(nav.shareNote(), Theme.small(), Theme.TEAL, 200), BorderLayout.CENTER);
+		}
+		return row;
+	}
+
+	private static void shareRoad(Navigation nav, Plan plan, Road road, boolean save)
+	{
+		long now = System.currentTimeMillis();
+		ZoneId zone = ZoneId.systemDefault();
+		PlayTime time = nav.playTime();
+		String date = time == null || plan.getHoursLeft() <= 0 || plan.isAwaitingTasks() ? null
+			: time.dateText(plan.getHoursLeft(), now, zone);
+		RoadShare.Spec spec = RoadShare.Spec.of(plan, road, nav.cardName(), date, now, zone);
+		if (spec == null || nav.share() == null)
+		{
+			return;
+		}
+		BufferedImage card = RoadShare.render(spec);
+		if (save)
+		{
+			nav.share().save(card, RoadShare.fileName(now, zone));
+		}
+		else
+		{
+			nav.share().copy(card);
+		}
+	}
+
 	static Pill goalPill(AccountSnapshot account, List<Goal> goals, Recommender.Pick pick)
 	{
 		if (Recommender.waits(account, goals, pick.getQuest()))

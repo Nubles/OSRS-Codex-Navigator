@@ -75,4 +75,15 @@ public interface CodexNavigatorConfig extends Config
 	{
 		return true;
 	}
+
+	@ConfigItem(
+		keyName = "nameOnCard",
+		name = "Name on cards",
+		description = "Write your character's name on the road card; turn off to share it without it",
+		position = 7
+	)
+	default boolean nameOnCard()
+	{
+		return true;
+	}
 }

@@ -66,6 +66,9 @@ public class NavigatorPanel extends PluginPanel implements Navigation
 	private boolean levelPickerOpen;
 	private PlayTime playTime;
 	private Skill levelSkill;
+	private ShareActions share;
+	private BooleanSupplier nameOnCards = () -> true;
+	private String shareNote;
 
 	public NavigatorPanel(Planner planner, Recommender recommender, GoalStore goals, SkillIconManager skillIcons,
 		BooleanSupplier includeMiniquests)
@@ -100,7 +103,7 @@ public class NavigatorPanel extends PluginPanel implements Navigation
 
 		tabs.onChange(this::showTab);
 		goals.addListener(() -> SwingUtilities.invokeLater(this::refreshViews));
-		crest.update(account, planner.getData());
+		crest.update(account, planner.getData(), planner.capeQuests());
 		refreshViews();
 	}
 
@@ -120,7 +123,7 @@ public class NavigatorPanel extends PluginPanel implements Navigation
 	public void update(AccountSnapshot snapshot)
 	{
 		account = snapshot;
-		crest.update(snapshot, planner.getData());
+		crest.update(snapshot, planner.getData(), planner.capeQuests());
 		refreshViews();
 	}
 
@@ -322,6 +325,39 @@ public class NavigatorPanel extends PluginPanel implements Navigation
 		{
 			stale.add(TABS[1]);
 		}
+	}
+
+	/** Lets the Compass save and copy the road card; names go on it while the option is on. */
+	public void setShare(ShareActions share, BooleanSupplier nameOnCards)
+	{
+		this.share = share;
+		this.nameOnCards = nameOnCards;
+	}
+
+	/** Shows what became of a save or copy under the road's buttons. Swing thread only. */
+	public void shareNote(String note)
+	{
+		shareNote = note;
+		stale.add(TABS[0]);
+		rebuildVisible();
+	}
+
+	@Override
+	public ShareActions share()
+	{
+		return share;
+	}
+
+	@Override
+	public String cardName()
+	{
+		return nameOnCards.getAsBoolean() && account.isLoggedIn() ? account.getPlayerName() : null;
+	}
+
+	@Override
+	public String shareNote()
+	{
+		return shareNote;
 	}
 
 	@Override

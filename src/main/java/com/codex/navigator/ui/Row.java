@@ -4,7 +4,6 @@ import com.codex.navigator.core.Step;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
-import javax.swing.BoxLayout;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -35,24 +34,17 @@ public final class Row
 			card.add(glyphHolder, BorderLayout.WEST);
 		}
 
-		// The name gets the full width; the tag sits on the quieter second line so it never squeezes the name.
-		JPanel text = new JPanel();
-		text.setOpaque(false);
-		text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
+		// The name gets the full width; the tag sits on the quieter second line so it never squeezes the name,
+		// unless the second line is the longer one, when it moves up beside a short name instead.
 		JLabel name = Ui.label(title, Theme.body(), Theme.TEXT);
 		name.setToolTipText(title);
-		boolean hasDetail = detail != null && !detail.isEmpty();
-		text.add(line(name, hasDetail ? null : trailing));
-		if (hasDetail)
+		JLabel sub = null;
+		if (detail != null && !detail.isEmpty())
 		{
-			JLabel sub = Ui.label(detail, Theme.small(), Theme.TEXT_MUTED);
+			sub = Ui.label(detail, Theme.small(), Theme.TEXT_MUTED);
 			sub.setToolTipText(detail);
-			text.add(line(sub, trailing));
 		}
-		// Let long names clip with an ellipsis rather than widen the card.
-		text.setMinimumSize(new Dimension(10, 10));
-		text.setPreferredSize(new Dimension(10, text.getPreferredSize().height));
-		card.add(text, BorderLayout.CENTER);
+		card.add(new Lines(name, sub, trailing), BorderLayout.CENTER);
 
 		if (onClick != null)
 		{
@@ -61,22 +53,93 @@ public final class Row
 		return card;
 	}
 
-	private static JPanel line(JLabel label, JComponent trailing)
+	/**
+	 * The name over its detail line, with the tag at the right of whichever line has room for it: the detail line
+	 * first, the name's line when the detail would be cut and the name would not. Text that still does not fit is
+	 * cut with an ellipsis rather than widening the card.
+	 */
+	static final class Lines extends JPanel
 	{
-		JPanel line = new JPanel(new BorderLayout(6, 0));
-		line.setOpaque(false);
-		line.setAlignmentX(JPanel.LEFT_ALIGNMENT);
-		label.setMinimumSize(new Dimension(10, label.getPreferredSize().height));
-		line.add(label, BorderLayout.CENTER);
-		if (trailing != null)
+		private final JLabel name;
+		private final JLabel sub;
+		private final JComponent tag;
+
+		Lines(JLabel name, JLabel sub, JComponent tag)
 		{
-			JPanel holder = new JPanel(new BorderLayout());
-			holder.setOpaque(false);
-			holder.add(trailing, BorderLayout.CENTER);
-			line.add(holder, BorderLayout.EAST);
+			super(null);
+			setOpaque(false);
+			this.name = name;
+			this.sub = sub;
+			this.tag = tag;
+			add(name);
+			if (sub != null)
+			{
+				add(sub);
+			}
+			if (tag != null)
+			{
+				add(tag);
+			}
 		}
-		Dimension pref = line.getPreferredSize();
-		line.setMaximumSize(new Dimension(Integer.MAX_VALUE, pref.height));
-		return line;
+
+		/** True when the tag goes on the name's line at this width. */
+		boolean tagOnTop(int width)
+		{
+			if (tag == null)
+			{
+				return false;
+			}
+			if (sub == null)
+			{
+				return true;
+			}
+			int room = width - tag.getPreferredSize().width - GAP;
+			return sub.getPreferredSize().width > room && name.getPreferredSize().width <= room;
+		}
+
+		@Override
+		public Dimension getPreferredSize()
+		{
+			int h = name.getPreferredSize().height + (sub == null ? 0 : sub.getPreferredSize().height);
+			if (tag != null && sub == null)
+			{
+				h = Math.max(h, tag.getPreferredSize().height);
+			}
+			// Width is the card's to give: never ask for more than the smallest so long names clip, not widen.
+			return new Dimension(10, h);
+		}
+
+		@Override
+		public Dimension getMinimumSize()
+		{
+			return new Dimension(10, getPreferredSize().height);
+		}
+
+		@Override
+		public void doLayout()
+		{
+			int w = getWidth();
+			boolean top = tagOnTop(w);
+			Dimension tp = tag == null ? new Dimension(0, 0) : tag.getPreferredSize();
+			int nameH = name.getPreferredSize().height;
+			int nameRoom = top ? w - tp.width - GAP : w;
+			name.setBounds(0, 0, Math.max(0, nameRoom), nameH);
+			if (sub != null)
+			{
+				int subH = sub.getPreferredSize().height;
+				int subRoom = tag != null && !top ? w - tp.width - GAP : w;
+				sub.setBounds(0, nameH, Math.max(0, subRoom), subH);
+				if (tag != null && !top)
+				{
+					tag.setBounds(w - tp.width, nameH + (subH - tp.height) / 2, tp.width, tp.height);
+				}
+			}
+			if (tag != null && top)
+			{
+				tag.setBounds(w - tp.width, (nameH - tp.height) / 2, tp.width, tp.height);
+			}
+		}
+
+		private static final int GAP = 6;
 	}
 }

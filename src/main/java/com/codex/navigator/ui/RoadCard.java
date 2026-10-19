@@ -36,15 +36,19 @@ final class RoadCard extends JComponent
 	private static final int LEFT_X = 20;
 	private static final int RIGHT_X = 36;
 	private static final int TEXT_X = 54;
+	/** The width the card is laid out at in the sidebar, used to decide how many lines the goal's name takes. */
+	private static final int SIDEBAR_WIDTH = 209;
 
 	private final Road road;
 	private final String goal;
 	private final String when;
 	private final Navigation nav;
+	/** The goal's name as drawn at the flag: one line, or two for a long name such as Desert Treasure II's. */
+	private final String[] title;
 	private int hover = -1;
 
 	/**
-	 * @param when the flag's second line: a day ("Around 3 Nov") or the play left, or null
+	 * @param when the flag's last line: the day you should get there ("Around 3 Nov"), or null when that is not known
 	 */
 	RoadCard(Navigation nav, Road road, String goal, String when)
 	{
@@ -54,7 +58,9 @@ final class RoadCard extends JComponent
 		this.when = when;
 		setOpaque(false);
 		setToolTipText(goal);
-		int h = height(road);
+		FontMetrics tm = getFontMetrics(Theme.title());
+		title = titleLines(goal, tm, SIDEBAR_WIDTH - 8 - TEXT_X);
+		int h = height(road) + (title.length - 1) * titleStep(tm) + (when == null ? -NOTE / 2 : 0);
 		setPreferredSize(new Dimension(10, h));
 		setMinimumSize(new Dimension(10, h));
 		setMaximumSize(new Dimension(Integer.MAX_VALUE, h));
@@ -252,18 +258,65 @@ final class RoadCard extends JComponent
 			text(g, small, more, TEXT_X, my, Theme.TEXT_FAINT);
 		}
 
-		// The flag at the goal.
+		// The flag at the goal: its name in gilt (on two lines when long), then the day you should get there.
 		int fx = trackX(n);
 		flag(g, fx, flagY);
-		// A long goal name steps down to the plain font before it is cut.
-		boolean fits = tm.stringWidth(goal) <= w - 8 - TEXT_X;
-		String title = fits ? goal : clip(goal, bm, w - 8 - TEXT_X);
-		text(g, fits ? bold : body, title, TEXT_X, flagY - 1, Theme.GOLD_BRIGHT);
+		int ty = flagY - 1;
+		for (int i = 0; i < title.length; i++)
+		{
+			text(g, bold, clip(title[i], tm, w - 8 - TEXT_X), TEXT_X, ty, Theme.GOLD_BRIGHT);
+			if (i < title.length - 1)
+			{
+				ty += titleStep(tm);
+			}
+		}
 		if (when != null)
 		{
-			text(g, small, clip(when, sm, w - 8 - TEXT_X), TEXT_X, flagY + sm.getAscent() - 1, Theme.TEAL);
+			text(g, small, clip(when, sm, w - 8 - TEXT_X), TEXT_X, ty + sm.getAscent(), Theme.TEAL);
 		}
 		g.dispose();
+	}
+
+	private static int titleStep(FontMetrics tm)
+	{
+		return tm.getAscent() + 2;
+	}
+
+	/**
+	 * The goal's name on one line when it fits, otherwise on two: split after a dash when both halves fit
+	 * ("Desert Treasure II -" over "The Fallen Empire"), else at the last word that fits. A second line still
+	 * too long is cut when drawn.
+	 */
+	static String[] titleLines(String goal, FontMetrics fm, int width)
+	{
+		if (fm.stringWidth(goal) <= width || goal.indexOf(' ') < 0)
+		{
+			return new String[]{goal};
+		}
+		int dash = goal.indexOf(" - ");
+		if (dash > 0)
+		{
+			String head = goal.substring(0, dash) + " -";
+			String tail = goal.substring(dash + 3);
+			if (fm.stringWidth(head) <= width && fm.stringWidth(tail) <= width)
+			{
+				return new String[]{head, tail};
+			}
+		}
+		int cut = -1;
+		for (int i = goal.indexOf(' '); i > 0; i = goal.indexOf(' ', i + 1))
+		{
+			if (fm.stringWidth(goal.substring(0, i)) > width)
+			{
+				break;
+			}
+			cut = i;
+		}
+		if (cut < 0)
+		{
+			return new String[]{goal};
+		}
+		return new String[]{goal.substring(0, cut), goal.substring(cut + 1)};
 	}
 
 	private static String sub(Road.State state)

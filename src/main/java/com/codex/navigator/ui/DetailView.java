@@ -550,23 +550,22 @@ final class DetailView
 	}
 
 	/**
-	 * The road's flag line: "Around 3 Nov" when Chronicle gives a day, otherwise "~5 h of play left"; null when
-	 * there is nothing to say (complete, or only diary tasks left).
+	 * The road's flag line: "Around 3 Nov" (or "Over a year off") when Chronicle gives a day; null without one, or
+	 * once nothing is left to do. The play left is on the focus card just above, so the flag does not repeat it.
 	 */
-	static String whenText(Navigation nav, Plan plan)
+	static String flagText(Navigation nav, Plan plan)
 	{
 		if (plan.isComplete() || plan.getHoursLeft() <= 0 || plan.isAwaitingTasks())
 		{
 			return null;
 		}
 		com.codex.navigator.core.PlayTime time = nav.playTime();
-		String hours = Effort.format(plan.getHoursLeft());
 		if (time == null)
 		{
-			return hours + " of play left";
+			return null;
 		}
 		String date = time.dateText(plan.getHoursLeft(), System.currentTimeMillis(), java.time.ZoneId.systemDefault());
-		return (date == null ? "Over a year off" : "Around " + date) + "  ·  " + hours;
+		return date == null ? "Over a year off" : "Around " + date;
 	}
 
 	/** True when a level still to train is timed at the player's learned pace rather than the steady rates. */

@@ -7,6 +7,7 @@ import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -25,6 +26,7 @@ public final class Planner
 {
 	private static final NumberFormat XP_FORMAT = NumberFormat.getIntegerInstance(Locale.ENGLISH);
 
+	private volatile Set<String> capeQuests;
 	private final CodexData data;
 
 	public Planner(CodexData data)
@@ -228,13 +230,29 @@ public final class Planner
 		return list;
 	}
 
+	/**
+	 * Every quest the quest cape needs, with the miniquests those quests need first, prerequisites first. The data
+	 * never changes, so it is worked out once.
+	 */
+	public Set<String> capeQuests()
+	{
+		Set<String> closure = capeQuests;
+		if (closure == null)
+		{
+			closure = new LinkedHashSet<>();
+			for (QuestDef q : data.questCapeQuests())
+			{
+				collect(q.name, closure);
+			}
+			closure = Collections.unmodifiableSet(closure);
+			capeQuests = closure;
+		}
+		return closure;
+	}
+
 	private Plan planQuestCape(Goal goal, AccountSnapshot account)
 	{
-		Set<String> closure = new LinkedHashSet<>();
-		for (QuestDef q : data.questCapeQuests())
-		{
-			collect(q.name, closure);
-		}
+		Set<String> closure = capeQuests();
 		boolean complete = true;
 		for (QuestDef q : data.questCapeQuests())
 		{

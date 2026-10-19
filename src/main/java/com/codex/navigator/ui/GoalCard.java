@@ -20,6 +20,14 @@ final class GoalCard
 
 	static Card build(Navigation nav, Plan plan, boolean focus, boolean showActions)
 	{
+		return build(nav, plan, focus, showActions, true);
+	}
+
+	/**
+	 * @param showDate false where the day is drawn elsewhere, as under the Compass's focus where the road's flag carries it
+	 */
+	static Card build(Navigation nav, Plan plan, boolean focus, boolean showActions, boolean showDate)
+	{
 		boolean done = plan.isComplete();
 		Card card = new Card(new BorderLayout(0, 8));
 		card.setBorder(new EmptyBorder(10, 10, 10, 10));
@@ -89,7 +97,7 @@ final class GoalCard
 					? "Training at the pace you have shown, plus a typical play-through of each quest left"
 					: "Training at steady rates plus a typical play-through of each quest left");
 				text.add(time);
-				JLabel when = DetailView.when(nav, plan, false);
+				JLabel when = showDate ? DetailView.when(nav, plan, false) : null;
 				if (when != null)
 				{
 					text.add(when);

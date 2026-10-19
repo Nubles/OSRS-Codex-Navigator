@@ -2,7 +2,6 @@ package com.codex.navigator.ui;
 
 import com.codex.navigator.core.AccountSnapshot;
 import com.codex.navigator.data.CodexData;
-import com.codex.navigator.data.QuestDef;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.GradientPaint;
@@ -12,6 +11,7 @@ import java.awt.GridLayout;
 import java.awt.geom.Path2D;
 import java.text.NumberFormat;
 import java.util.Locale;
+import java.util.Set;
 import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -54,6 +54,7 @@ public class CrestHeader extends JPanel
 		JPanel ledgers = new JPanel(new GridLayout(3, 1, 0, 2));
 		ledgers.setOpaque(false);
 		ledgers.setBorder(new EmptyBorder(4, 0, 0, 0));
+		quests.setToolTipText("Quests done, counted as the quest cape counts them");
 		ledgers.add(quests);
 		ledgers.add(diaries);
 		ledgers.add(combat);
@@ -62,18 +63,15 @@ public class CrestHeader extends JPanel
 		add(right, BorderLayout.CENTER);
 	}
 
-	public void update(AccountSnapshot account, CodexData data)
+	/**
+	 * @param capeQuests the quests as the quest cape counts them (every quest, and the miniquests a quest needs
+	 *                   first), so the crest and the cape's page always show the same figure
+	 */
+	public void update(AccountSnapshot account, CodexData data, Set<String> capeQuests)
 	{
-		int questTotal = 0;
-		int questDone = 0;
-		for (QuestDef q : data.quests())
-		{
-			questTotal++;
-			if (account.questDone(q.name))
-			{
-				questDone++;
-			}
-		}
+		int[] cape = capeCount(account, data, capeQuests);
+		int questDone = cape[0];
+		int questTotal = cape[1];
 		int diaryTotal = data.diaries().size();
 		int diaryDone = account.diariesCompleted();
 		int caTotal = 0;
@@ -97,6 +95,26 @@ public class CrestHeader extends JPanel
 		ring.setProgress(overall, in && overall >= 1, true);
 		ring.setCenterText(in ? null : "Log in", Theme.TEXT_MUTED);
 		ring.setToolTipText("Account completion across quests, diaries and combat achievement tasks");
+	}
+
+	/** Done and total over the cape's quests, skipping any name the data does not know, as the cape's plan does. */
+	static int[] capeCount(AccountSnapshot account, CodexData data, Set<String> capeQuests)
+	{
+		int done = 0;
+		int total = 0;
+		for (String quest : capeQuests)
+		{
+			if (data.quest(quest) == null)
+			{
+				continue;
+			}
+			total++;
+			if (account.questDone(quest))
+			{
+				done++;
+			}
+		}
+		return new int[]{done, total};
 	}
 
 	private static double ratio(int done, int total)

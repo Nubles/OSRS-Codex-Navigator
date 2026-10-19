@@ -47,4 +47,13 @@ interface Navigation
 
 	/** Opens or closes the level picker with a skill chosen (or none), and redraws the Goals view. */
 	void levelPicker(boolean open, Skill skill);
+
+	/** Saves or copies the road card, or null when sharing is not set up (as in tests). */
+	ShareActions share();
+
+	/** The name to print on cards, or null when the player turned names off or is logged out. */
+	String cardName();
+
+	/** What became of the last save or copy ("Saved as ..."), shown under the buttons, or null. */
+	String shareNote();
 }
