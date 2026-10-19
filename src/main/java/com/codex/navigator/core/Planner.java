@@ -3,7 +3,6 @@ package com.codex.navigator.core;
 import com.codex.navigator.data.CodexData;
 import com.codex.navigator.data.DiaryDef;
 import com.codex.navigator.data.QuestDef;
-import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -24,7 +23,6 @@ import net.runelite.api.Skill;
  */
 public final class Planner
 {
-	private static final NumberFormat XP_FORMAT = NumberFormat.getIntegerInstance(Locale.ENGLISH);
 
 	private volatile Set<String> capeQuests;
 	private final CodexData data;
@@ -53,7 +51,8 @@ public final class Planner
 
 	public static String formatXp(int xp)
 	{
-		return XP_FORMAT.format(xp);
+		// Plans are made on the Swing thread and the background lane at once; a shared NumberFormat is not safe there.
+		return String.format(Locale.ENGLISH, "%,d", xp);
 	}
 
 	public Plan plan(Goal goal, AccountSnapshot account)

@@ -12,11 +12,14 @@ import java.util.Map;
 
 /**
  * Reads saved entries back as trees, keeping every good part: a damaged, cut-off or hand-edited value gives up
- * only the pieces that cannot be read, and never throws. Nothing here writes; a value that cannot be read at all
- * is left in place until the plugin next saves something good over it.
+ * only the pieces that cannot be read, and never throws. Nothing here writes: when {@link #keptAll} says part of a
+ * value was passed over, the plugin keeps the whole value aside under its key plus {@link #UNREADABLE} before it
+ * next saves, so a damaged or newer-version value is never lost.
  */
 public final class Saved
 {
+	/** Added to a key's name to keep aside a saved value that could not be read in full, as Codex Guardian does. */
+	public static final String UNREADABLE = "Unreadable";
 	/** Longer than any real goal key; a longer string is damage, not a goal. */
 	static final int MAX_KEY_LENGTH = 200;
 	/** A number written with more characters than this is not a time, a count or an amount. */
@@ -165,6 +168,42 @@ public final class Saved
 		{
 			return Double.NaN;
 		}
+	}
+
+	/**
+	 * True when reading {@code json} kept all of it: {@code kept} of its entries were used, and it holds no more
+	 * (a list's items, an object's fields, or one bare key). False for anything passed over, including a value that
+	 * could not be read at all or one of a shape this version does not know.
+	 */
+	public static boolean keptAll(Gson gson, String json, int kept)
+	{
+		if (json == null || json.trim().isEmpty() || "null".equals(json.trim()))
+		{
+			return true;
+		}
+		JsonElement root = tree(gson, json);
+		int entries;
+		if (root == null)
+		{
+			entries = -1;
+		}
+		else if (root.isJsonNull())
+		{
+			entries = 0;
+		}
+		else if (root.isJsonArray())
+		{
+			entries = root.getAsJsonArray().size();
+		}
+		else if (root.isJsonObject())
+		{
+			entries = root.getAsJsonObject().size();
+		}
+		else
+		{
+			entries = isString(root) ? 1 : -1;
+		}
+		return entries >= 0 && kept >= entries;
 	}
 
 	private static boolean isString(JsonElement e)

@@ -1,10 +1,6 @@
 package com.codex.navigator;
 
 import com.codex.navigator.core.AccountSnapshot;
-import com.codex.navigator.core.Chains;
-import com.codex.navigator.core.CompletionWatch;
-import com.codex.navigator.core.Goal;
-import com.codex.navigator.core.GoalBoard;
 import com.codex.navigator.core.GoalStore;
 import com.codex.navigator.core.Pace;
 import com.codex.navigator.core.Plan;
@@ -162,8 +158,6 @@ public class CodexNavigatorPlugin extends Plugin
 	private final Map<String, Quest> questsByName = new HashMap<>();
 	/** Last quest states read from the client; reused between the throttled quest reads. */
 	private final Map<String, QuestState> questCache = new HashMap<>();
-	/** Compares each publish with the one before, to announce the moment a pinned goal finishes. */
-	private final CompletionWatch completion = new CompletionWatch();
 	/** How fast this account trains each skill, learned while the plugin runs. Touched on the client thread only. */
 	private final Pace pace = new Pace();
 	/** The RuneScape profile {@link #pace} was loaded from and is saved back to. */
@@ -173,6 +167,8 @@ public class CodexNavigatorPlugin extends Plugin
 	private GoalStore goals;
 	private Planner planner;
 	private Recommender recommender;
+	/** Plans the pinned goals for the board, the finished-goal check and the overlay, off the client thread. */
+	private GoalWork work;
 	private NavigatorPanel panel;
 	private NavigationButton navButton;
 
@@ -188,8 +184,6 @@ public class CodexNavigatorPlugin extends Plugin
 	private int lastQuestTick = -QUEST_TICKS;
 	private int loginTick;
 	private int lastQuestPoints = -1;
-	/** The board last written, so an unchanged board is not saved again. */
-	private String lastBoard;
 	/**
 	 * Set when the profile changes and cleared by the next publish: until then the snapshot still belongs to
 	 * the previous profile, and a board written from it would land under the new one.
@@ -215,6 +209,56 @@ public class CodexNavigatorPlugin extends Plugin
 		CodexData data = CodexData.load(gson);
 		planner = new Planner(data);
 		recommender = new Recommender(planner);
+		// The lane this run of the plugin made; a board it hands on is dropped if the plugin stopped meanwhile.
+		GoalWork[] self = new GoalWork[1];
+		GoalWork lane = new GoalWork(planner, recommender, gson, executor, new GoalWork.Settings()
+		{
+			@Override
+			public boolean showOverlay()
+			{
+				return config.showOverlay();
+			}
+
+			@Override
+			public boolean includeMiniquests()
+			{
+				return config.includeMiniquests();
+			}
+
+			@Override
+			public boolean suggestWithoutFocus()
+			{
+				return config.suggestWithoutFocus();
+			}
+		}, new GoalWork.Out()
+		{
+			@Override
+			public void board(String profile, String json)
+			{
+				// Written on the client thread, where other plugins have always heard of a new board.
+				clientThread.invokeLater(() ->
+				{
+					if (!self[0].isClosed())
+					{
+						configManager.setConfiguration(CodexNavigatorConfig.GROUP, profile, BOARD_KEY, json);
+					}
+				});
+			}
+
+			@Override
+			public void finished(List<Plan> plans)
+			{
+				announce(plans);
+			}
+
+			@Override
+			public void overlay(FocusOverlay.View view)
+			{
+				overlay.setView(view);
+			}
+		});
+		self[0] = lane;
+		work = lane;
 		for (Quest quest : Quest.values())
 		{
 			questsByName.put(quest.getName(), quest);
@@ -266,6 +310,8 @@ public class CodexNavigatorPlugin extends Plugin
 	@Override
 	protected void shutDown()
 	{
+		// First, so no board, chat line or overlay view is produced after this point.
+		work.close();
 		savePace();
 		pace.load(null);
 		paceProfile = null;
@@ -274,12 +320,10 @@ public class CodexNavigatorPlugin extends Plugin
 		overlay.setView(null);
 		questsByName.clear();
 		questCache.clear();
-		completion.reset();
 		snapshot = AccountSnapshot.empty();
 		gate.reset();
 		heldBack = null;
 		offlinePins = null;
-		lastBoard = null;
 		boardHeld = false;
 		boardDeferred = false;
 		panel = null;
@@ -334,7 +378,7 @@ public class CodexNavigatorPlugin extends Plugin
 			savePace();
 			questCache.clear();
 			lastQuestPoints = -1;
-			completion.reset();
+			work.forget();
 			heldBack = null;
 			publish(AccountSnapshot.empty(), true);
 		}
@@ -346,8 +390,7 @@ public class CodexNavigatorPlugin extends Plugin
 		// What was learned belongs to the profile it was learned on, which is the one being left.
 		savePace();
 		loadPace();
-		completion.reset();
-		lastBoard = null;
+		work.forget();
 		boardHeld = true;
 		// Publish afresh for the new profile even if the read happens to match, so its board is written.
 		gate.reset();
@@ -391,7 +434,8 @@ public class CodexNavigatorPlugin extends Plugin
 			return;
 		}
 		if (!CodexNavigatorConfig.GROUP.equals(event.getGroup()) || GOALS_KEY.equals(event.getKey())
-			|| BOARD_KEY.equals(event.getKey()) || PACE_KEY.equals(event.getKey()))
+			|| BOARD_KEY.equals(event.getKey()) || PACE_KEY.equals(event.getKey())
+			|| event.getKey().endsWith(Saved.UNREADABLE))
 		{
 			return;
 		}
@@ -466,19 +510,26 @@ public class CodexNavigatorPlugin extends Plugin
 	 */
 	private void readPlayTime()
 	{
-		PlayTime time = PlayTime.read(gson, configManager.getRSProfileConfiguration(PlayTime.GROUP, PlayTime.JOURNAL),
-			System.currentTimeMillis());
+		// A long journal takes tens of milliseconds to read, and Chronicle files one on the client thread.
+		String journal = configManager.getRSProfileConfiguration(PlayTime.GROUP, PlayTime.JOURNAL);
 		NavigatorPanel target = panel;
-		if (target != null)
+		GoalWork lane = work;
+		if (target != null && lane != null)
 		{
-			SwingUtilities.invokeLater(() -> target.setPlayTime(time));
+			lane.run(() ->
+			{
+				PlayTime time = PlayTime.read(gson, journal, System.currentTimeMillis());
+				SwingUtilities.invokeLater(() -> target.setPlayTime(time));
+			});
 		}
 	}
 
 	private void loadGoals()
 	{
-		List<String> keys = Saved.goalKeys(gson, configManager.getRSProfileConfiguration(CodexNavigatorConfig.GROUP, GOALS_KEY));
-		List<String> extra = configManager.getRSProfileKey() != null ? offlinePins : null;
+		String profile = configManager.getRSProfileKey();
+		String raw = configManager.getRSProfileConfiguration(CodexNavigatorConfig.GROUP, GOALS_KEY);
+		List<String> keys = Saved.goalKeys(gson, raw);
+		List<String> extra = profile != null ? offlinePins : null;
 		if (extra != null)
 		{
 			offlinePins = null;
@@ -486,6 +537,13 @@ public class CodexNavigatorPlugin extends Plugin
 		GoalStore store = goals;
 		if (store != null)
 		{
+			if (profile != null && raw != null)
+			{
+				// The next pin saves the list back; anything in it this version could not read is kept aside first.
+				GoalStore probe = new GoalStore();
+				probe.load(keys);
+				keepAside(profile, GOALS_KEY, raw, probe.goals().size());
+			}
 			store.load(keys, extra);
 		}
 	}
@@ -495,11 +553,35 @@ public class CodexNavigatorPlugin extends Plugin
 	{
 		paceProfile = configManager.getRSProfileKey();
 		Map<String, double[]> saved = null;
+		String raw = null;
 		if (paceProfile != null)
 		{
-			saved = Saved.pace(gson, configManager.getConfiguration(CodexNavigatorConfig.GROUP, paceProfile, PACE_KEY));
+			raw = configManager.getConfiguration(CodexNavigatorConfig.GROUP, paceProfile, PACE_KEY);
+			saved = Saved.pace(gson, raw);
 		}
 		pace.load(saved);
+		if (raw != null)
+		{
+			keepAside(paceProfile, PACE_KEY, raw, pace.learnedSkills());
+		}
+	}
+
+	/**
+	 * Keeps a saved value of which only {@code kept} entries could be read under its key plus
+	 * {@link Saved#UNREADABLE}, before the next save writes over it, so a damaged or newer-version value is never
+	 * lost. Written once for each value read in part, and not again while the same text is already kept.
+	 */
+	private void keepAside(String profile, String key, String raw, int kept)
+	{
+		if (Saved.keptAll(gson, raw, kept))
+		{
+			return;
+		}
+		String aside = key + Saved.UNREADABLE;
+		if (!raw.equals(configManager.getConfiguration(CodexNavigatorConfig.GROUP, profile, aside)))
+		{
+			configManager.setConfiguration(CodexNavigatorConfig.GROUP, profile, aside, raw);
+		}
 	}
 
 	/** Saves the learned pace to the profile it belongs to, if anything new was learned since the last save. */
@@ -666,9 +748,12 @@ public class CodexNavigatorPlugin extends Plugin
 		}
 		snapshot = next;
 		boardHeld = false;
-		announceCompletions(next);
-		writeBoard();
-		updateOverlay();
+		GoalStore store = goals;
+		if (store != null)
+		{
+			// Varbits settle over the first ticks after login; completions seen then are not announced.
+			work.published(next, store, boardProfile(next), tick - loginTick >= WARMUP_TICKS && config.announceCompletions());
+		}
 		NavigatorPanel target = panel;
 		if (target != null)
 		{
@@ -676,45 +761,41 @@ public class CodexNavigatorPlugin extends Plugin
 		}
 	}
 
-	/**
-	 * Saves the goal board for other plugins when it has changed. Only a logged-in read is written:
-	 * progress worked out from a logged-out snapshot would tell readers every goal had gone back to zero.
-	 */
+	/** Saves the goal board for other plugins when it has changed; the planning is done off the client thread. */
 	private void writeBoard()
 	{
-		AccountSnapshot account = snapshot;
 		GoalStore store = goals;
-		if (store == null || planner == null || boardHeld || !account.isLoggedIn() || configManager.getRSProfileKey() == null)
+		AccountSnapshot account = snapshot;
+		String profile = boardProfile(account);
+		if (store != null && profile != null)
 		{
-			return;
+			work.board(account, store, profile);
+		}
+	}
+
+	/**
+	 * The profile a board worked out from {@code account} may be saved under, or null when none may be written yet.
+	 * Only a logged-in, settled read is written: progress worked out from a logged-out snapshot, or from varbits
+	 * still arriving after login, would tell readers every goal had gone back to zero.
+	 */
+	private String boardProfile(AccountSnapshot account)
+	{
+		String profile = configManager.getRSProfileKey();
+		if (goals == null || planner == null || boardHeld || !account.isLoggedIn() || profile == null)
+		{
+			return null;
 		}
 		if (!settled())
 		{
 			boardDeferred = true;
-			return;
+			return null;
 		}
-		String json = gson.toJson(GoalBoard.of(planner, store.goals(), account));
-		if (json.equals(lastBoard))
-		{
-			return;
-		}
-		lastBoard = json;
-		configManager.setRSProfileConfiguration(CodexNavigatorConfig.GROUP, BOARD_KEY, json);
+		return profile;
 	}
 
-	/** Posts a chat line the moment a pinned goal is finished, once varbits have settled after login. */
-	private void announceCompletions(AccountSnapshot account)
+	/** Posts a chat line for each pinned goal just finished. */
+	private void announce(List<Plan> finished)
 	{
-		GoalStore store = goals;
-		if (store == null || !account.isLoggedIn() || account.getPlayerName() == null)
-		{
-			return;
-		}
-		List<Plan> finished = completion.finished(planner, store.goals(), account);
-		if (tick - loginTick < WARMUP_TICKS || !config.announceCompletions())
-		{
-			return;
-		}
 		for (Plan plan : finished)
 		{
 			String message = new ChatMessageBuilder()
@@ -730,46 +811,15 @@ public class CodexNavigatorPlugin extends Plugin
 		}
 	}
 
+	/** Redraws the overlay off the client thread; called from whichever thread changed a pin or a setting. */
 	private void updateOverlay()
 	{
-		AccountSnapshot account = snapshot;
+		GoalWork lane = work;
 		GoalStore store = goals;
-		if (!config.showOverlay() || !account.isLoggedIn() || planner == null || store == null)
+		if (lane != null && store != null)
 		{
-			overlay.setView(null);
-			return;
+			lane.overlay(snapshot, store);
 		}
-		Goal focus = store.focus();
-		if (focus != null)
-		{
-			Plan plan = planner.plan(focus, account);
-			Step next = plan.getNext();
-			if (plan.isComplete())
-			{
-				Goal after = Chains.next(planner, focus, account, config.includeMiniquests());
-				overlay.setView(new FocusOverlay.View("CODEX  ·  COMPLETE", plan.getTitle(), 1,
-					after != null && !store.isPinned(after) ? "Next in line: " + planner.plan(after, account).getTitle()
-						: "Pick your next goal in the Codex"));
-			}
-			else
-			{
-				overlay.setView(new FocusOverlay.View("CODEX  ·  FOCUS", plan.getTitle(), plan.getProgress(),
-					next == null ? null : stepText(next)));
-			}
-			return;
-		}
-		if (config.suggestWithoutFocus())
-		{
-			List<Recommender.Pick> picks = recommender.readyNow(account, store.goals(), config.includeMiniquests(), 1);
-			if (!picks.isEmpty())
-			{
-				Recommender.Pick pick = picks.get(0);
-				overlay.setView(new FocusOverlay.View("CODEX  ·  SUGGESTED", pick.getQuest().name, -1,
-					pick.getReason() != null ? pick.getReason() : "Ready to start"));
-				return;
-			}
-		}
-		overlay.setView(null);
 	}
 
 	static String stepText(Step step)

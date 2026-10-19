@@ -157,6 +157,12 @@ public final class Pace
 		return value;
 	}
 
+	/** How many skills have a learned pace. */
+	public int learnedSkills()
+	{
+		return samples.size();
+	}
+
 	/** The samples in a form Gson can save: skill name to {xp, expected, seconds}, rounded. */
 	public Map<String, double[]> toSaved()
 	{

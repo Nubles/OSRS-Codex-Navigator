@@ -83,6 +83,49 @@ public class DamagedDataTest
 	}
 
 	@Test
+	public void aValueReadOnlyInPartIsKeptAsideBeforeItIsSavedOver()
+	{
+		// A goal list from a newer Navigator, in a shape this one does not read: nothing loads, and the next pin
+		// saves a list of one over it. The plugin keeps the original aside whenever keptAll says part was passed over.
+		String newer = "{\"version\":2,\"goals\":[\"quest:Regicide\",\"diary:Ardougne Hard\"]}";
+		List<String> saved = new ArrayList<>();
+		GoalStore store = new GoalStore();
+		store.setSaver(saved::addAll);
+		List<String> keys = Saved.goalKeys(GSON, newer);
+		store.load(keys);
+		store.toggle(Goal.quest("Cook's Assistant"));
+		assertEquals(Collections.singletonList("quest:Cook's Assistant"), saved);
+		assertFalse(Saved.keptAll(GSON, newer, store.goals().size() - 1));
+
+		// Kinds of goal it does not know, entries of the wrong type, and lists past the cap are passed over too.
+		assertFalse(Saved.keptAll(GSON, "[\"quest:Regicide\",\"future:Raid 3\"]", 1));
+		assertFalse(Saved.keptAll(GSON, "[\"quest:Regicide\",{\"key\":\"quest:Biohazard\"}]", 1));
+		for (String value : garbage())
+		{
+			List<String> read = Saved.goalKeys(GSON, value);
+			GoalStore probe = new GoalStore();
+			probe.load(read);
+			boolean whole = Saved.keptAll(GSON, value, probe.goals().size());
+			boolean nothing = value == null || value.trim().isEmpty() || "null".equals(value) || "[]".equals(value)
+				|| "{}".equals(value);
+			assertEquals(value, nothing, whole);
+		}
+
+		// A list read in full is not kept aside, so a normal save never writes a second copy.
+		assertTrue(Saved.keptAll(GSON, "[\"quest:Regicide\",\"diary:Ardougne Hard\"]", 2));
+		assertTrue(Saved.keptAll(GSON, "\"quest:Regicide\"", 1));
+
+		// Pace: a row this version cannot read is passed over, so the learned pace is kept aside before it is saved.
+		String pace = "{\"AGILITY\":[90000,60000,3600],\"SAILING_V2\":[1,2,3],\"version\":2}";
+		Pace learned = new Pace();
+		learned.load(Saved.pace(GSON, pace));
+		assertEquals(1, learned.learnedSkills());
+		assertFalse(Saved.keptAll(GSON, pace, learned.learnedSkills()));
+		learned.load(Saved.pace(GSON, "{\"AGILITY\":[90000,60000,3600]}"));
+		assertTrue(Saved.keptAll(GSON, "{\"AGILITY\":[90000,60000,3600]}", learned.learnedSkills()));
+	}
+
+	@Test
 	public void oddGoalKeysAreSkippedNotPinned()
 	{
 		for (String key : Arrays.asList("", ":", "quest:", "quest: ", "skill:Agility", "skill:Agility 0", "skill:Agility 100",
@@ -247,8 +290,9 @@ public class DamagedDataTest
 		everything.add(Goal.level(Skill.AGILITY, 99));
 		for (AccountSnapshot account : Arrays.asList(TestAccounts.maxed(data), TestAccounts.fresh(data), TestAccounts.mid(data).build()))
 		{
-			// What a refresh does on the client thread with every goal in the game pinned: the board for other
-			// plugins, the finished-goal check and the overlay's focus plan.
+			// What a refresh hands to the background lane with every goal in the game pinned: the board for other
+			// plugins, the finished-goal check and the overlay's focus plan. The client thread's own share is timed in
+			// GoalWorkTest; this only keeps the lane from falling behind a refresh every two ticks.
 			for (int warm = 0; warm < 3; warm++)
 			{
 				GoalBoard.of(planner, everything, account);
@@ -256,7 +300,7 @@ public class DamagedDataTest
 			long start = System.nanoTime();
 			String board = GSON.toJson(GoalBoard.of(planner, everything, account));
 			planner.plan(everything.get(0), account);
-			long clientMs = (System.nanoTime() - start) / 1_000_000;
+			long laneMs = (System.nanoTime() - start) / 1_000_000;
 			// What the Compass builds on the Swing thread.
 			start = System.nanoTime();
 			rec.readyNow(account, everything, true, 6);
@@ -264,9 +308,9 @@ public class DamagedDataTest
 			rec.almostThere(account, everything, true, 4);
 			rec.closestDiaries(account, 3);
 			long panelMs = (System.nanoTime() - start) / 1_000_000;
-			System.out.println(account.getPlayerName() + ": board of " + everything.size() + " goals " + clientMs
+			System.out.println(account.getPlayerName() + ": board of " + everything.size() + " goals " + laneMs
 				+ " ms (" + board.length() + " chars), compass lists " + panelMs + " ms");
-			assertTrue(clientMs + " ms", clientMs < 100);
+			assertTrue(laneMs + " ms", laneMs < 600);
 			assertTrue(panelMs + " ms", panelMs < 400);
 		}
 		// A keen player's pins: twenty goals, the most anyone is likely to keep, plan in a few milliseconds.
