@@ -4,6 +4,7 @@ import com.codex.navigator.core.AccountSnapshot;
 import com.codex.navigator.core.Boosts;
 import com.codex.navigator.core.Effort;
 import com.codex.navigator.core.Goal;
+import com.codex.navigator.core.Hazards;
 import com.codex.navigator.core.Plan;
 import com.codex.navigator.core.Recommender;
 import com.codex.navigator.core.SkillGap;
@@ -69,8 +70,7 @@ final class CompassView
 			for (Recommender.Pick pick : ready)
 			{
 				QuestDef q = pick.getQuest();
-				stack.add(Row.of(Step.Status.READY, q.name, subtitle(q, pick.getHours()), pick.getReason() == null ? null
-					: new Pill(pick.getReason(), pick.getServes().isEmpty() ? Theme.TEAL : Theme.GOLD), null,
+				stack.add(Row.of(Step.Status.READY, q.name, subtitle(q, pick.getHours()), pill(account, pick), null,
 					() -> nav.open(Goal.quest(q.name))));
 			}
 		}
@@ -117,6 +117,26 @@ final class CompassView
 			stack.add(PaceCard.build(nav));
 		}
 		return stack;
+	}
+
+	/**
+	 * The pick's pill: a goal it serves first, since the player chose that; then, on a one-life account, the deadly
+	 * fight or Wilderness trip it asks for; then what makes it worth doing.
+	 */
+	static Pill pill(AccountSnapshot account, Recommender.Pick pick)
+	{
+		if (!pick.getServes().isEmpty())
+		{
+			return pick.getReason() == null ? null : new Pill(pick.getReason(), Theme.GOLD);
+		}
+		Hazards.Hazard hazard = account.isOneLife() ? Hazards.of(pick.getQuest().name) : null;
+		if (hazard != null)
+		{
+			Pill pill = new Pill(hazard.getLabel(), Theme.EMBER);
+			pill.setToolTipText(hazard.getLine());
+			return pill;
+		}
+		return pick.getReason() == null ? null : new Pill(pick.getReason(), Theme.TEAL);
 	}
 
 	/**

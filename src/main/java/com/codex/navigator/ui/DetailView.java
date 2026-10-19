@@ -4,6 +4,7 @@ import com.codex.navigator.core.AccountSnapshot;
 import com.codex.navigator.core.Boosts;
 import com.codex.navigator.core.Effort;
 import com.codex.navigator.core.Goal;
+import com.codex.navigator.core.Hazards;
 import com.codex.navigator.core.Plan;
 import com.codex.navigator.core.Planner;
 import com.codex.navigator.core.SkillGap;
@@ -57,6 +58,11 @@ final class DetailView
 		stack.add(backRow);
 
 		stack.add(hero(nav, plan));
+		Card risks = risks(nav, plan);
+		if (risks != null)
+		{
+			stack.add(risks);
+		}
 
 		requirements(stack, nav, plan, showMet, toggleMet);
 		if (goal.getType() == Goal.Type.DIARY && !plan.isComplete())
@@ -299,6 +305,83 @@ final class DetailView
 			}
 		});
 		return toggle;
+	}
+
+	/** Most quests a path's risk card names; the rest are counted. */
+	private static final int RISKS_SHOWN = 4;
+
+	/**
+	 * The deadly fights and Wilderness trips still ahead on this path. A quest's own risk is shown to every account,
+	 * since it is worth knowing before you start; the risks along a longer path only on one life, where they decide
+	 * what to prepare for. Null when there is nothing to say.
+	 */
+	private static Card risks(Navigation nav, Plan plan)
+	{
+		AccountSnapshot account = nav.account();
+		List<String> quests = new ArrayList<>();
+		for (Step step : plan.getPath())
+		{
+			if (step.getKind() == Step.Kind.QUEST && step.getStatus() != Step.Status.DONE && step.getQuest() != null
+				&& Hazards.of(step.getQuest()) != null && !quests.contains(step.getQuest()))
+			{
+				quests.add(step.getQuest());
+			}
+		}
+		boolean single = plan.getGoal().getType() == Goal.Type.QUEST;
+		if (single)
+		{
+			quests.retainAll(java.util.Collections.singletonList(plan.getGoal().getName()));
+		}
+		if (quests.isEmpty() || !single && !account.isOneLife())
+		{
+			return null;
+		}
+		Card card = new Card(new BorderLayout(0, 4));
+		card.setBorder(new EmptyBorder(8, 10, 8, 10));
+		JPanel text = new JPanel();
+		text.setOpaque(false);
+		text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
+		String head = account.isOneLife() ? "ON ONE LIFE" : Hazards.of(quests.get(0)).getKind() == Hazards.Hazard.Kind.WILDERNESS
+			? "INTO THE WILDERNESS" : "A FIGHT TO PREPARE FOR";
+		text.add(Ui.label(head, Theme.small(), Theme.EMBER));
+		if (single)
+		{
+			text.add(Ui.wrapped(Hazards.of(quests.get(0)).getLine() + ".", Theme.body(), Theme.TEXT, 190));
+		}
+		else
+		{
+			text.add(Ui.wrapped(quests.size() == 1 ? "One quest on this path asks for a real risk."
+				: quests.size() + " quests on this path ask for a real risk.", Theme.small(), Theme.TEXT_MUTED, 190));
+			for (int i = 0; i < Math.min(RISKS_SHOWN, quests.size()); i++)
+			{
+				String quest = quests.get(i);
+				JLabel row = Ui.wrapped(quest + ": " + Hazards.of(quest).getLine(), Theme.small(), Theme.TEXT, 190);
+				row.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+				row.addMouseListener(new MouseAdapter()
+				{
+					@Override
+					public void mouseReleased(MouseEvent e)
+					{
+						nav.open(Goal.quest(quest));
+					}
+				});
+				row.setBorder(new EmptyBorder(3, 0, 0, 0));
+				text.add(row);
+			}
+			if (quests.size() > RISKS_SHOWN)
+			{
+				text.add(Ui.label("and " + (quests.size() - RISKS_SHOWN) + " more", Theme.small(), Theme.TEXT_FAINT));
+			}
+		}
+		if (account.isOneLife())
+		{
+			JLabel note = Ui.wrapped(single ? "Suggested after safer quests until you pin it." : "Plan your gear for these.",
+				Theme.small(), Theme.TEXT_FAINT, 190);
+			note.setBorder(new EmptyBorder(3, 0, 0, 0));
+			text.add(note);
+		}
+		card.add(text, BorderLayout.CENTER);
+		return card;
 	}
 
 	private static Card hero(Navigation nav, Plan plan)

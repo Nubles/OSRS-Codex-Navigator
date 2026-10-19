@@ -63,4 +63,16 @@ public interface CodexNavigatorConfig extends Config
 	{
 		return true;
 	}
+
+	@ConfigItem(
+		keyName = "oneLifeCare",
+		name = "Hardcore care",
+		description = "On a one-life account (hardcore ironman, a Hardcore World, or marked one-life in Codex Guardian),"
+			+ " quests with a deadly fight or a Wilderness trip are marked and suggested after safer ones",
+		position = 6
+	)
+	default boolean oneLifeCare()
+	{
+		return true;
+	}
 }

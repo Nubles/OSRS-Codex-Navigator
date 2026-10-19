@@ -97,6 +97,11 @@ public class CodexNavigatorPlugin extends Plugin
 	private static final int XP_ONLY_TICKS = 10;
 	/** Varbits settle over the first ticks after login; completions seen then are not announced. */
 	private static final int WARMUP_TICKS = 8;
+	/** Codex Guardian's per-account one-life choice ("true" / "false"), read only. */
+	static final String GUARDIAN_GROUP = "codexguardian";
+	static final String GUARDIAN_ONE_LIFE_KEY = "oneLifeAccount";
+	/** RuneLite's name for the world flag Hardcore Worlds carry; matched by name so an older client reads false. */
+	private static final String HARDCORE_WORLD_TYPE = "HARDCORE_MAIN";
 
 	static final String[] DIARY_AREAS = {"Ardougne", "Desert", "Falador", "Fremennik", "Kandarin", "Karamja",
 		"Kourend", "Lumbridge", "Morytania", "Varrock", "Western", "Wilderness"};
@@ -186,6 +191,11 @@ public class CodexNavigatorPlugin extends Plugin
 	 * the previous profile, and a board written from it would land under the new one.
 	 */
 	private boolean boardHeld;
+	/**
+	 * Set when a board was due in the first ticks after login, while quest and diary varbits are still arriving: a
+	 * board written then would tell other plugins your goals had gone back to zero. It is written once they settle.
+	 */
+	private boolean boardDeferred;
 
 	@Provides
 	CodexNavigatorConfig provideConfig(ConfigManager configManager)
@@ -251,6 +261,7 @@ public class CodexNavigatorPlugin extends Plugin
 		offlinePins = null;
 		lastBoard = null;
 		boardHeld = false;
+		boardDeferred = false;
 		panel = null;
 		goals = null;
 	}
@@ -343,6 +354,12 @@ public class CodexNavigatorPlugin extends Plugin
 	@Subscribe
 	public void onConfigChanged(ConfigChanged event)
 	{
+		if (GUARDIAN_GROUP.equals(event.getGroup()) && GUARDIAN_ONE_LIFE_KEY.equals(event.getKey()))
+		{
+			// Marked one-life (or not) in Guardian: suggestions change order.
+			clientThread.invokeLater(() -> dirty = true);
+			return;
+		}
 		if (PlayTime.GROUP.equals(event.getGroup()) && PlayTime.JOURNAL.equals(event.getKey())
 			&& (event.getProfile() == null || event.getProfile().equals(configManager.getRSProfileKey())))
 		{
@@ -354,6 +371,10 @@ public class CodexNavigatorPlugin extends Plugin
 			|| BOARD_KEY.equals(event.getKey()) || PACE_KEY.equals(event.getKey()))
 		{
 			return;
+		}
+		if ("oneLifeCare".equals(event.getKey()))
+		{
+			clientThread.invokeLater(() -> dirty = true);
 		}
 		if ("learnPace".equals(event.getKey()))
 		{
@@ -381,6 +402,11 @@ public class CodexNavigatorPlugin extends Plugin
 		{
 			savePace();
 		}
+		if (boardDeferred && settled())
+		{
+			boardDeferred = false;
+			writeBoard();
+		}
 		if (dirty && tick - lastRefreshTick >= REFRESH_TICKS)
 		{
 			refresh();
@@ -391,6 +417,12 @@ public class CodexNavigatorPlugin extends Plugin
 			heldBack = null;
 			publish(next, true);
 		}
+	}
+
+	/** True once the varbits sent at login have had time to arrive. */
+	private boolean settled()
+	{
+		return tick - loginTick >= WARMUP_TICKS;
 	}
 
 	private void markLogin()
@@ -501,7 +533,8 @@ public class CodexNavigatorPlugin extends Plugin
 		}
 		AccountSnapshot.Builder b = new AccountSnapshot.Builder().loggedIn(true)
 			.members(client.getWorldType().contains(WorldType.MEMBERS))
-			.ironman(client.getVarbitValue(VarbitID.IRONMAN) != 0);
+			.ironman(client.getVarbitValue(VarbitID.IRONMAN) != 0)
+			.oneLife(config.oneLifeCare() && oneLife());
 		Player local = client.getLocalPlayer();
 		if (local != null && local.getName() != null)
 		{
@@ -564,6 +597,27 @@ public class CodexNavigatorPlugin extends Plugin
 		publish(b.build(), false);
 	}
 
+	/**
+	 * Whether this account has one life: a hardcore ironman or hardcore group ironman, any account on a Hardcore
+	 * World, or one marked one-life in Codex Guardian (read only; without Guardian that part is simply false).
+	 */
+	private boolean oneLife()
+	{
+		int type = client.getVarbitValue(VarbitID.IRONMAN);
+		if (type == 3 || type == 5)
+		{
+			return true;
+		}
+		for (WorldType world : client.getWorldType())
+		{
+			if (HARDCORE_WORLD_TYPE.equals(world.name()))
+			{
+				return true;
+			}
+		}
+		return "true".equals(configManager.getRSProfileConfiguration(GUARDIAN_GROUP, GUARDIAN_ONE_LIFE_KEY));
+	}
+
 	private void readQuests()
 	{
 		questsPending = false;
@@ -621,6 +675,11 @@ public class CodexNavigatorPlugin extends Plugin
 		GoalStore store = goals;
 		if (store == null || planner == null || boardHeld || !account.isLoggedIn() || configManager.getRSProfileKey() == null)
 		{
+			return;
+		}
+		if (!settled())
+		{
+			boardDeferred = true;
 			return;
 		}
 		String json = gson.toJson(GoalBoard.of(planner, store.goals(), account));

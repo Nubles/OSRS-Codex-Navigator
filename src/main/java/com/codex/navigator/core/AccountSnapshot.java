@@ -29,6 +29,7 @@ public final class AccountSnapshot
 	private final int combatAchievementPoints;
 	private final boolean members;
 	private final boolean ironman;
+	private final boolean oneLife;
 	private final Map<Skill, Double> pace;
 	private final Map<Skill, Double> paceHours;
 
@@ -46,6 +47,7 @@ public final class AccountSnapshot
 		combatAchievementPoints = b.combatAchievementPoints;
 		members = b.members;
 		ironman = b.ironman;
+		oneLife = b.oneLife;
 		pace = Collections.unmodifiableMap(new EnumMap<>(b.pace));
 		paceHours = Collections.unmodifiableMap(new EnumMap<>(b.paceHours));
 	}
@@ -147,6 +149,15 @@ public final class AccountSnapshot
 	}
 
 	/**
+	 * True for an account with one life: a hardcore ironman, any account on a Hardcore World, or one marked one-life
+	 * in Codex Guardian. Quests with a deadly fight are then marked and suggested after safer ones.
+	 */
+	public boolean isOneLife()
+	{
+		return oneLife;
+	}
+
+	/**
 	 * How many times faster than {@link Effort}'s steady rates this player trains the skill, as learned by
 	 * {@link Pace}; 1 when nothing has been learned yet.
 	 */
@@ -174,7 +185,7 @@ public final class AccountSnapshot
 	public Builder toBuilder()
 	{
 		Builder b = new Builder().loggedIn(loggedIn).playerName(playerName).questPoints(questPoints)
-			.combatLevel(combatLevel).combatAchievementPoints(combatAchievementPoints).members(members).ironman(ironman);
+			.combatLevel(combatLevel).combatAchievementPoints(combatAchievementPoints).members(members).ironman(ironman).oneLife(oneLife);
 		b.levels.putAll(levels);
 		b.xp.putAll(xp);
 		b.quests.putAll(quests);
@@ -199,7 +210,7 @@ public final class AccountSnapshot
 	public int structureSignature()
 	{
 		return Objects.hash(loggedIn, playerName, levels, quests, diariesDone, combatAchievementsDone,
-			questPoints, combatLevel, combatAchievementPoints, members, ironman);
+			questPoints, combatLevel, combatAchievementPoints, members, ironman, oneLife);
 	}
 
 	public static final class Builder
@@ -216,6 +227,7 @@ public final class AccountSnapshot
 		private int combatAchievementPoints;
 		private boolean members = true;
 		private boolean ironman;
+		private boolean oneLife;
 		private final Map<Skill, Double> pace = new EnumMap<>(Skill.class);
 		private final Map<Skill, Double> paceHours = new EnumMap<>(Skill.class);
 
@@ -289,6 +301,12 @@ public final class AccountSnapshot
 		public Builder ironman(boolean value)
 		{
 			ironman = value;
+			return this;
+		}
+
+		public Builder oneLife(boolean value)
+		{
+			oneLife = value;
 			return this;
 		}
 
