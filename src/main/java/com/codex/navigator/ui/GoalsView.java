@@ -202,7 +202,10 @@ final class GoalsView
 		name.setToolTipText(before.getTitle());
 		name.setMinimumSize(new java.awt.Dimension(10, name.getPreferredSize().height));
 		line.add(name, BorderLayout.CENTER);
-		String figures = after.isComplete() ? "Done!" : percent(before) + " to " + percent(after);
+		// A goal the session does not reach says so, rather than "17% to 17%".
+		boolean moved = !percent(before).equals(percent(after));
+		String figures = after.isComplete() ? "Done!" : moved ? percent(before) + " to " + percent(after)
+			: percent(before) + ", later";
 		line.add(Ui.label(figures, Theme.small(), after.isComplete() ? Theme.GREEN
 			: after.getProgress() > before.getProgress() ? Theme.GOLD_BRIGHT : Theme.TEXT_FAINT), BorderLayout.EAST);
 		row.add(line, BorderLayout.NORTH);

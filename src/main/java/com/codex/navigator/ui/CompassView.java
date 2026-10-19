@@ -7,6 +7,7 @@ import com.codex.navigator.core.Goal;
 import com.codex.navigator.core.Hazards;
 import com.codex.navigator.core.Plan;
 import com.codex.navigator.core.Recommender;
+import com.codex.navigator.core.Road;
 import com.codex.navigator.core.SkillGap;
 import com.codex.navigator.core.Step;
 import com.codex.navigator.data.QuestDef;
@@ -21,6 +22,9 @@ import javax.swing.border.EmptyBorder;
 /** The home view: your focus, then what is worth doing right now. */
 final class CompassView
 {
+	/** Stops drawn on the road, the few done ones behind you included. */
+	private static final int ROAD_STOPS = 6;
+
 	private CompassView()
 	{
 	}
@@ -40,6 +44,13 @@ final class CompassView
 		{
 			Plan plan = nav.planner().plan(focus, account);
 			stack.add(GoalCard.build(nav, plan, true, false));
+			// The road to the focus: every quest on the way as a stop, with a flag at the goal.
+			Road road = Road.of(plan, account.isOneLife(), ROAD_STOPS);
+			if (road != null)
+			{
+				stack.add(new SectionHeader("The road", plan.getQuestsDone() + "/" + plan.getQuestsTotal()));
+				stack.add(new RoadCard(nav, road, plan.getTitle(), DetailView.whenText(nav, plan)));
+			}
 		}
 		else
 		{

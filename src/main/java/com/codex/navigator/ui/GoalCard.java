@@ -31,7 +31,13 @@ final class GoalCard
 		int size = done && !focus ? 30 : focus ? 50 : 40;
 		ProgressRing ring = new ProgressRing(size, focus ? 5f : 4f);
 		ring.setProgress(plan.getProgress(), done, false);
-		if (plan.isAwaitingTasks())
+		// Logged out, the account is unknown: no figure is better than a confident 0%.
+		boolean known = nav.account().isLoggedIn();
+		if (!known)
+		{
+			ring.setCenterText("-", Theme.TEXT_FAINT);
+		}
+		else if (plan.isAwaitingTasks())
 		{
 			ring.setCenterText("Tasks");
 		}
@@ -67,12 +73,16 @@ final class GoalCard
 		else
 		{
 			text.add(Ui.wrapped(plan.getSubtitle(), Theme.small(), Theme.TEXT_MUTED, textWidth));
-			if (plan.getQuestsTotal() > 1)
+			if (!known)
+			{
+				text.add(Ui.wrapped("Progress shows once you log in", Theme.small(), Theme.TEXT_FAINT, textWidth));
+			}
+			else if (plan.getQuestsTotal() > 1)
 			{
 				text.add(Ui.label(plan.getQuestsDone() + " of " + plan.getQuestsTotal() + " quests done", Theme.small(),
 					Theme.TEXT_FAINT));
 			}
-			if (plan.getHoursLeft() > 0 && !plan.isAwaitingTasks())
+			if (known && plan.getHoursLeft() > 0 && !plan.isAwaitingTasks())
 			{
 				JLabel time = Ui.label(Effort.format(plan.getHoursLeft()) + " of play left", Theme.small(), Theme.TEXT_FAINT);
 				time.setToolTipText(DetailView.usesPace(plan)

@@ -398,8 +398,9 @@ final class DetailView
 		if (plan.getHoursLeft() > 0 && !plan.isAwaitingTasks())
 		{
 			boolean ownPace = usesPace(plan);
-			JLabel time = Ui.label("About " + Effort.format(plan.getHoursLeft()).substring(1) + " of play left"
-				+ (ownPace ? " at your pace" : ""), Theme.small(), Theme.TEXT_FAINT);
+			// Wrapped: "at your pace" on a long goal runs past the card's edge on one line.
+			JLabel time = Ui.wrapped("About " + Effort.format(plan.getHoursLeft()).substring(1) + " of play left"
+				+ (ownPace ? " at your pace" : ""), Theme.small(), Theme.TEXT_FAINT, 176);
 			time.setToolTipText(ownPace ? "Training at the pace you have shown, plus a typical play-through of each quest left"
 				: "Training at steady rates plus a typical play-through of each quest left");
 			titles.add(time);
@@ -503,8 +504,14 @@ final class DetailView
 		JPanel line = new JPanel(new BorderLayout());
 		line.setOpaque(false);
 		line.add(Ui.label(name, Theme.small(), met ? Theme.TEXT_MUTED : Theme.TEXT), BorderLayout.WEST);
-		line.add(Ui.label(current + " / " + target, Theme.small(), met ? Theme.GREEN : boostNote != null ? Theme.TEAL : Theme.GOLD),
-			BorderLayout.EAST);
+		// A met level says what was needed: "40 / 10" reads like a shortfall at a glance.
+		JLabel figures = Ui.label(met ? current + "  (needs " + target + ")" : current + " / " + target, Theme.small(),
+			met ? Theme.GREEN : boostNote != null ? Theme.TEAL : Theme.GOLD);
+		if (met)
+		{
+			figures.setToolTipText(name + " " + current);
+		}
+		line.add(figures, BorderLayout.EAST);
 		right.add(line, BorderLayout.NORTH);
 		ProgressBar bar = new ProgressBar(4);
 		bar.setProgress(fraction, met, false);
@@ -540,6 +547,26 @@ final class DetailView
 		label.setToolTipText("If your play goes to this goal, at the " + time.rateText() + " you have played lately ("
 			+ time.getSessions() + " sessions in Codex Session Chronicle)");
 		return label;
+	}
+
+	/**
+	 * The road's flag line: "Around 3 Nov" when Chronicle gives a day, otherwise "~5 h of play left"; null when
+	 * there is nothing to say (complete, or only diary tasks left).
+	 */
+	static String whenText(Navigation nav, Plan plan)
+	{
+		if (plan.isComplete() || plan.getHoursLeft() <= 0 || plan.isAwaitingTasks())
+		{
+			return null;
+		}
+		com.codex.navigator.core.PlayTime time = nav.playTime();
+		String hours = Effort.format(plan.getHoursLeft());
+		if (time == null)
+		{
+			return hours + " of play left";
+		}
+		String date = time.dateText(plan.getHoursLeft(), System.currentTimeMillis(), java.time.ZoneId.systemDefault());
+		return (date == null ? "Over a year off" : "Around " + date) + "  ·  " + hours;
 	}
 
 	/** True when a level still to train is timed at the player's learned pace rather than the steady rates. */
