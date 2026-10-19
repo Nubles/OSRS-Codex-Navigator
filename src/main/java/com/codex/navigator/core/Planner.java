@@ -380,7 +380,7 @@ public final class Planner
 		for (SkillGap gap : gaps)
 		{
 			if (!data.boostable(quest.name, gap.getSkill().getName(), gap.getTarget())
-				|| !Boosts.reaches(gap.getSkill(), gap.getCurrent(), gap.getTarget()))
+				|| !Boosts.reaches(gap.getSkill(), gap.getCurrent(), gap.getTarget(), account))
 			{
 				return null;
 			}
@@ -411,7 +411,7 @@ public final class Planner
 			int current = account.level(skill);
 			int need = e.getValue();
 			boolean ok = current >= need
-				|| data.boostable(quest.name, skill.getName(), need) && Boosts.reaches(skill, current, need);
+				|| data.boostable(quest.name, skill.getName(), need) && Boosts.reaches(skill, current, need, account);
 			boostable.merge(skill, ok, Boolean::logicalAnd);
 		}
 	}

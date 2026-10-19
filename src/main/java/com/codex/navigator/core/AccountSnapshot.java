@@ -28,6 +28,7 @@ public final class AccountSnapshot
 	private final int combatLevel;
 	private final int combatAchievementPoints;
 	private final boolean members;
+	private final boolean ironman;
 	private final Map<Skill, Double> pace;
 	private final Map<Skill, Double> paceHours;
 
@@ -44,6 +45,7 @@ public final class AccountSnapshot
 		combatLevel = b.combatLevel;
 		combatAchievementPoints = b.combatAchievementPoints;
 		members = b.members;
+		ironman = b.ironman;
 		pace = Collections.unmodifiableMap(new EnumMap<>(b.pace));
 		paceHours = Collections.unmodifiableMap(new EnumMap<>(b.paceHours));
 	}
@@ -136,6 +138,15 @@ public final class AccountSnapshot
 	}
 
 	/**
+	 * True for any ironman mode (regular, hardcore, ultimate or group): the account cannot buy from the Grand
+	 * Exchange, so a boost it cannot make or buy in a shop is out of reach.
+	 */
+	public boolean isIronman()
+	{
+		return ironman;
+	}
+
+	/**
 	 * How many times faster than {@link Effort}'s steady rates this player trains the skill, as learned by
 	 * {@link Pace}; 1 when nothing has been learned yet.
 	 */
@@ -163,7 +174,7 @@ public final class AccountSnapshot
 	public Builder toBuilder()
 	{
 		Builder b = new Builder().loggedIn(loggedIn).playerName(playerName).questPoints(questPoints)
-			.combatLevel(combatLevel).combatAchievementPoints(combatAchievementPoints).members(members);
+			.combatLevel(combatLevel).combatAchievementPoints(combatAchievementPoints).members(members).ironman(ironman);
 		b.levels.putAll(levels);
 		b.xp.putAll(xp);
 		b.quests.putAll(quests);
@@ -188,7 +199,7 @@ public final class AccountSnapshot
 	public int structureSignature()
 	{
 		return Objects.hash(loggedIn, playerName, levels, quests, diariesDone, combatAchievementsDone,
-			questPoints, combatLevel, combatAchievementPoints, members);
+			questPoints, combatLevel, combatAchievementPoints, members, ironman);
 	}
 
 	public static final class Builder
@@ -204,6 +215,7 @@ public final class AccountSnapshot
 		private int combatLevel = 3;
 		private int combatAchievementPoints;
 		private boolean members = true;
+		private boolean ironman;
 		private final Map<Skill, Double> pace = new EnumMap<>(Skill.class);
 		private final Map<Skill, Double> paceHours = new EnumMap<>(Skill.class);
 
@@ -271,6 +283,12 @@ public final class AccountSnapshot
 		public Builder members(boolean value)
 		{
 			members = value;
+			return this;
+		}
+
+		public Builder ironman(boolean value)
+		{
+			ironman = value;
 			return this;
 		}
 

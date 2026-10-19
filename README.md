@@ -28,7 +28,7 @@ It is the first plugin in the **Codex** suite: a family of RuneLite plugins that
 - **Diaries.** The client tells the Codex which diary tiers are complete, but not which of their tasks you have done. Once every level and quest a tier needs is met, the Codex says **Tasks** rather than showing a 99% it cannot measure.
 - **Free worlds.** On a free-to-play world, only free quests are suggested and diaries are left out, since they cannot be started there.
 - **Time estimates.** Times assume steady, ordinary training methods and a typical first play-through of each quest, until the Codex has seen at least 15 minutes of your own training in a skill; then they move toward your pace over the first hour. Breaks, quest rewards and lamps are not counted as training. They are there to compare one choice with another, so they read as "about".
-- **Boosts.** A level counts as boostable only where Quest Helper marks the requirement as boostable, and only for skills with a plain, repeatable boost: pies, potions and the dwarven stout. Boost when the quest asks for the level; some quests check it at the start, others part-way through.
+- **Boosts.** A level counts as boostable only where Quest Helper marks the requirement as boostable, and only for skills with a plain, repeatable boost: pies, potions and the dwarven stout. Ironmen are only offered a boost they can make themselves (a summer pie needs 95 Cooking) or buy in a shop (dwarven stout). Boost when the quest asks for the level; some quests check it at the start, others part-way through.
 - **Logged out.** Goals you pin while logged out are added to your account's goals when you next log in.
 
 <p align="center">

@@ -475,7 +475,8 @@ public class CodexNavigatorPlugin extends Plugin
 			return;
 		}
 		AccountSnapshot.Builder b = new AccountSnapshot.Builder().loggedIn(true)
-			.members(client.getWorldType().contains(WorldType.MEMBERS));
+			.members(client.getWorldType().contains(WorldType.MEMBERS))
+			.ironman(client.getVarbitValue(VarbitID.IRONMAN) != 0);
 		Player local = client.getLocalPlayer();
 		if (local != null && local.getName() != null)
 		{

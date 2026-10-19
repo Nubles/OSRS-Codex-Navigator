@@ -136,6 +136,26 @@ public class BoostPaceSessionTest
 	}
 
 	@Test
+	public void anIronmanIsOnlyToldToUseABoostTheyCanMake()
+	{
+		// An ironman cannot buy a summer pie; at 60 Cooking they cannot bake one (95), so Regicide needs Agility.
+		AccountSnapshot iron = readyForRegicideBut(52).ironman(true).build();
+		assertEquals(Step.Status.BLOCKED, planner.questStep(data.quest("Regicide"), iron).getStatus());
+		assertEquals("Train Agility to 56", planner.plan(Goal.quest("Regicide"), iron).getNext().getTitle());
+		assertTrue(recommender.boostNow(iron, Collections.emptyList(), true, 50).stream()
+			.noneMatch(p -> p.getQuest().name.equals("Regicide")));
+
+		// With 95 Cooking they bake their own, and the quest is ready again.
+		AccountSnapshot baker = level(readyForRegicideBut(52).ironman(true), Skill.COOKING, 95).build();
+		assertEquals(Step.Status.READY, planner.questStep(data.quest("Regicide"), baker).getStatus());
+
+		// A dwarven stout is sold in shops, so an ironman can always use it.
+		assertTrue(Boosts.reaches(Skill.MINING, 49, 50, iron));
+		assertFalse(Boosts.reaches(Skill.AGILITY, 52, 56, iron));
+		assertTrue(Boosts.reaches(Skill.AGILITY, 52, 56, readyForRegicideBut(52).build()));
+	}
+
+	@Test
 	public void aBoostThatFallsShortStillMeansTraining()
 	{
 		AccountSnapshot account = readyForRegicideBut(50).build();
