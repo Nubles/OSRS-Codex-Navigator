@@ -5,6 +5,7 @@ import com.codex.navigator.core.Effort;
 import com.codex.navigator.core.Goal;
 import com.codex.navigator.core.Plan;
 import com.codex.navigator.core.Recommender;
+import com.codex.navigator.core.SkillGap;
 import com.codex.navigator.core.Step;
 import com.codex.navigator.data.QuestDef;
 import java.awt.BorderLayout;
@@ -80,7 +81,7 @@ final class CompassView
 			for (Recommender.Pick pick : almost)
 			{
 				QuestDef q = pick.getQuest();
-				stack.add(Row.of(Step.Status.BLOCKED, q.name, Effort.format(pick.getHours()) + "  ·  " + pick.getReason(),
+				stack.add(Row.of(Step.Status.BLOCKED, q.name, almostSubtitle(pick),
 					pick.getServes().isEmpty() ? null : new Pill("Goal", Theme.GOLD), null,
 					() -> nav.open(Goal.quest(q.name))));
 			}
@@ -96,6 +97,25 @@ final class CompassView
 			}
 		}
 		return stack;
+	}
+
+	/**
+	 * The time and the slowest level still missing, such as "~50 min · Herblore 57 +1". The full list of
+	 * levels with their current values does not fit beside a pill at sidebar width; the quest's page has it.
+	 */
+	static String almostSubtitle(Recommender.Pick pick)
+	{
+		String time = Effort.format(pick.getHours());
+		List<SkillGap> gaps = pick.getGaps();
+		if (gaps.isEmpty())
+		{
+			return time;
+		}
+		// The recommender sorts the gaps slowest first: that is the level the wait is really about.
+		SkillGap slowest = gaps.get(0);
+		// Single spaces here: "~1.5 h · Runecraft to 57 +1" has to fit beside the Goal pill.
+		return time + " · " + slowest.getSkill().getName() + " " + slowest.getTarget()
+			+ (gaps.size() > 1 ? " +" + (gaps.size() - 1) : "");
 	}
 
 	/** About how long it takes to play and its quest points, such as "~35 min · 2 QP". */
