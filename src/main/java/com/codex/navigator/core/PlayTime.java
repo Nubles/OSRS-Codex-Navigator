@@ -35,6 +35,7 @@ public final class PlayTime
 
 	private static final long DAY_MS = 24 * 3_600_000L;
 	private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("d MMM", Locale.ENGLISH);
+	private static final DateTimeFormatter MONTH = DateTimeFormatter.ofPattern("MMM yyyy", Locale.ENGLISH);
 
 	private final double hoursPerDay;
 	private final int sessions;
@@ -145,11 +146,21 @@ public final class PlayTime
 		return days < 0 ? null : Instant.ofEpochMilli(now).atZone(zone).toLocalDate().plusDays(days);
 	}
 
-	/** "3 Nov", or null. */
+	/**
+	 * "3 Nov", or "Oct 2027" for a date ten months or more off, which without its year would read like a day
+	 * already gone (and that far ahead the day itself means little); null when there is no date.
+	 */
 	public String dateText(double hours, long now, ZoneId zone)
 	{
 		LocalDate date = date(hours, now, zone);
-		return date == null ? null : DATE.format(date);
+		if (date == null)
+		{
+			return null;
+		}
+		LocalDate today = Instant.ofEpochMilli(now).atZone(zone).toLocalDate();
+		// Read without a year, a date is taken as the nearest one of that name; ten months on, that is the past.
+		boolean farOff = !date.isBefore(today.plusMonths(10));
+		return farOff ? MONTH.format(date) : DATE.format(date);
 	}
 
 	/** "40 min a day" or "1.5 h a day": the habit in a few words. */

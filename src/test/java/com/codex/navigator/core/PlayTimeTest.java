@@ -87,4 +87,21 @@ public class PlayTimeTest
 		assertEquals(2, time.getSessions());
 		assertEquals(2 / 7.0, time.getHoursPerDay(), 1e-9);
 	}
+
+	@Test
+	public void aDateNextYearThatLooksPastSaysItsYear()
+	{
+		// Two hours a day; 19 Oct 2026 noon UTC.
+		long now = java.time.LocalDate.of(2026, 10, 19).atTime(12, 0).toInstant(ZoneOffset.UTC).toEpochMilli();
+		String json = "[{\"startedAt\":" + (now - 6 * DAY) + ",\"playedMs\":25200000},{\"startedAt\":" + (now - DAY)
+			+ ",\"playedMs\":25200000}]";
+		PlayTime time = PlayTime.read(new Gson(), json, now);
+		assertEquals(2.0, time.getHoursPerDay(), 1e-9);
+		// 360 days off: "14 Oct" alone would read as last week.
+		assertEquals("Oct 2027", time.dateText(720, now, ZoneOffset.UTC));
+		assertEquals("Around Oct 2027 at your 2 h a day", time.describe(720, now, ZoneOffset.UTC));
+		// Into next year but plainly ahead: no year needed.
+		assertEquals("3 Jan", time.dateText(2 * 76, now, ZoneOffset.UTC));
+		assertEquals("29 Oct", time.dateText(20, now, ZoneOffset.UTC));
+	}
 }
