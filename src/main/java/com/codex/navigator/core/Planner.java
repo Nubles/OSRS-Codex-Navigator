@@ -238,12 +238,25 @@ public final class Planner
 				return step;
 			}
 		}
+		// Of the quests that can be started now, the quickest: every one is needed, and a short one is progress sooner.
+		Step quickest = null;
+		double quickestHours = Double.MAX_VALUE;
 		for (Step step : path)
 		{
-			if (step.getStatus() == Step.Status.READY)
+			if (step.getStatus() == Step.Status.READY && step.getKind() == Step.Kind.QUEST)
 			{
-				return step;
+				QuestDef quest = data.quest(step.getQuest());
+				double hours = quest == null ? Double.MAX_VALUE - 1 : Effort.questHours(quest);
+				if (hours < quickestHours)
+				{
+					quickest = step;
+					quickestHours = hours;
+				}
 			}
+		}
+		if (quickest != null)
+		{
+			return quickest;
 		}
 		for (SkillGap gap : skills)
 		{

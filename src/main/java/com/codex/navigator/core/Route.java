@@ -162,7 +162,10 @@ public final class Route
 	static double worth(Leg leg, Goal focus)
 	{
 		double goals = leg.getServes().size() + (focus != null && leg.getServes().contains(focus) ? 0.5 : 0);
-		return goals / (leg.getHours() + 0.5);
+		// Quest points, a combat level or a diary's tasks have no estimate; count them as an hour, not as free.
+		Step.Kind kind = leg.getStep().getKind();
+		double hours = kind == Step.Kind.QUEST || kind == Step.Kind.TRAIN ? leg.getHours() : Math.max(1, leg.getHours());
+		return goals / (hours + 0.5);
 	}
 
 	/** Quests already started come first: they are the cheapest progress there is. */

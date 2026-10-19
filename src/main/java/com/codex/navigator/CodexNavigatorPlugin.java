@@ -159,6 +159,11 @@ public class CodexNavigatorPlugin extends Plugin
 	private int lastQuestPoints = -1;
 	/** The board last written, so an unchanged board is not saved again. */
 	private String lastBoard;
+	/**
+	 * Set when the profile changes and cleared by the next publish: until then the snapshot still belongs to
+	 * the previous profile, and a board written from it would land under the new one.
+	 */
+	private boolean boardHeld;
 
 	@Provides
 	CodexNavigatorConfig provideConfig(ConfigManager configManager)
@@ -218,6 +223,7 @@ public class CodexNavigatorPlugin extends Plugin
 		heldBack = null;
 		offlinePins = null;
 		lastBoard = null;
+		boardHeld = false;
 		panel = null;
 		goals = null;
 	}
@@ -250,6 +256,10 @@ public class CodexNavigatorPlugin extends Plugin
 	{
 		completion.reset();
 		lastBoard = null;
+		boardHeld = true;
+		// Publish afresh for the new profile even if the read happens to match, so its board is written.
+		gate.reset();
+		dirty = true;
 		loadGoals();
 	}
 
@@ -451,6 +461,7 @@ public class CodexNavigatorPlugin extends Plugin
 			return;
 		}
 		snapshot = next;
+		boardHeld = false;
 		announceCompletions(next);
 		writeBoard();
 		updateOverlay();
@@ -469,7 +480,7 @@ public class CodexNavigatorPlugin extends Plugin
 	{
 		AccountSnapshot account = snapshot;
 		GoalStore store = goals;
-		if (store == null || planner == null || !account.isLoggedIn() || configManager.getRSProfileKey() == null)
+		if (store == null || planner == null || boardHeld || !account.isLoggedIn() || configManager.getRSProfileKey() == null)
 		{
 			return;
 		}

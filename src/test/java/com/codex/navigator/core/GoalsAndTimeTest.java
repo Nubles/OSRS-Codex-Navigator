@@ -113,6 +113,22 @@ public class GoalsAndTimeTest
 	}
 
 	@Test
+	public void nextQuestIsTheQuickestOfThoseReady()
+	{
+		Plan cape = planner.plan(Goal.QUEST_CAPE, fresh().build());
+		Step next = cape.getNext();
+		assertEquals(Step.Status.READY, next.getStatus());
+		double hours = Effort.questHours(data.quest(next.getQuest()));
+		for (Step step : cape.getPath())
+		{
+			if (step.getStatus() == Step.Status.READY && data.quest(step.getQuest()) != null)
+			{
+				assertTrue(step.getQuest() + " is quicker than " + next.getQuest(), Effort.questHours(data.quest(step.getQuest())) >= hours);
+			}
+		}
+	}
+
+	@Test
 	public void questsOnThePathToAPinnedGoalRankFirst()
 	{
 		AccountSnapshot account = fresh().build();
