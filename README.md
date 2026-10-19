@@ -14,7 +14,9 @@ It is the first plugin in the **Codex** suite: a family of RuneLite plugins that
 
 - **Account crest.** One ring for your whole account, plus ledgers for quests, diaries and combat achievement tasks.
 - **Compass.** Your focus goal and its next step, then quests in progress, the **best next** quests and the quests held back by only a little training. Best next puts the quests on the way to your focus first, then those on the way to your other goals, then the rest by how much they open per hour. Every suggestion says about how long it takes.
-- **Goals.** Pin any quest, diary tier or the quest cape. The first pin is your focus; every goal shows its progress, its next step and about how much play is left. Finished goals move to a Completed list, a line in your chatbox tells you the moment one is done, and each offers the **next in line** (the next diary tier, or the quest it leads into) to pin with one click.
+- **Goals.** Pin any quest, diary tier, the quest cape or a level. The first pin is your focus; every goal shows its progress, its next step and about how much play is left. Finished goals move to a Completed list, a line in your chatbox tells you the moment one is done, and each offers the **next in line** (the next diary tier, or the quest it leads into) to pin with one click.
+- **Level goals.** "Aiming for a level?" on the Goals tab opens a skill grid; pick a skill and the Codex offers the levels worth aiming for: the next ones that open a quest or diary tier (in teal, with how many), the next round ten, and 99. A level goal's page lists everything it opens in level order, and whether anything else still holds each quest back. When you reach it, the next round ten is offered to pin.
+- **A date on every goal.** With Codex Session Chronicle installed, the Codex reads how much you have played over the last two weeks and turns each goal's hours of play into a day on the calendar ("Around 3 Nov at your 40 min a day"). Without Chronicle, or with fewer than two sessions in its journal, no date is shown.
 - **Next session.** Pick one to four hours and the Codex fills them from your goals: whole quests and levels first, then training for whatever time is left, each step unlocking the next. Under the plan, every goal shows how far the session moves it ("Regicide 62% to 81%").
 - **Boost and go.** Quests you can start today with a pie or a potion: held back only by levels that the quest lets you boost, each within reach of an everyday boost ("Summer pie for Agility 56"). Path pages mark those levels in teal, and they cost no training time in any estimate.
 - **Your pace.** The Codex learns how fast you really train each skill from the experience you gain while it runs, and times every estimate with it. The Compass lists what it has learned ("Agility · 38% faster · from 3.4 h").
@@ -29,6 +31,7 @@ It is the first plugin in the **Codex** suite: a family of RuneLite plugins that
 - **Free worlds.** On a free-to-play world, only free quests are suggested and diaries are left out, since they cannot be started there.
 - **Time estimates.** Times assume steady, ordinary training methods and a typical first play-through of each quest, until the Codex has seen at least 15 minutes of your own training in a skill; then they move toward your pace over the first hour. Breaks, quest rewards and lamps are not counted as training. They are there to compare one choice with another, so they read as "about".
 - **Boosts.** A level counts as boostable only where Quest Helper marks the requirement as boostable, and only for skills with a plain, repeatable boost: pies, potions and the dwarven stout. Ironmen are only offered a boost they can make themselves (a summer pie needs 95 Cooking) or buy in a shop (dwarven stout). Boost when the quest asks for the level; some quests check it at the start, others part-way through.
+- **Dates.** A date assumes your play goes to that goal, at the daily average of your sessions in the last 14 days (counted over at least a week, so one long evening is not a habit). Chronicle's journal is only read, never written.
 - **Logged out.** Goals you pin while logged out are added to your account's goals when you next log in.
 
 <p align="center">
@@ -43,7 +46,7 @@ Codex Navigator only reads client state you can already see (quest states, varbi
 
 Codex Navigator saves two keys per RuneScape profile in the `codexnavigator` config group, which any plugin can read with `ConfigManager.getRSProfileConfiguration("codexnavigator", key)`. Both shapes are stable: fields may be added, never renamed or removed.
 
-- **`goals`**: the pinned goals in order, focus first, as a JSON list of keys: `"quest:<name>"` (names as in RuneLite's `Quest` enum), `"diary:<Area> <Tier>"` such as `"diary:Ardougne Easy"`, and `"cape:Quest point cape"`.
+- **`goals`**: the pinned goals in order, focus first, as a JSON list of keys: `"quest:<name>"` (names as in RuneLite's `Quest` enum), `"diary:<Area> <Tier>"` such as `"diary:Ardougne Easy"`, `"cape:Quest point cape"`, and `"skill:<Skill> <level>"` such as `"skill:Agility 70"`. Readers should keep keys of a kind they do not know.
 - **`goalBoard`**: the same goals with what they still need, written whenever that changes while logged in:
 
 ```json
@@ -66,7 +69,7 @@ Codex Navigator saves two keys per RuneScape profile in the `codexnavigator` con
 }
 ```
 
-`type` is `quest`, `diary` or `cape`. `skills` lists only unmet levels, by skill name. `quests` lists unfinished quests on the way, prerequisites first. `progress` is rounded to two decimals and `hoursLeft` to the half hour. `next` is absent once a goal is complete, and `focus` is absent with nothing pinned.
+`type` is `quest`, `diary`, `cape` or `skill` (a level goal: its `skills` holds the one level, its `quests` is empty). `skills` lists only unmet levels, by skill name. `quests` lists unfinished quests on the way, prerequisites first. `progress` is rounded to two decimals and `hoursLeft` to the half hour. `next` is absent once a goal is complete, and `focus` is absent with nothing pinned.
 
 ## Settings
 

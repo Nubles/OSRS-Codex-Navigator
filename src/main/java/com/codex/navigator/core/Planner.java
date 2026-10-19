@@ -126,7 +126,7 @@ public final class Planner
 		targets.put(skill, level);
 		boolean complete = account.isLoggedIn() && account.level(skill) >= level;
 		// Miniquests are left out of the count, as the quest counts elsewhere leave them out.
-		int opens = opens(skill, level, account, false).size();
+		int opens = account.isLoggedIn() ? opens(skill, level, account, false).size() : 0;
 		String subtitle = "Level goal" + (opens > 0 ? " · opens " + opens + (opens == 1 ? " quest" : " quests") : "");
 		return build(goal, level + " " + skill.getName(), subtitle, complete, new LinkedHashSet<>(), targets, 0, 0,
 			false, account);

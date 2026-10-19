@@ -53,7 +53,7 @@ final class LevelPicker
 		{
 			JPanel line = new JPanel(new BorderLayout(6, 0));
 			line.setOpaque(false);
-			line.add(Ui.label("Training toward a level?", Theme.small(), Theme.TEXT_MUTED), BorderLayout.CENTER);
+			line.add(Ui.label("Aiming for a level?", Theme.small(), Theme.TEXT_MUTED), BorderLayout.CENTER);
 			line.add(new CodexButton("Pin a level", false, () -> nav.levelPicker(true, null)), BorderLayout.EAST);
 			card.add(line, BorderLayout.CENTER);
 			return card;

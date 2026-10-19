@@ -131,4 +131,27 @@ public class LevelGoalTest
 		assertEquals(0, entry.getAsJsonArray("quests").size());
 		assertEquals("Train Agility to 60", entry.get("next").getAsString());
 	}
+
+	@Test
+	public void aLevelGoalSharesItsTrainingWithTheQuestsThatNeedIt()
+	{
+		// Dragon Slayer II needs 60 Agility too; the route trains Agility once, for both goals, to the higher level.
+		List<Goal> pinned = Arrays.asList(Goal.level(Skill.AGILITY, 65), Goal.quest("Dragon Slayer II"));
+		AccountSnapshot account = account(50);
+		Route route = Route.build(planner, pinned, account);
+		int agility = 0;
+		for (Route.Leg leg : route.getLegs())
+		{
+			if (leg.getStep().getSkill() == Skill.AGILITY)
+			{
+				agility++;
+				assertEquals(65, leg.getTarget());
+				assertTrue(leg.getServes().contains(Goal.level(Skill.AGILITY, 65)));
+			}
+		}
+		assertEquals(1, agility);
+		SessionPlan session = SessionPlan.build(planner, Collections.singletonList(Goal.level(Skill.AGILITY, 60)), account, 2);
+		assertFalse(session.getItems().isEmpty());
+		assertEquals(Skill.AGILITY, session.getItems().get(0).getStep().getSkill());
+	}
 }

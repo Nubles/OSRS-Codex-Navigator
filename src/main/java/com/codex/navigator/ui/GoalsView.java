@@ -42,8 +42,8 @@ final class GoalsView
 			text.setOpaque(false);
 			text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
 			text.add(Ui.label("NO GOALS PINNED", Theme.small(), Theme.GOLD));
-			text.add(Ui.wrapped("Open a quest or diary in the Atlas and press Pin goal, or pin a level below. The first goal you pin becomes your focus.",
-				Theme.body(), Theme.TEXT, 168));
+			text.add(Ui.wrapped("Open a quest or diary in the Atlas and press Pin goal" + (nav.account().isLoggedIn()
+				? ", or pin a level below" : "") + ". The first goal you pin becomes your focus.", Theme.body(), Theme.TEXT, 168));
 			card.add(text, BorderLayout.CENTER);
 			JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 			actions.setOpaque(false);
