@@ -41,10 +41,10 @@ public final class Hazards
 			return line;
 		}
 
-		/** A pill-sized name for it. */
+		/** A pill-sized name for it, short enough to sit beside a row's time and level. */
 		public String getLabel()
 		{
-			return kind == Kind.WILDERNESS ? "Wilderness" : "Boss fight";
+			return kind == Kind.WILDERNESS ? "Wildy" : "Boss";
 		}
 	}
 

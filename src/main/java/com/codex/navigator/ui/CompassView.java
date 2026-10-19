@@ -70,7 +70,7 @@ final class CompassView
 			for (Recommender.Pick pick : ready)
 			{
 				QuestDef q = pick.getQuest();
-				stack.add(Row.of(Step.Status.READY, q.name, subtitle(q, pick.getHours()), pill(account, pick), null,
+				stack.add(Row.of(Step.Status.READY, q.name, subtitle(q, pick.getHours()), pill(account, pinned, pick), null,
 					() -> nav.open(Goal.quest(q.name))));
 			}
 		}
@@ -82,8 +82,7 @@ final class CompassView
 			for (Recommender.Pick pick : boosts)
 			{
 				QuestDef q = pick.getQuest();
-				stack.add(Row.of(Step.Status.READY, q.name, boostSubtitle(pick),
-					pick.getServes().isEmpty() ? null : new Pill("Goal", Theme.GOLD), null,
+				stack.add(Row.of(Step.Status.READY, q.name, boostSubtitle(pick), goalPill(account, pinned, pick), null,
 					() -> nav.open(Goal.quest(q.name))));
 			}
 		}
@@ -95,8 +94,7 @@ final class CompassView
 			for (Recommender.Pick pick : almost)
 			{
 				QuestDef q = pick.getQuest();
-				stack.add(Row.of(Step.Status.BLOCKED, q.name, almostSubtitle(pick),
-					pick.getServes().isEmpty() ? null : new Pill("Goal", Theme.GOLD), null,
+				stack.add(Row.of(Step.Status.BLOCKED, q.name, almostSubtitle(pick), goalPill(account, pinned, pick), null,
 					() -> nav.open(Goal.quest(q.name))));
 			}
 		}
@@ -120,23 +118,32 @@ final class CompassView
 	}
 
 	/**
-	 * The pick's pill: a goal it serves first, since the player chose that; then, on a one-life account, the deadly
-	 * fight or Wilderness trip it asks for; then what makes it worth doing.
+	 * The pick's pill: on a one-life account, the deadly fight or Wilderness trip a quest asks for (unless you pinned
+	 * the quest itself, a risk you chose); otherwise the goal it serves or what makes it worth doing.
 	 */
-	static Pill pill(AccountSnapshot account, Recommender.Pick pick)
+	static Pill pill(AccountSnapshot account, List<Goal> goals, Recommender.Pick pick)
 	{
-		if (!pick.getServes().isEmpty())
+		if (Recommender.waits(account, goals, pick.getQuest()))
 		{
-			return pick.getReason() == null ? null : new Pill(pick.getReason(), Theme.GOLD);
+			Hazards.Hazard hazard = Hazards.of(pick.getQuest().name);
+			Pill pill = new Pill(hazard.getLabel(), Theme.EMBER);
+			pill.setToolTipText(hazard.getLine() + (pick.getReason() == null ? "" : " (" + pick.getReason().toLowerCase() + ")"));
+			return pill;
 		}
-		Hazards.Hazard hazard = account.isOneLife() ? Hazards.of(pick.getQuest().name) : null;
-		if (hazard != null)
+		return pick.getReason() == null ? null : new Pill(pick.getReason(), pick.getServes().isEmpty() ? Theme.TEAL : Theme.GOLD);
+	}
+
+	/** "Goal" for a pick on a goal's path, or on one life the risk a quest asks for; null for neither. */
+	static Pill goalPill(AccountSnapshot account, List<Goal> goals, Recommender.Pick pick)
+	{
+		if (Recommender.waits(account, goals, pick.getQuest()))
 		{
+			Hazards.Hazard hazard = Hazards.of(pick.getQuest().name);
 			Pill pill = new Pill(hazard.getLabel(), Theme.EMBER);
 			pill.setToolTipText(hazard.getLine());
 			return pill;
 		}
-		return pick.getReason() == null ? null : new Pill(pick.getReason(), Theme.TEAL);
+		return pick.getServes().isEmpty() ? null : new Pill("Goal", Theme.GOLD);
 	}
 
 	/**

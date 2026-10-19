@@ -51,8 +51,8 @@ public class HazardsTest
 			assertNotNull("Unknown quest " + name, data.quest(name));
 		}
 		assertNull(Hazards.of("Cook's Assistant"));
-		assertEquals("Boss fight", Hazards.of("Dragon Slayer I").getLabel());
-		assertEquals("Wilderness", Hazards.of("Mage Arena I").getLabel());
+		assertEquals("Boss", Hazards.of("Dragon Slayer I").getLabel());
+		assertEquals("Wildy", Hazards.of("Mage Arena I").getLabel());
 	}
 
 	@Test

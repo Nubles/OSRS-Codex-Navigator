@@ -169,10 +169,9 @@ public final class Recommender
 			picks.add(new Pick(q, reason(q, unlocks, serves, focus), score, new ArrayList<>(), hours, serves));
 		}
 		// What the player asked for comes first: the focus's quests, then other goals', then the rest by worth.
-		// On one life, a quest with a deadly fight that no goal asks for waits behind the safer ones.
-		boolean careful = account.isOneLife();
+		// On one life, within each group a quest with a deadly fight waits behind the safer ones, unless you pinned it.
 		picks.sort(Comparator.comparingInt((Pick p) -> tier(p.getServes(), focus))
-			.thenComparingInt(p -> careful && p.getServes().isEmpty() && Hazards.of(p.getQuest().name) != null ? 1 : 0)
+			.thenComparingInt(p -> waits(account, goals, p.getQuest()) ? 1 : 0)
 			.thenComparing(Comparator.comparingDouble(Pick::getScore).reversed())
 			.thenComparing(p -> p.getQuest().name));
 		return picks.size() > limit ? new ArrayList<>(picks.subList(0, limit)) : picks;
@@ -262,12 +261,20 @@ public final class Recommender
 			double hours = Effort.questHours(q);
 			picks.add(new Pick(q, Planner.boostDetail(gaps), Math.max(0.2, worth) / (hours + 0.5), gaps, hours, serves));
 		}
-		boolean careful = account.isOneLife();
 		picks.sort(Comparator.comparingInt((Pick p) -> tier(p.getServes(), focus))
-			.thenComparingInt(p -> careful && p.getServes().isEmpty() && Hazards.of(p.getQuest().name) != null ? 1 : 0)
+			.thenComparingInt(p -> waits(account, goals, p.getQuest()) ? 1 : 0)
 			.thenComparing(Comparator.comparingDouble(Pick::getScore).reversed())
 			.thenComparing(p -> p.getQuest().name));
 		return picks.size() > limit ? new ArrayList<>(picks.subList(0, limit)) : picks;
+	}
+
+	/**
+	 * True when a one-life account should do safer quests first: the quest has a deadly fight or a Wilderness trip
+	 * and was not pinned itself. A quest you pinned is a risk you chose.
+	 */
+	public static boolean waits(AccountSnapshot account, List<Goal> goals, QuestDef quest)
+	{
+		return account.isOneLife() && Hazards.of(quest.name) != null && !goals.contains(Goal.quest(quest.name));
 	}
 
 	/** 0 for a quest on the focus's path, 1 for another goal's, 2 for anything else. */
