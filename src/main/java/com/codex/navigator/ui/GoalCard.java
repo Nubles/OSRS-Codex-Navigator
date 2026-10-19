@@ -75,8 +75,15 @@ final class GoalCard
 			if (plan.getHoursLeft() > 0 && !plan.isAwaitingTasks())
 			{
 				JLabel time = Ui.label(Effort.format(plan.getHoursLeft()) + " of play left", Theme.small(), Theme.TEXT_FAINT);
-				time.setToolTipText("Training at steady rates plus a typical play-through of each quest left");
+				time.setToolTipText(DetailView.usesPace(plan)
+					? "Training at the pace you have shown, plus a typical play-through of each quest left"
+					: "Training at steady rates plus a typical play-through of each quest left");
 				text.add(time);
+				JLabel when = DetailView.when(nav, plan, false);
+				if (when != null)
+				{
+					text.add(when);
+				}
 			}
 		}
 		top.add(text, BorderLayout.CENTER);

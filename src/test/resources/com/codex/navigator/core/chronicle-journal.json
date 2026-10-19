@@ -1,0 +1,80 @@
+[
+ {
+  "startedAt": 1790432000000,
+  "lastSeenAt": 1790439200000,
+  "endedAt": 1790439200000,
+  "playedMs": 7200000,
+  "player": "Zezima",
+  "skills": {
+   "Agility": {
+    "skill": "Agility",
+    "startXp": 1000000,
+    "xp": 1072000,
+    "startLevel": 70,
+    "level": 70
+   }
+  },
+  "loot": {},
+  "kills": {},
+  "moments": [],
+  "deaths": 0,
+  "otherLoot": 0,
+  "otherDrops": 0,
+  "tripCount": 0,
+  "tripMs": 0,
+  "bestTripMs": 0,
+  "activity": "Agility"
+ },
+ {
+  "startedAt": 1790172800000,
+  "lastSeenAt": 1790175500000,
+  "endedAt": 1790175500000,
+  "playedMs": 2700000,
+  "player": "Zezima",
+  "skills": {
+   "Agility": {
+    "skill": "Agility",
+    "startXp": 1000000,
+    "xp": 1027000,
+    "startLevel": 70,
+    "level": 70
+   }
+  },
+  "loot": {},
+  "kills": {},
+  "moments": [],
+  "deaths": 0,
+  "otherLoot": 0,
+  "otherDrops": 0,
+  "tripCount": 0,
+  "tripMs": 0,
+  "bestTripMs": 0,
+  "activity": "Agility"
+ },
+ {
+  "startedAt": 1790000000000,
+  "lastSeenAt": 1790005400000,
+  "endedAt": 1790005400000,
+  "playedMs": 5400000,
+  "player": "Zezima",
+  "skills": {
+   "Agility": {
+    "skill": "Agility",
+    "startXp": 1000000,
+    "xp": 1054000,
+    "startLevel": 70,
+    "level": 70
+   }
+  },
+  "loot": {},
+  "kills": {},
+  "moments": [],
+  "deaths": 0,
+  "otherLoot": 0,
+  "otherDrops": 0,
+  "tripCount": 0,
+  "tripMs": 0,
+  "bestTripMs": 0,
+  "activity": "Agility"
+ }
+]

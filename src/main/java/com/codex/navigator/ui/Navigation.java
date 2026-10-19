@@ -4,6 +4,7 @@ import com.codex.navigator.core.AccountSnapshot;
 import com.codex.navigator.core.Goal;
 import com.codex.navigator.core.GoalStore;
 import com.codex.navigator.core.Planner;
+import com.codex.navigator.core.PlayTime;
 import com.codex.navigator.core.Recommender;
 import java.awt.image.BufferedImage;
 import net.runelite.api.Skill;
@@ -34,6 +35,9 @@ interface Navigation
 
 	/** Chooses a session length and redraws the plan. */
 	void chooseSession(int choice);
+
+	/** How much the account plays a day, from Codex Session Chronicle, or null when that is not known. */
+	PlayTime playTime();
 
 	/** True while the Goals view's level picker is open. */
 	boolean levelPickerOpen();

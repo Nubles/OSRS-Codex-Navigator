@@ -9,6 +9,7 @@ import com.codex.navigator.core.GoalStore;
 import com.codex.navigator.core.Pace;
 import com.codex.navigator.core.Plan;
 import com.codex.navigator.core.Planner;
+import com.codex.navigator.core.PlayTime;
 import com.codex.navigator.core.PublishGate;
 import com.codex.navigator.core.Recommender;
 import com.codex.navigator.core.Step;
@@ -220,6 +221,7 @@ public class CodexNavigatorPlugin extends Plugin
 			.build();
 		clientToolbar.addNavigation(navButton);
 		overlayManager.add(overlay);
+		readPlayTime();
 
 		clientThread.invokeLater(() ->
 		{
@@ -317,6 +319,7 @@ public class CodexNavigatorPlugin extends Plugin
 		gate.reset();
 		dirty = true;
 		loadGoals();
+		readPlayTime();
 	}
 
 	@Subscribe
@@ -340,6 +343,13 @@ public class CodexNavigatorPlugin extends Plugin
 	@Subscribe
 	public void onConfigChanged(ConfigChanged event)
 	{
+		if (PlayTime.GROUP.equals(event.getGroup()) && PlayTime.JOURNAL.equals(event.getKey())
+			&& (event.getProfile() == null || event.getProfile().equals(configManager.getRSProfileKey())))
+		{
+			// Session Chronicle filed a session: the daily habit may have moved.
+			readPlayTime();
+			return;
+		}
 		if (!CodexNavigatorConfig.GROUP.equals(event.getGroup()) || GOALS_KEY.equals(event.getKey())
 			|| BOARD_KEY.equals(event.getKey()) || PACE_KEY.equals(event.getKey()))
 		{
@@ -388,6 +398,21 @@ public class CodexNavigatorPlugin extends Plugin
 		loginTick = tick;
 		questsPending = true;
 		dirty = true;
+	}
+
+	/**
+	 * Reads how much this account plays a day from Codex Session Chronicle's journal, read only; nothing when
+	 * Chronicle is not installed or has too little to go on, and the panel then shows no dates.
+	 */
+	private void readPlayTime()
+	{
+		PlayTime time = PlayTime.read(gson, configManager.getRSProfileConfiguration(PlayTime.GROUP, PlayTime.JOURNAL),
+			System.currentTimeMillis());
+		NavigatorPanel target = panel;
+		if (target != null)
+		{
+			SwingUtilities.invokeLater(() -> target.setPlayTime(time));
+		}
 	}
 
 	private void loadGoals()

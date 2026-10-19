@@ -4,6 +4,7 @@ import com.codex.navigator.core.AccountSnapshot;
 import com.codex.navigator.core.Goal;
 import com.codex.navigator.core.GoalStore;
 import com.codex.navigator.core.Planner;
+import com.codex.navigator.core.PlayTime;
 import com.codex.navigator.core.Recommender;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
@@ -63,6 +64,7 @@ public class NavigatorPanel extends PluginPanel implements Navigation
 	/** Two hours: an ordinary evening. */
 	private int sessionChoice = 1;
 	private boolean levelPickerOpen;
+	private PlayTime playTime;
 	private Skill levelSkill;
 
 	public NavigatorPanel(Planner planner, Recommender recommender, GoalStore goals, SkillIconManager skillIcons,
@@ -269,6 +271,23 @@ public class NavigatorPanel extends PluginPanel implements Navigation
 		}
 		sessionChoice = choice;
 		redrawGoals();
+	}
+
+	@Override
+	public PlayTime playTime()
+	{
+		return playTime;
+	}
+
+	/** Called on the Swing thread when Codex Session Chronicle's journal has been read; null when it says nothing. */
+	public void setPlayTime(PlayTime time)
+	{
+		if (time == playTime)
+		{
+			return;
+		}
+		playTime = time;
+		refreshViews();
 	}
 
 	@Override

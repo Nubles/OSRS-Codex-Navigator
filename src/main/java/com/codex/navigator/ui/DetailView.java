@@ -320,6 +320,11 @@ final class DetailView
 			time.setToolTipText(ownPace ? "Training at the pace you have shown, plus a typical play-through of each quest left"
 				: "Training at steady rates plus a typical play-through of each quest left");
 			titles.add(time);
+			JLabel when = when(nav, plan, true);
+			if (when != null)
+			{
+				titles.add(when);
+			}
 		}
 		card.add(titles, BorderLayout.NORTH);
 
@@ -431,6 +436,27 @@ final class DetailView
 			row.setToolTipText(tip);
 		}
 		return row;
+	}
+
+	/**
+	 * "Around 3 Nov at your 40 min a day" (or just "Around 3 Nov" when short), from how much the account has played
+	 * lately by Codex Session Chronicle; null without Chronicle or with nothing left to play.
+	 */
+	static JLabel when(Navigation nav, Plan plan, boolean full)
+	{
+		com.codex.navigator.core.PlayTime time = nav.playTime();
+		if (time == null || plan.isComplete() || plan.getHoursLeft() <= 0 || plan.isAwaitingTasks())
+		{
+			return null;
+		}
+		long now = System.currentTimeMillis();
+		java.time.ZoneId zone = java.time.ZoneId.systemDefault();
+		String date = time.dateText(plan.getHoursLeft(), now, zone);
+		String text = full ? time.describe(plan.getHoursLeft(), now, zone) : date == null ? "Over a year off" : "Around " + date;
+		JLabel label = Ui.label(text, Theme.small(), Theme.TEAL);
+		label.setToolTipText("If your play goes to this goal, at the " + time.rateText() + " you have played lately ("
+			+ time.getSessions() + " sessions in Codex Session Chronicle)");
+		return label;
 	}
 
 	/** True when a level still to train is timed at the player's learned pace rather than the steady rates. */
