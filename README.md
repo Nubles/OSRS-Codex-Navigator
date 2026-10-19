@@ -23,6 +23,7 @@ It is the first plugin in the **Codex** suite: a family of RuneLite plugins that
 - **Your route.** With two or more goals pinned, their paths are laid over one another into a single route. A quest or level that several goals share appears once, and the steps that move the most goals for the least time come first.
 - **Atlas.** Search and filter every quest, see each area's diary tiers as seals, and track combat achievement tiers.
 - **Path pages.** Open any goal to see every level, quest point and combat level it still needs with live bars, every quest on the way as a timeline (done, in progress, ready, or blocked and by what), and for a quest, what finishing it leads to.
+- **Hardcore care.** On a one-life account (a hardcore ironman, any account on a Hardcore World, or one marked one-life in [Codex Guardian](https://github.com/Nubles/OSRS-Codex-Guardian)), quests with a fight hardcore players prepare for, or a trip into the Wilderness, are marked "Boss" or "Wildy" and suggested after the safer quests in the same group. A quest you pinned yourself is a risk you chose and keeps its place. A quest's page says what the danger is ("Elvarg breathes dragonfire: bring an anti-dragon shield"), for every account; a longer goal such as the quest cape lists the risky quests still on its path. The list is short on purpose: only quests whose danger is well known.
 - **In-game plaque.** A small overlay with your focus and its next step. With nothing pinned it suggests the best quest to start.
 
 ### Good to know
@@ -80,6 +81,7 @@ Codex Navigator saves two keys per RuneScape profile in the `codexnavigator` con
 | Include miniquests | On | Lists and suggests miniquests alongside quests. |
 | Announce finished goals | On | A chatbox line the moment a pinned goal is complete. |
 | Learn my pace | On | Times training by how fast you really train each skill. Off uses the steady rates. |
+| Hardcore care | On | On a one-life account, marks quests with a deadly fight or a Wilderness trip and suggests them after safer ones. |
 
 ## Data
 
