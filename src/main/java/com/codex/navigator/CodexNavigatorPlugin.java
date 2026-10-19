@@ -73,7 +73,7 @@ import net.runelite.client.util.Filepath;
 @PluginDescriptor(
 	name = "Codex Navigator",
 	description = "An account compass: every quest, diary and combat achievement tier, with the path to whatever you want next",
-	tags = {"quest", "diary", "goal", "planner", "progress", "achievement", "codex"}
+	tags = {"quest", "diary", "goal", "planner", "progress", "account", "achievement", "codex"}
 )
 public class CodexNavigatorPlugin extends Plugin
 {
