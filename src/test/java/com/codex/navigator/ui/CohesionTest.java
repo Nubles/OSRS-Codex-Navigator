@@ -177,8 +177,8 @@ public class CohesionTest
 	{
 		// Whole thousands below a million, then millions to one decimal: never "~1000k xp/h".
 		assertEquals("57k", PaceCard.perHour(57_400));
-		assertEquals("999k", PaceCard.perHour(999_700));
-		assertEquals("1.2M", PaceCard.perHour(1_290_000));
+		assertEquals("1.0M", PaceCard.perHour(999_700));
+		assertEquals("1.3M", PaceCard.perHour(1_290_000));
 	}
 
 	@Test

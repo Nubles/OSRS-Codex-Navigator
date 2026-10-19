@@ -7,6 +7,7 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -110,17 +111,25 @@ final class PaceCard
 	}
 
 	/**
-	 * A rate by the suite's one rule: whole thousands below a million ("57k"), then millions to one decimal
-	 * ("1.2M"). Rounded down, so it never reads "1000k".
+	 * A rate by the suite's one rule: in full below 10,000 ("8,240"), whole thousands below a million ("57k"),
+	 * millions to one decimal ("1.2M"), billions to two. A figure that rounds up to a thousand of one unit is written
+	 * in the next ("1.0M", never "1000k").
 	 */
 	static String perHour(double xp)
 	{
-		long n = (long) Math.max(0, xp);
-		if (n >= 1_000_000)
+		long n = Math.round(Math.max(0, xp));
+		if (n < 10_000)
 		{
-			long tenths = n / 100_000;
-			return tenths / 10 + "." + tenths % 10 + "M";
+			return String.format(Locale.ENGLISH, "%,d", n);
 		}
-		return n / 1000 + "k";
+		if (n < 999_500)
+		{
+			return Math.round(n / 1_000.0) + "k";
+		}
+		if (n < 999_950_000)
+		{
+			return String.format(Locale.ENGLISH, "%.1fM", n / 1_000_000.0);
+		}
+		return String.format(Locale.ENGLISH, "%.2fB", n / 1_000_000_000.0);
 	}
 }
