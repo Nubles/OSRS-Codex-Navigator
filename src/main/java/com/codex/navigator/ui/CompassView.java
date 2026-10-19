@@ -182,8 +182,13 @@ final class CompassView
 		long now = System.currentTimeMillis();
 		ZoneId zone = ZoneId.systemDefault();
 		PlayTime time = nav.playTime();
-		String date = time == null || plan.getHoursLeft() <= 0 || plan.isAwaitingTasks() ? null
-			: time.dateText(plan.getHoursLeft(), now, zone);
+		String date = null;
+		if (time != null && plan.getHoursLeft() > 0 && !plan.isAwaitingTasks())
+		{
+			// As the flag says it: a day, or over a year off.
+			String day = time.dateText(plan.getHoursLeft(), now, zone);
+			date = day == null ? "Over a year" : "~" + day;
+		}
 		RoadShare.Spec spec = RoadShare.Spec.of(plan, road, nav.cardName(), date, now, zone);
 		if (spec == null || nav.share() == null)
 		{

@@ -65,7 +65,8 @@ public final class RoadShare
 
 		/**
 		 * @param player the name to print, or null to leave it off
-		 * @param date the day the goal should be reached ("21 Apr"), or null without Chronicle
+		 * @param date the day the goal should be reached as the card prints it ("~21 Apr", or "Over a year"), or null
+		 *             without Chronicle
 		 * @return the card, or null when the goal has no road to draw (no quests on the way, or already there)
 		 */
 		public static Spec of(Plan plan, Road road, String player, String date, long now, ZoneId zone)
@@ -82,7 +83,7 @@ public final class RoadShare
 			}
 			if (date != null)
 			{
-				tiles.add(new String[]{"~" + date, "at your pace"});
+				tiles.add(new String[]{date, "at your pace"});
 			}
 			String name = player == null || player.trim().isEmpty() ? null : player.trim();
 			return new Spec(name, plan.getTitle(), plan.getSubtitle(), plan.getProgress(), road, tiles, now, zone);

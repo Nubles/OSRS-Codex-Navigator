@@ -90,7 +90,7 @@ public class CohesionTest
 	{
 		Plan plan = plan(false, 4.5);
 		Road road = Road.of(plan, false, 6);
-		RoadShare.Spec spec = RoadShare.Spec.of(plan, road, "  Nubles ", "3 Nov", 0, ZoneOffset.UTC);
+		RoadShare.Spec spec = RoadShare.Spec.of(plan, road, "  Nubles ", "~3 Nov", 0, ZoneOffset.UTC);
 		assertNotNull(spec);
 		assertEquals("Nubles", spec.heading());
 		List<String> values = new ArrayList<>();

@@ -12,9 +12,10 @@ It is the first plugin in the **Codex** suite: a family of RuneLite plugins that
 
 ## What it does
 
-- **Account crest.** One ring for your whole account, plus ledgers for quests, diaries and combat achievement tasks.
+- **Account crest.** One ring for your whole account, plus ledgers for quests, diaries and combat achievement tasks. Quests are counted as the quest cape counts them (every quest, and the miniquests a quest needs first), so the crest and the cape's page always show the same figure.
 - **Compass.** Your focus goal and its next step, then quests in progress, the **best next** quests and the quests held back by only a little training. Best next puts the quests on the way to your focus first, then those on the way to your other goals, then the rest by how much they open per hour. Every suggestion says about how long it takes.
-- **The road.** Under your focus, the Compass draws the way there as a winding road on an old map: every quest on the way is a stone, gold behind you, a glowing stone for the next one (the same step the focus card names), plain stones ahead and red-rimmed ones still held back, with a Boss or Wildy mark on one life. The goal is a flag at the end with the day you should reach it (with Chronicle) or the play left. A long goal such as the quest cape keeps a window around where you stand and counts the rest. Click a stone to open its quest.
+- **The road.** Under your focus, the Compass draws the way there as a winding road on an old map: every quest on the way is a stone, gold behind you, a glowing stone for the next one (the same step the focus card names), plain stones ahead and red-rimmed ones still held back, with a Boss or Wildy mark on one life. The goal is a flag at the end with the day you should reach it (with Chronicle); the focus card above keeps the play left, and the road's header counts the quests still to go, so no figure is shown twice. A long goal name such as Desert Treasure II's wraps onto two lines at the flag. A long goal such as the quest cape keeps a window around where you stand and counts the rest. Click a stone to open its quest.
+- **Road card.** Save road card (or Copy) under the road makes a picture to share: your name, the goal's kind and how far along it is, quests done, play left and the day at your pace, then the road itself ending at the goal's flag. Turn off "Name on cards" to share it without your name.
 - **Goals.** Pin any quest, diary tier, the quest cape or a level. The first pin is your focus; every goal shows its progress, its next step and about how much play is left. Finished goals move to a Completed list, a line in your chatbox tells you the moment one is done, and each offers the **next in line** (the next diary tier, or the quest it leads into) to pin with one click.
 - **Level goals.** "Aiming for a level?" on the Goals tab opens a skill grid; pick a skill and the Codex offers the levels worth aiming for: the next ones that open a quest or diary tier (in teal, with how many), the next round ten, and 99. A level goal's page lists everything it opens in level order, and whether anything else still holds each quest back. When you reach it, the next round ten is offered to pin.
 - **A date on every goal.** With Codex Session Chronicle installed, the Codex reads how much you have played over the last two weeks and turns each goal's hours of play into a day on the calendar ("Around 3 Nov at your 40 min a day"). Without Chronicle, or with fewer than two sessions in its journal, no date is shown.
@@ -37,6 +38,7 @@ It is the first plugin in the **Codex** suite: a family of RuneLite plugins that
 - **Logged out.** Goals you pin while logged out are added to your account's goals when you next log in.
 
 <p align="center">
+  <img src="docs/screenshots/11-road-card.png" width="300" alt="Road card">
   <img src="docs/screenshots/9-overlay.png" width="300" alt="Focus overlay">
 </p>
 
@@ -83,6 +85,7 @@ Codex Navigator saves two keys per RuneScape profile in the `codexnavigator` con
 | Announce finished goals | On | A chatbox line the moment a pinned goal is complete. |
 | Learn my pace | On | Times training by how fast you really train each skill. Off uses the steady rates. |
 | Hardcore care | On | On a one-life account, marks quests with a deadly fight or a Wilderness trip and suggests them after safer ones. |
+| Name on cards | On | Writes your character's name on the road card. |
 
 ## Data
 

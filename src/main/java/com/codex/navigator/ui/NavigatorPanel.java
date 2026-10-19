@@ -102,7 +102,12 @@ public class NavigatorPanel extends PluginPanel implements Navigation
 		add(content, BorderLayout.CENTER);
 
 		tabs.onChange(this::showTab);
-		goals.addListener(() -> SwingUtilities.invokeLater(this::refreshViews));
+		goals.addListener(() -> SwingUtilities.invokeLater(() ->
+		{
+			// A note about the last card belongs to the road it was made from.
+			shareNote = null;
+			refreshViews();
+		}));
 		crest.update(account, planner.getData(), planner.capeQuests());
 		refreshViews();
 	}
