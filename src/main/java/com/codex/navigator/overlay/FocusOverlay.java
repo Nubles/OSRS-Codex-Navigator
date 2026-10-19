@@ -64,7 +64,7 @@ public class FocusOverlay extends Overlay
 		g.setFont(Theme.title());
 		FontMetrics bold = g.getFontMetrics();
 		Layout l = layout;
-		if (l == null || l.view != v || l.small != small || l.bold != bold)
+		if (l == null || l.view != v || !l.small.getFont().equals(small.getFont()) || !l.bold.getFont().equals(bold.getFont()))
 		{
 			// Clipping, the plaque's shape and its paints are worked out once per view, not every frame.
 			l = new Layout(v, small, bold);
