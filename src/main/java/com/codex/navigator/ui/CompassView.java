@@ -56,8 +56,7 @@ final class CompassView
 			{
 				// The focus card above already says how many are done and the play left, so the road counts what
 				// is still ahead and its flag carries the day.
-				int ahead = Math.max(0, plan.getQuestsTotal() - plan.getQuestsDone());
-				stack.add(new SectionHeader("The road", ahead + " to go"));
+				stack.add(new SectionHeader("The road", DetailView.toGo(plan)));
 				String flag = DetailView.flagText(nav, plan);
 				stack.add(new RoadCard(nav, road, plan.getTitle(), flag));
 				if (nav.share() != null)
@@ -158,7 +157,6 @@ final class CompassView
 		return pick.getReason() == null ? null : new Pill(pick.getReason(), pick.getServes().isEmpty() ? Theme.TEAL : Theme.GOLD);
 	}
 
-	/** "Goal" for a pick on a goal's path, or on one life the risk a quest asks for; null for neither. */
 	/** Save and copy buttons for the road card, with what became of the last one under them. */
 	private static JComponent shareRow(Navigation nav, Plan plan, Road road)
 	{
@@ -205,6 +203,7 @@ final class CompassView
 		}
 	}
 
+	/** "Goal" for a pick on a goal's path, or on one life the risk a quest asks for; null for neither. */
 	static Pill goalPill(AccountSnapshot account, List<Goal> goals, Recommender.Pick pick)
 	{
 		if (Recommender.waits(account, goals, pick.getQuest()))

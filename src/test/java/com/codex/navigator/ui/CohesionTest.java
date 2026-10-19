@@ -132,4 +132,52 @@ public class CohesionTest
 		JLabel longName = Ui.label("Recipe for Disaster - Another Cook's Quest", Theme.body(), Theme.TEXT);
 		assertFalse(new Row.Lines(longName, longDetail, new Pill("Goal", Theme.GOLD)).tagOnTop(narrow));
 	}
+
+	private static void texts(java.awt.Component c, List<String> out)
+	{
+		if (c instanceof JLabel && ((JLabel) c).getText() != null)
+		{
+			out.add(((JLabel) c).getText());
+		}
+		if (c instanceof java.awt.Container)
+		{
+			for (java.awt.Component k : ((java.awt.Container) c).getComponents())
+			{
+				texts(k, out);
+			}
+		}
+	}
+
+	@Test
+	public void theCrestSaysItCountsAsTheCapeDoes()
+	{
+		// The Atlas's "All quests" lists every quest (and miniquests when asked), so a bare "Quests 45/199" above a
+		// list headed 212 read as a miscount. The crest names what it counts.
+		CodexData data = CodexData.load(new Gson());
+		CrestHeader crest = new CrestHeader();
+		crest.update(new AccountSnapshot.Builder().loggedIn(true).build(), data, new Planner(data).capeQuests());
+		List<String> labels = new ArrayList<>();
+		texts(crest, labels);
+		assertTrue(labels.toString(), labels.contains("Quest cape"));
+		assertFalse(labels.toString(), labels.contains("Quests"));
+	}
+
+	@Test
+	public void aGoalsPathCountsWhatIsLeftSinceItsRingShowsTheDoneCount()
+	{
+		// The ring above already reads "45/199"; the Path header said the same figure again.
+		Plan plan = plan(false, 4.5);
+		assertEquals("2 to go", DetailView.toGo(plan));
+		assertEquals("all done", DetailView.toGo(new Plan(Goal.quest("Regicide"), "Regicide", "", true, 1, new ArrayList<>(),
+			Collections.emptyList(), null, 3, 3, 0, 0, 0)));
+	}
+
+	@Test
+	public void paceRatesFollowTheSuitesNumberRule()
+	{
+		// Whole thousands below a million, then millions to one decimal: never "~1000k xp/h".
+		assertEquals("57k", PaceCard.perHour(57_400));
+		assertEquals("999k", PaceCard.perHour(999_700));
+		assertEquals("1.2M", PaceCard.perHour(1_290_000));
+	}
 }

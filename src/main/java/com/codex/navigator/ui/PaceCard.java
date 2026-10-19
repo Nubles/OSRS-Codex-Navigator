@@ -71,8 +71,8 @@ final class PaceCard
 		line.add(Ui.label(skill.getName(), Theme.small(), Theme.TEXT), BorderLayout.WEST);
 		line.add(Ui.label(compare(factor), Theme.small(), color(factor)), BorderLayout.EAST);
 		text.add(line, BorderLayout.NORTH);
-		int rate = (int) Math.round(Effort.xpPerHour(skill, account.level(skill)) * factor / 1000);
-		text.add(Ui.label("~" + rate + "k xp/h  ·  from " + hours(account.paceHours(skill)), Theme.small(),
+		String rate = perHour(Effort.xpPerHour(skill, account.level(skill)) * factor);
+		text.add(Ui.label("~" + rate + " xp/h  ·  from " + hours(account.paceHours(skill)), Theme.small(),
 			Theme.TEXT_MUTED), BorderLayout.SOUTH);
 		row.add(text, BorderLayout.CENTER);
 		row.setToolTipText(String.format("Your %s training runs at %.2f times the Codex's steady rate", skill.getName(), factor));
@@ -107,5 +107,20 @@ final class PaceCard
 		}
 		double tenths = Math.round(hours * 10) / 10.0;
 		return (tenths == Math.floor(tenths) ? String.valueOf((long) tenths) : String.valueOf(tenths)) + " h";
+	}
+
+	/**
+	 * A rate by the suite's one rule: whole thousands below a million ("57k"), then millions to one decimal
+	 * ("1.2M"). Rounded down, so it never reads "1000k".
+	 */
+	static String perHour(double xp)
+	{
+		long n = (long) Math.max(0, xp);
+		if (n >= 1_000_000)
+		{
+			long tenths = n / 100_000;
+			return tenths / 10 + "." + tenths % 10 + "M";
+		}
+		return n / 1000 + "k";
 	}
 }

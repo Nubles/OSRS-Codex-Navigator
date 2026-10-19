@@ -28,7 +28,7 @@ public class CrestHeader extends JPanel
 	private final ProgressRing ring = new ProgressRing(60, 6f);
 	private final JLabel name = Ui.label("Codex", Theme.title(), Theme.GOLD_BRIGHT);
 	private final JLabel summary = Ui.label("Your account compass", Theme.small(), Theme.TEXT_MUTED);
-	private final Ledger quests = new Ledger("Quests");
+	private final Ledger quests = new Ledger("Quest cape");
 	private final Ledger diaries = new Ledger("Diaries");
 	private final Ledger combat = new Ledger("Combat tasks");
 

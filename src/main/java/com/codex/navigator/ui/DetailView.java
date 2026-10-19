@@ -88,7 +88,7 @@ final class DetailView
 				}
 				shown.add(step);
 			}
-			stack.add(new SectionHeader("Path", plan.getQuestsDone() + "/" + plan.getQuestsTotal()));
+			stack.add(new SectionHeader("Path", toGo(plan)));
 			Card pathCard = new Card(new BorderLayout());
 			pathCard.setBorder(new EmptyBorder(6, 8, 6, 8));
 			StackPanel rows = new StackPanel(0, 0);
@@ -566,6 +566,16 @@ final class DetailView
 		}
 		String date = time.dateText(plan.getHoursLeft(), System.currentTimeMillis(), java.time.ZoneId.systemDefault());
 		return date == null ? "Over a year off" : "Around " + date;
+	}
+
+	/**
+	 * The Path header's count: the quests still ahead ("12 to go"), as the road counts them. The ring above already
+	 * shows how many are done, so the header does not repeat that figure.
+	 */
+	static String toGo(Plan plan)
+	{
+		int ahead = Math.max(0, plan.getQuestsTotal() - plan.getQuestsDone());
+		return ahead == 0 ? "all done" : ahead + " to go";
 	}
 
 	/** True when a level still to train is timed at the player's learned pace rather than the steady rates. */
