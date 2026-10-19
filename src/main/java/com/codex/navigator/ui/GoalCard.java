@@ -1,5 +1,8 @@
 package com.codex.navigator.ui;
 
+import com.codex.navigator.core.Chains;
+import com.codex.navigator.core.Effort;
+import com.codex.navigator.core.Goal;
 import com.codex.navigator.core.Plan;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
@@ -69,13 +72,28 @@ final class GoalCard
 				text.add(Ui.label(plan.getQuestsDone() + " of " + plan.getQuestsTotal() + " quests done", Theme.small(),
 					Theme.TEXT_FAINT));
 			}
+			if (plan.getHoursLeft() > 0 && !plan.isAwaitingTasks())
+			{
+				JLabel time = Ui.label(Effort.format(plan.getHoursLeft()) + " of play left", Theme.small(), Theme.TEXT_FAINT);
+				time.setToolTipText("Training at steady rates plus a typical play-through of each quest left");
+				text.add(time);
+			}
 		}
 		top.add(text, BorderLayout.CENTER);
 		card.add(top, BorderLayout.NORTH);
 
+		Goal after = done ? Chains.next(nav.planner(), plan.getGoal(), nav.account(), nav.includeMiniquests()) : null;
+		if (after != null && nav.goals().isPinned(after))
+		{
+			after = null;
+		}
 		if (!done || focus)
 		{
-			card.add(new NextStepBox(plan.getNext(), 150), BorderLayout.CENTER);
+			card.add(after != null ? chain(nav, after, focus) : new NextStepBox(plan.getNext(), 150), BorderLayout.CENTER);
+		}
+		else if (after != null && !showActions)
+		{
+			card.add(chain(nav, after, focus), BorderLayout.CENTER);
 		}
 
 		if (showActions)
@@ -97,6 +115,10 @@ final class GoalCard
 				line.add(actions, BorderLayout.EAST);
 				text.add(line);
 				card.setBorder(new EmptyBorder(8, 10, 8, 10));
+				if (after != null)
+				{
+					card.add(chain(nav, after, focus), BorderLayout.SOUTH);
+				}
 			}
 			else
 			{
@@ -105,6 +127,36 @@ final class GoalCard
 		}
 		card.onClick(() -> nav.open(plan.getGoal()));
 		return card;
+	}
+
+	/**
+	 * The next link in a finished goal's chain, ready to pin: the next diary tier, or the quest this one
+	 * leads straight into. Pressing it on the focus card makes the successor the new focus.
+	 */
+	static JPanel chain(Navigation nav, Goal next, boolean asFocus)
+	{
+		Plan plan = nav.planner().plan(next, nav.account());
+		JPanel box = new JPanel(new BorderLayout(6, 0));
+		box.setOpaque(false);
+		box.setBorder(new EmptyBorder(6, 0, 0, 0));
+		JPanel text = new JPanel();
+		text.setOpaque(false);
+		text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
+		text.add(Ui.label("NEXT IN LINE", Theme.small(), Theme.GOLD));
+		JLabel name = Ui.label(plan.getTitle(), Theme.body(), Theme.TEXT);
+		name.setToolTipText(plan.getTitle());
+		name.setMinimumSize(new java.awt.Dimension(10, name.getPreferredSize().height));
+		text.add(name);
+		text.setMinimumSize(new java.awt.Dimension(10, 10));
+		text.setPreferredSize(new java.awt.Dimension(10, text.getPreferredSize().height));
+		box.add(text, BorderLayout.CENTER);
+		JPanel holder = new JPanel(new BorderLayout());
+		holder.setOpaque(false);
+		// After the focus is reached, its successor takes over as focus; otherwise it joins the list.
+		holder.add(asFocus ? new CodexButton("Focus", true, () -> nav.goals().makeFocus(next))
+			: new CodexButton("Pin", true, () -> nav.goals().toggle(next)), BorderLayout.SOUTH);
+		box.add(holder, BorderLayout.EAST);
+		return box;
 	}
 
 	static JLabel hint(String text)

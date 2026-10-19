@@ -1,6 +1,7 @@
 package com.codex.navigator.ui;
 
 import com.codex.navigator.core.AccountSnapshot;
+import com.codex.navigator.core.Effort;
 import com.codex.navigator.core.Goal;
 import com.codex.navigator.core.Plan;
 import com.codex.navigator.core.Planner;
@@ -247,6 +248,13 @@ final class DetailView
 		titles.setLayout(new BoxLayout(titles, BoxLayout.Y_AXIS));
 		titles.add(Ui.wrapped(plan.getTitle(), Theme.title(), Theme.GOLD_BRIGHT, 168));
 		titles.add(Ui.wrapped(plan.getSubtitle(), Theme.small(), Theme.TEXT_MUTED, 168));
+		if (plan.getHoursLeft() > 0 && !plan.isAwaitingTasks())
+		{
+			JLabel time = Ui.label("About " + Effort.format(plan.getHoursLeft()).substring(1) + " of play left",
+				Theme.small(), Theme.TEXT_FAINT);
+			time.setToolTipText("Training at steady rates plus a typical play-through of each quest left");
+			titles.add(time);
+		}
 		card.add(titles, BorderLayout.NORTH);
 
 		JPanel middle = new JPanel(new BorderLayout(10, 0));
@@ -299,7 +307,7 @@ final class DetailView
 	private static JPanel skillRow(Navigation nav, SkillGap gap)
 	{
 		return meterRow(nav.skillIcon(gap.getSkill()), gap.getSkill().getName(), gap.getCurrent(), gap.getTarget(),
-			gap.fraction(), gap.isMet() ? null : Planner.formatXp(gap.xpToGo()) + " xp to go");
+			gap.fraction(), gap.isMet() ? null : Planner.formatXp(gap.xpToGo()) + " xp to go, about " + Effort.format(gap.hours()).substring(1));
 	}
 
 	/** An icon, a name, "current / target" and a slim bar; met rows fade back and turn green. */

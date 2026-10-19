@@ -1,6 +1,7 @@
 package com.codex.navigator.ui;
 
 import com.codex.navigator.core.AccountSnapshot;
+import com.codex.navigator.core.Effort;
 import com.codex.navigator.core.Goal;
 import com.codex.navigator.core.Plan;
 import com.codex.navigator.core.Recommender;
@@ -54,10 +55,11 @@ final class CompassView
 			}
 		}
 
-		List<Recommender.Pick> ready = rec.readyNow(account, nav.includeMiniquests(), 6);
+		List<Goal> pinned = nav.goals().goals();
+		List<Recommender.Pick> ready = rec.readyNow(account, pinned, nav.includeMiniquests(), 6);
 		if (!ready.isEmpty())
 		{
-			stack.add(new SectionHeader("Ready now"));
+			stack.add(new SectionHeader("Best next"));
 			if (!account.isMembers())
 			{
 				stack.add(GoalCard.hint("On a free world, so only free quests are suggested."));
@@ -65,19 +67,21 @@ final class CompassView
 			for (Recommender.Pick pick : ready)
 			{
 				QuestDef q = pick.getQuest();
-				stack.add(Row.of(Step.Status.READY, q.name, subtitle(q), pick.getReason() == null ? null : new Pill(pick.getReason(), Theme.TEAL), null,
+				stack.add(Row.of(Step.Status.READY, q.name, subtitle(q, pick.getHours()), pick.getReason() == null ? null
+					: new Pill(pick.getReason(), pick.getServes().isEmpty() ? Theme.TEAL : Theme.GOLD), null,
 					() -> nav.open(Goal.quest(q.name))));
 			}
 		}
 
-		List<Recommender.Pick> almost = rec.almostThere(account, nav.includeMiniquests(), 4);
+		List<Recommender.Pick> almost = rec.almostThere(account, pinned, nav.includeMiniquests(), 4);
 		if (!almost.isEmpty())
 		{
 			stack.add(new SectionHeader("Almost there"));
 			for (Recommender.Pick pick : almost)
 			{
 				QuestDef q = pick.getQuest();
-				stack.add(Row.of(Step.Status.BLOCKED, q.name, pick.getReason(), null, null,
+				stack.add(Row.of(Step.Status.BLOCKED, q.name, Effort.format(pick.getHours()) + "  ·  " + pick.getReason(),
+					pick.getServes().isEmpty() ? null : new Pill("Goal", Theme.GOLD), null,
 					() -> nav.open(Goal.quest(q.name))));
 			}
 		}
@@ -92,6 +96,14 @@ final class CompassView
 			}
 		}
 		return stack;
+	}
+
+	/** About how long it takes to play and its quest points, such as "~35 min · 2 QP". */
+	static String subtitle(QuestDef q, double hours)
+	{
+		// The time stands in for the difficulty here: it says the same thing in a unit worth planning with.
+		String time = Effort.format(hours);
+		return q.points > 0 ? time + "  ·  " + q.points + " QP" : q.miniquest ? time + "  ·  Miniquest" : time;
 	}
 
 	static String subtitle(QuestDef q)

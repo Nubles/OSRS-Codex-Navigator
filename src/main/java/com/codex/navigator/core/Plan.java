@@ -18,16 +18,19 @@ public final class Plan
 	private final int questsTotal;
 	private final int questPointTarget;
 	private final int combatTarget;
+	private final double hoursLeft;
 
 	public Plan(Goal goal, String title, String subtitle, boolean complete, double progress, List<Step> path,
 		List<SkillGap> skills, Step next, int questsDone, int questsTotal)
 	{
-		this(goal, title, subtitle, complete, progress, path, skills, next, questsDone, questsTotal, 0, 0);
+		this(goal, title, subtitle, complete, progress, path, skills, next, questsDone, questsTotal, 0, 0, 0);
 	}
 
 	public Plan(Goal goal, String title, String subtitle, boolean complete, double progress, List<Step> path,
-		List<SkillGap> skills, Step next, int questsDone, int questsTotal, int questPointTarget, int combatTarget)
+		List<SkillGap> skills, Step next, int questsDone, int questsTotal, int questPointTarget, int combatTarget,
+		double hoursLeft)
 	{
+		this.hoursLeft = hoursLeft;
 		this.questPointTarget = questPointTarget;
 		this.combatTarget = combatTarget;
 		this.goal = goal;
@@ -106,6 +109,16 @@ public final class Plan
 	public int getCombatTarget()
 	{
 		return combatTarget;
+	}
+
+	/**
+	 * About how many hours of training and questing the goal still needs, or 0 when complete. Diary tasks,
+	 * quest points and combat levels are not counted: the first are unreadable and the others follow from
+	 * the quests and levels that are.
+	 */
+	public double getHoursLeft()
+	{
+		return hoursLeft;
 	}
 
 	/**

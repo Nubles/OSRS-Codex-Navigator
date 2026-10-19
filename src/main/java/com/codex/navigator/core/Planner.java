@@ -164,6 +164,7 @@ public final class Planner
 		int questsTotal = 0;
 		double score = 0;
 		int items = 0;
+		double hours = 0;
 
 		for (String name : closure)
 		{
@@ -186,6 +187,11 @@ public final class Planner
 			if (step.getStatus() == Step.Status.IN_PROGRESS)
 			{
 				score += 0.5;
+				hours += Effort.questHours(quest) / 2;
+			}
+			else
+			{
+				hours += Effort.questHours(quest);
 			}
 			addSkills(targets, quest.skills);
 			questPointTarget = Math.max(questPointTarget, quest.questPoints);
@@ -198,9 +204,12 @@ public final class Planner
 			SkillGap gap = new SkillGap(e.getKey(), account.level(e.getKey()), e.getValue(), account.xp(e.getKey()));
 			skills.add(gap);
 			score += gap.fraction();
+			hours += gap.hours();
 			items++;
 		}
-		skills.sort(Comparator.comparing(SkillGap::isMet).thenComparingInt(SkillGap::xpToGo));
+		// Unmet levels quickest first, so the next step is the level that frees the path soonest.
+		skills.sort(Comparator.comparing(SkillGap::isMet).thenComparingDouble(SkillGap::hours)
+			.thenComparingInt(SkillGap::xpToGo));
 
 		if (questPointTarget > 0)
 		{
@@ -216,7 +225,7 @@ public final class Planner
 		double progress = complete ? 1 : items == 0 ? 0 : Math.min(0.99, score / items);
 		Step next = complete ? null : next(path, skills, questPointTarget, combatTarget, diaryTasks, title, account);
 		return new Plan(goal, title, subtitle, complete, progress, path, skills, next, questsDone, questsTotal,
-			questPointTarget, combatTarget);
+			questPointTarget, combatTarget, complete ? 0 : hours);
 	}
 
 	private Step next(List<Step> path, List<SkillGap> skills, int questPointTarget, int combatTarget,

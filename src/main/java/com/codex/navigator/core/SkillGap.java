@@ -44,6 +44,12 @@ public final class SkillGap
 		return Math.max(0, Experience.getXpForLevel(target) - currentXp);
 	}
 
+	/** About how long the gap takes to train at steady rates; see {@link Effort}. */
+	public double hours()
+	{
+		return isMet() ? 0 : Effort.trainingHours(skill, currentXp, target);
+	}
+
 	/** Progress toward the target measured in experience, so 98 of 99 reads as about 90%. */
 	public double fraction()
 	{

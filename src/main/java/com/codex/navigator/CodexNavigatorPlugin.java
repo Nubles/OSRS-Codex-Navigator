@@ -1,8 +1,10 @@
 package com.codex.navigator;
 
 import com.codex.navigator.core.AccountSnapshot;
+import com.codex.navigator.core.Chains;
 import com.codex.navigator.core.CompletionWatch;
 import com.codex.navigator.core.Goal;
+import com.codex.navigator.core.GoalBoard;
 import com.codex.navigator.core.GoalStore;
 import com.codex.navigator.core.Plan;
 import com.codex.navigator.core.Planner;
@@ -62,6 +64,8 @@ import net.runelite.client.ui.overlay.OverlayManager;
 public class CodexNavigatorPlugin extends Plugin
 {
 	private static final String GOALS_KEY = "goals";
+	/** The pinned goals with progress, next step and what they still need, for other plugins to read. */
+	static final String BOARD_KEY = "goalBoard";
 	private static final Type GOAL_LIST = new TypeToken<List<String>>()
 	{
 	}.getType();
@@ -153,6 +157,8 @@ public class CodexNavigatorPlugin extends Plugin
 	private int lastQuestTick = -QUEST_TICKS;
 	private int loginTick;
 	private int lastQuestPoints = -1;
+	/** The board last written, so an unchanged board is not saved again. */
+	private String lastBoard;
 
 	@Provides
 	CodexNavigatorConfig provideConfig(ConfigManager configManager)
@@ -175,6 +181,7 @@ public class CodexNavigatorPlugin extends Plugin
 		goals = new GoalStore();
 		goals.setSaver(this::saveGoals);
 		goals.addListener(this::updateOverlay);
+		goals.addListener(() -> clientThread.invokeLater(this::writeBoard));
 		loadGoals();
 
 		panel = new NavigatorPanel(planner, recommender, goals, skillIconManager, config::includeMiniquests);
@@ -210,6 +217,7 @@ public class CodexNavigatorPlugin extends Plugin
 		gate.reset();
 		heldBack = null;
 		offlinePins = null;
+		lastBoard = null;
 		panel = null;
 		goals = null;
 	}
@@ -241,6 +249,7 @@ public class CodexNavigatorPlugin extends Plugin
 	public void onRuneScapeProfileChanged(RuneScapeProfileChanged event)
 	{
 		completion.reset();
+		lastBoard = null;
 		loadGoals();
 	}
 
@@ -260,7 +269,8 @@ public class CodexNavigatorPlugin extends Plugin
 	@Subscribe
 	public void onConfigChanged(ConfigChanged event)
 	{
-		if (!CodexNavigatorConfig.GROUP.equals(event.getGroup()) || GOALS_KEY.equals(event.getKey()))
+		if (!CodexNavigatorConfig.GROUP.equals(event.getGroup()) || GOALS_KEY.equals(event.getKey())
+			|| BOARD_KEY.equals(event.getKey()))
 		{
 			return;
 		}
@@ -442,12 +452,34 @@ public class CodexNavigatorPlugin extends Plugin
 		}
 		snapshot = next;
 		announceCompletions(next);
+		writeBoard();
 		updateOverlay();
 		NavigatorPanel target = panel;
 		if (target != null)
 		{
 			SwingUtilities.invokeLater(() -> target.update(next));
 		}
+	}
+
+	/**
+	 * Saves the goal board for other plugins when it has changed. Only a logged-in read is written:
+	 * progress worked out from a logged-out snapshot would tell readers every goal had gone back to zero.
+	 */
+	private void writeBoard()
+	{
+		AccountSnapshot account = snapshot;
+		GoalStore store = goals;
+		if (store == null || planner == null || !account.isLoggedIn() || configManager.getRSProfileKey() == null)
+		{
+			return;
+		}
+		String json = gson.toJson(GoalBoard.of(planner, store.goals(), account));
+		if (json.equals(lastBoard))
+		{
+			return;
+		}
+		lastBoard = json;
+		configManager.setRSProfileConfiguration(CodexNavigatorConfig.GROUP, BOARD_KEY, json);
 	}
 
 	/** Posts a chat line the moment a pinned goal is finished, once varbits have settled after login. */
@@ -494,8 +526,10 @@ public class CodexNavigatorPlugin extends Plugin
 			Step next = plan.getNext();
 			if (plan.isComplete())
 			{
+				Goal after = Chains.next(planner, focus, account, config.includeMiniquests());
 				overlay.setView(new FocusOverlay.View("CODEX  ·  COMPLETE", plan.getTitle(), 1,
-					"Pick your next goal in the Codex"));
+					after != null && !store.isPinned(after) ? "Next in line: " + planner.plan(after, account).getTitle()
+						: "Pick your next goal in the Codex"));
 			}
 			else
 			{
@@ -506,7 +540,7 @@ public class CodexNavigatorPlugin extends Plugin
 		}
 		if (config.suggestWithoutFocus())
 		{
-			List<Recommender.Pick> picks = recommender.readyNow(account, config.includeMiniquests(), 1);
+			List<Recommender.Pick> picks = recommender.readyNow(account, store.goals(), config.includeMiniquests(), 1);
 			if (!picks.isEmpty())
 			{
 				Recommender.Pick pick = picks.get(0);
