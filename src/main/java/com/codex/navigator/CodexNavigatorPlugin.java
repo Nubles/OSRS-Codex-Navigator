@@ -12,6 +12,7 @@ import com.codex.navigator.core.Planner;
 import com.codex.navigator.core.PlayTime;
 import com.codex.navigator.core.PublishGate;
 import com.codex.navigator.core.Recommender;
+import com.codex.navigator.core.Saved;
 import com.codex.navigator.core.Step;
 import com.codex.navigator.data.CodexData;
 import com.codex.navigator.data.QuestDef;
@@ -20,13 +21,11 @@ import com.codex.navigator.ui.Icons;
 import com.codex.navigator.ui.NavigatorPanel;
 import com.codex.navigator.ui.ShareActions;
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import com.google.inject.Provides;
 import java.awt.Toolkit;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -81,9 +80,6 @@ public class CodexNavigatorPlugin extends Plugin
 	private static final String GOALS_KEY = "goals";
 	/** What {@link Pace} has learned about this account's training speed, per RuneScape profile. */
 	static final String PACE_KEY = "pace";
-	private static final Type PACE_MAP = new TypeToken<Map<String, double[]>>()
-	{
-	}.getType();
 	/** Learned pace is saved at most this often while it changes, and always on logout and shutdown. */
 	private static final int PACE_SAVE_TICKS = 500;
 	/** Worlds whose stats are not the account's own, or that do not save: nothing is learned there. */
@@ -91,9 +87,6 @@ public class CodexNavigatorPlugin extends Plugin
 		WorldType.BETA_WORLD, WorldType.NOSAVE_MODE, WorldType.TOURNAMENT_WORLD, WorldType.FRESH_START_WORLD);
 	/** The pinned goals with progress, next step and what they still need, for other plugins to read. */
 	static final String BOARD_KEY = "goalBoard";
-	private static final Type GOAL_LIST = new TypeToken<List<String>>()
-	{
-	}.getType();
 	/** Varbits can change many times a second; refresh at most this often while they do. */
 	private static final int REFRESH_TICKS = 2;
 	/**
@@ -484,19 +477,7 @@ public class CodexNavigatorPlugin extends Plugin
 
 	private void loadGoals()
 	{
-		String json = configManager.getRSProfileConfiguration(CodexNavigatorConfig.GROUP, GOALS_KEY);
-		List<String> keys = null;
-		if (json != null && !json.isEmpty())
-		{
-			try
-			{
-				keys = gson.fromJson(json, GOAL_LIST);
-			}
-			catch (RuntimeException e)
-			{
-				keys = null;
-			}
-		}
+		List<String> keys = Saved.goalKeys(gson, configManager.getRSProfileConfiguration(CodexNavigatorConfig.GROUP, GOALS_KEY));
 		List<String> extra = configManager.getRSProfileKey() != null ? offlinePins : null;
 		if (extra != null)
 		{
@@ -516,18 +497,7 @@ public class CodexNavigatorPlugin extends Plugin
 		Map<String, double[]> saved = null;
 		if (paceProfile != null)
 		{
-			String json = configManager.getConfiguration(CodexNavigatorConfig.GROUP, paceProfile, PACE_KEY);
-			if (json != null && !json.isEmpty())
-			{
-				try
-				{
-					saved = gson.fromJson(json, PACE_MAP);
-				}
-				catch (RuntimeException e)
-				{
-					saved = null;
-				}
-			}
+			saved = Saved.pace(gson, configManager.getConfiguration(CodexNavigatorConfig.GROUP, paceProfile, PACE_KEY));
 		}
 		pace.load(saved);
 	}
@@ -650,7 +620,13 @@ public class CodexNavigatorPlugin extends Plugin
 				return true;
 			}
 		}
-		return "true".equals(configManager.getRSProfileConfiguration(GUARDIAN_GROUP, GUARDIAN_ONE_LIFE_KEY));
+		return markedOneLife(configManager.getRSProfileConfiguration(GUARDIAN_GROUP, GUARDIAN_ONE_LIFE_KEY));
+	}
+
+	/** True only for Guardian's own "true"; anything else, damaged or missing, is not a one-life mark. */
+	static boolean markedOneLife(String saved)
+	{
+		return "true".equals(saved);
 	}
 
 	private void readQuests()

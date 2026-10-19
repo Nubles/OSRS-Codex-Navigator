@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -52,19 +51,7 @@ public final class PlayTime
 	 */
 	public static PlayTime read(Gson gson, String json, long now)
 	{
-		if (json == null || json.trim().isEmpty())
-		{
-			return null;
-		}
-		JsonElement root;
-		try
-		{
-			root = gson.fromJson(json, JsonElement.class);
-		}
-		catch (JsonParseException | IllegalStateException | NumberFormatException e)
-		{
-			return null;
-		}
+		JsonElement root = Saved.tree(gson, json);
 		if (root == null || !root.isJsonArray())
 		{
 			return null;
@@ -81,8 +68,8 @@ public final class PlayTime
 				continue;
 			}
 			JsonObject s = e.getAsJsonObject();
-			long started = number(s, "startedAt");
-			long ms = number(s, "playedMs");
+			long started = Saved.number(s, "startedAt");
+			long ms = Saved.number(s, "playedMs");
 			// A session from the future (a wrong clock) or with no play is not evidence of anything.
 			if (started < from || started > now || ms <= 0)
 			{
@@ -101,22 +88,6 @@ public final class PlayTime
 		return new PlayTime(played / 3_600_000.0 / days, count);
 	}
 
-	private static long number(JsonObject o, String key)
-	{
-		JsonElement e = o.get(key);
-		if (e == null || !e.isJsonPrimitive() || !e.getAsJsonPrimitive().isNumber())
-		{
-			return -1;
-		}
-		try
-		{
-			return e.getAsLong();
-		}
-		catch (NumberFormatException ex)
-		{
-			return -1;
-		}
-	}
 
 	public double getHoursPerDay()
 	{

@@ -2,7 +2,9 @@ package com.codex.navigator.core;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
@@ -12,6 +14,12 @@ import java.util.function.Consumer;
  */
 public final class GoalStore
 {
+	/**
+	 * At most this many goals are held: more than every quest, diary and the cape together, so only a damaged
+	 * save could reach it, and its first goals (the focus and those just after) are the ones kept.
+	 */
+	public static final int MAX_GOALS = 400;
+
 	private final List<Goal> goals = new CopyOnWriteArrayList<>();
 	private final List<Runnable> listeners = new CopyOnWriteArrayList<>();
 	private Consumer<List<String>> saver = keys -> { };
@@ -45,6 +53,10 @@ public final class GoalStore
 	{
 		if (!goals.remove(goal))
 		{
+			if (goals.size() >= MAX_GOALS)
+			{
+				return;
+			}
 			goals.add(goal);
 		}
 		changed(true);
@@ -69,14 +81,17 @@ public final class GoalStore
 	 */
 	public void load(List<String> keys, List<String> extra)
 	{
+		// Gathered in a set first: a long damaged list must not be checked against itself goal by goal.
+		Set<Goal> loaded = new LinkedHashSet<>();
+		addAll(loaded, keys);
+		int before = loaded.size();
+		addAll(loaded, extra);
 		goals.clear();
-		addAll(keys);
-		int before = goals.size();
-		addAll(extra);
-		changed(goals.size() > before);
+		goals.addAll(loaded);
+		changed(loaded.size() > before);
 	}
 
-	private void addAll(List<String> keys)
+	private static void addAll(Set<Goal> into, List<String> keys)
 	{
 		if (keys == null)
 		{
@@ -84,10 +99,14 @@ public final class GoalStore
 		}
 		for (String key : keys)
 		{
-			Goal goal = key == null ? null : Goal.fromKey(key);
-			if (goal != null && !goals.contains(goal))
+			if (into.size() >= MAX_GOALS)
 			{
-				goals.add(goal);
+				return;
+			}
+			Goal goal = key == null ? null : Goal.fromKey(key);
+			if (goal != null)
+			{
+				into.add(goal);
 			}
 		}
 	}

@@ -180,4 +180,44 @@ public class CohesionTest
 		assertEquals("999k", PaceCard.perHour(999_700));
 		assertEquals("1.2M", PaceCard.perHour(1_290_000));
 	}
+
+	@Test
+	public void boostAndGoNeverRepeatsTheFocusCardsBoost()
+	{
+		// The focus card's next step already reads "Boost Agility 52 to 56 with a summer pie"; listing Regicide again
+		// under Boost and go said the same thing twice.
+		CodexData data = CodexData.load(new Gson());
+		Planner planner = new Planner(data);
+		com.codex.navigator.core.Recommender rec = new com.codex.navigator.core.Recommender(planner);
+		AccountSnapshot account = com.codex.navigator.TestAccounts.mid(data).build();
+		List<Goal> pinned = java.util.Arrays.asList(Goal.quest("Regicide"), Goal.QUEST_CAPE);
+		Plan focus = planner.plan(pinned.get(0), account);
+		assertTrue(focus.getNext().getDetail(), focus.getNext().getDetail().startsWith("Boost Agility"));
+		List<String> all = new ArrayList<>();
+		for (com.codex.navigator.core.Recommender.Pick p : rec.boostNow(account, pinned, true, 3))
+		{
+			all.add(p.getQuest().name);
+		}
+		assertTrue(all.toString(), all.contains("Regicide"));
+		List<String> listed = new ArrayList<>();
+		for (com.codex.navigator.core.Recommender.Pick p : CompassView.boostPicks(rec, account, pinned, focus, true, 3))
+		{
+			listed.add(p.getQuest().name);
+		}
+		assertFalse(listed.toString(), listed.contains("Regicide"));
+		// The others still show, up to the same count.
+		assertTrue(listed.size() <= 3);
+		// With no focus nothing is held back.
+		assertEquals(all, names(CompassView.boostPicks(rec, account, pinned, null, true, 3)));
+	}
+
+	private static List<String> names(List<com.codex.navigator.core.Recommender.Pick> picks)
+	{
+		List<String> out = new ArrayList<>();
+		for (com.codex.navigator.core.Recommender.Pick p : picks)
+		{
+			out.add(p.getQuest().name);
+		}
+		return out;
+	}
 }

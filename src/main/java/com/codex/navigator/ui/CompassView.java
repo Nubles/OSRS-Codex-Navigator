@@ -16,6 +16,7 @@ import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.image.BufferedImage;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -45,9 +46,11 @@ final class CompassView
 		}
 
 		Goal focus = nav.goals().focus();
+		Plan focusPlan = null;
 		if (focus != null)
 		{
 			Plan plan = nav.planner().plan(focus, account);
+			focusPlan = plan;
 			// The road to the focus: every quest on the way as a stop, with a flag at the goal. When it is drawn,
 			// the day goes on its flag rather than on the card.
 			Road road = Road.of(plan, account.isOneLife(), ROAD_STOPS);
@@ -99,7 +102,7 @@ final class CompassView
 			}
 		}
 
-		List<Recommender.Pick> boosts = rec.boostNow(account, pinned, nav.includeMiniquests(), 3);
+		List<Recommender.Pick> boosts = boostPicks(rec, account, pinned, focusPlan, nav.includeMiniquests(), 3);
 		if (!boosts.isEmpty())
 		{
 			stack.add(new SectionHeader("Boost and go"));
@@ -214,6 +217,26 @@ final class CompassView
 			return pill;
 		}
 		return pick.getServes().isEmpty() ? null : new Pill("Goal", Theme.GOLD);
+	}
+
+	/**
+	 * The quests to boost for and start today, leaving out the quest the focus card's next step already names: its
+	 * boost line is on the card just above, and the list would only say it again.
+	 */
+	static List<Recommender.Pick> boostPicks(Recommender rec, AccountSnapshot account, List<Goal> pinned, Plan focus,
+		boolean includeMiniquests, int limit)
+	{
+		Step next = focus == null || focus.isComplete() ? null : focus.getNext();
+		String onCard = next != null && next.getKind() == Step.Kind.QUEST ? next.getQuest() : null;
+		List<Recommender.Pick> picks = new ArrayList<>();
+		for (Recommender.Pick pick : rec.boostNow(account, pinned, includeMiniquests, limit + 1))
+		{
+			if (picks.size() < limit && !pick.getQuest().name.equals(onCard))
+			{
+				picks.add(pick);
+			}
+		}
+		return picks;
 	}
 
 	/**
