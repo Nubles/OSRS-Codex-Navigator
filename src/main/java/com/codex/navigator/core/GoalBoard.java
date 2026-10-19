@@ -23,7 +23,7 @@ public final class GoalBoard
 	{
 		/** The same key as the {@code goals} list, such as {@code quest:Dragon Slayer II} or {@code diary:Ardougne Easy}. */
 		String key;
-		/** quest, diary or cape. */
+		/** quest, diary, cape or skill (a level goal, keyed like {@code skill:Agility 70}). */
 		String type;
 		String title;
 		boolean complete;
@@ -53,7 +53,7 @@ public final class GoalBoard
 			Plan plan = planner.plan(goal, account);
 			Entry e = new Entry();
 			e.key = goal.key();
-			e.type = goal.getType() == Goal.Type.QUEST ? "quest" : goal.getType() == Goal.Type.DIARY ? "diary" : "cape";
+			e.type = type(goal.getType());
 			e.title = plan.getTitle();
 			e.complete = plan.isComplete();
 			e.progress = Math.round(plan.getProgress() * 100) / 100.0;
@@ -82,6 +82,21 @@ public final class GoalBoard
 			board.goals.add(e);
 		}
 		return board;
+	}
+
+	static String type(Goal.Type type)
+	{
+		switch (type)
+		{
+			case QUEST:
+				return "quest";
+			case DIARY:
+				return "diary";
+			case SKILL:
+				return "skill";
+			default:
+				return "cape";
+		}
 	}
 
 	public String getFocus()

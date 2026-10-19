@@ -62,6 +62,8 @@ public class NavigatorPanel extends PluginPanel implements Navigation
 	private boolean active;
 	/** Two hours: an ordinary evening. */
 	private int sessionChoice = 1;
+	private boolean levelPickerOpen;
+	private Skill levelSkill;
 
 	public NavigatorPanel(Planner planner, Recommender recommender, GoalStore goals, SkillIconManager skillIcons,
 		BooleanSupplier includeMiniquests)
@@ -266,11 +268,40 @@ public class NavigatorPanel extends PluginPanel implements Navigation
 			return;
 		}
 		sessionChoice = choice;
+		redrawGoals();
+	}
+
+	@Override
+	public boolean levelPickerOpen()
+	{
+		return levelPickerOpen;
+	}
+
+	@Override
+	public Skill levelSkill()
+	{
+		return levelSkill;
+	}
+
+	@Override
+	public void levelPicker(boolean open, Skill skill)
+	{
+		levelPickerOpen = open;
+		levelSkill = open ? skill : null;
+		redrawGoals();
+	}
+
+	private void redrawGoals()
+	{
 		if (TABS[1].equals(visible))
 		{
 			replace(goalsView, GoalsView.build(this));
 			revalidate();
 			repaint();
+		}
+		else
+		{
+			stale.add(TABS[1]);
 		}
 	}
 

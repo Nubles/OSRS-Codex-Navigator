@@ -42,7 +42,7 @@ final class GoalsView
 			text.setOpaque(false);
 			text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
 			text.add(Ui.label("NO GOALS PINNED", Theme.small(), Theme.GOLD));
-			text.add(Ui.wrapped("Open anything in the Atlas and press Pin goal. The first goal you pin becomes your focus.",
+			text.add(Ui.wrapped("Open a quest or diary in the Atlas and press Pin goal, or pin a level below. The first goal you pin becomes your focus.",
 				Theme.body(), Theme.TEXT, 168));
 			card.add(text, BorderLayout.CENTER);
 			JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
@@ -50,6 +50,11 @@ final class GoalsView
 			actions.add(new CodexButton("Browse the Atlas", true, () -> nav.showTab(2)));
 			card.add(actions, BorderLayout.SOUTH);
 			stack.add(card);
+			Card levels = LevelPicker.build(nav);
+			if (levels != null)
+			{
+				stack.add(levels);
+			}
 			return stack;
 		}
 
@@ -93,6 +98,11 @@ final class GoalsView
 			{
 				stack.add(GoalCard.build(nav, plan, false, true));
 			}
+		}
+		Card levels = LevelPicker.build(nav);
+		if (levels != null)
+		{
+			stack.add(levels);
 		}
 		stack.add(GoalCard.hint("Your focus also shows in game, and the chatbox tells you when a goal is done. Both can be turned off in the plugin settings."));
 		return stack;

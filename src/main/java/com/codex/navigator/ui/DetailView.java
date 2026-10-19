@@ -120,6 +120,10 @@ final class DetailView
 		{
 			leadsTo(stack, nav, goal.getName());
 		}
+		if (goal.getType() == Goal.Type.SKILL && goal.getSkill() != null)
+		{
+			opens(stack, nav, goal);
+		}
 		return stack;
 	}
 
@@ -220,6 +224,61 @@ final class DetailView
 		for (JComponent row : rows)
 		{
 			stack.add(row);
+		}
+	}
+
+	/** Rows listed under Opens before the rest fold into the header's count. */
+	private static final int OPENS_SHOWN = 8;
+
+	/**
+	 * The quests and diary tiers a level goal opens: those whose requirement in the skill lies between the level
+	 * now and the goal, each with the level it asks for and whether anything else still holds it back.
+	 */
+	private static void opens(StackPanel stack, Navigation nav, Goal goal)
+	{
+		AccountSnapshot account = nav.account();
+		if (!account.isLoggedIn())
+		{
+			return;
+		}
+		Planner planner = nav.planner();
+		net.runelite.api.Skill skill = goal.getSkill();
+		// Quests and tiers together, in the order their levels come.
+		List<Object[]> rows = new ArrayList<>();
+		for (QuestDef def : planner.opens(skill, goal.getLevel(), account, nav.includeMiniquests()))
+		{
+			int need = Planner.need(def.skills, skill);
+			List<String> blockers = planner.blockers(def, account);
+			// The skill itself is one blocker; whatever else is left is what the level alone will not fix.
+			blockers.remove(skill.getName() + " " + need);
+			Step.Status status = blockers.isEmpty() ? Step.Status.READY : Step.Status.BLOCKED;
+			String detail = skill.getName() + " " + need + (blockers.isEmpty() ? "  ·  then ready"
+				: "  ·  also " + blockers.get(0) + (blockers.size() > 1 ? " +" + (blockers.size() - 1) : ""));
+			rows.add(new Object[]{need, Row.of(status, def.name, detail, null, null, () -> nav.open(Goal.quest(def.name)))});
+		}
+		for (com.codex.navigator.data.DiaryDef def : planner.diariesOpened(skill, goal.getLevel(), account))
+		{
+			int need = Planner.need(def.skills, skill);
+			rows.add(new Object[]{need, Row.of(Step.Status.BLOCKED, def.name + " Diary", skill.getName() + " " + need
+				+ "  ·  diary tier", null, null, () -> nav.open(Goal.diary(def.name)))});
+		}
+		if (rows.isEmpty())
+		{
+			return;
+		}
+		rows.sort(java.util.Comparator.comparingInt(r -> (Integer) r[0]));
+		stack.add(new SectionHeader("Opens", String.valueOf(rows.size())));
+		int shown = Math.min(OPENS_SHOWN, rows.size());
+		for (int i = 0; i < shown; i++)
+		{
+			stack.add((JComponent) rows.get(i)[1]);
+		}
+		if (rows.size() > shown)
+		{
+			JLabel tail = Ui.label("+ " + (rows.size() - shown) + " more up to " + skill.getName() + " " + goal.getLevel(),
+				Theme.small(), Theme.TEXT_FAINT);
+			tail.setBorder(new EmptyBorder(0, 4, 0, 0));
+			stack.add(tail);
 		}
 	}
 

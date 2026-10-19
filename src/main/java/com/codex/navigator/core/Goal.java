@@ -1,15 +1,19 @@
 package com.codex.navigator.core;
 
+import java.util.Locale;
 import java.util.Objects;
+import net.runelite.api.Skill;
 
-/** Something the player wants: a quest, a diary tier or the quest cape. */
+/** Something the player wants: a quest, a diary tier, the quest cape or a level in a skill. */
 public final class Goal
 {
 	public enum Type
 	{
 		QUEST("quest"),
 		DIARY("diary"),
-		QUEST_CAPE("cape");
+		QUEST_CAPE("cape"),
+		/** A level in one skill, named like {@code Agility 70}. */
+		SKILL("skill");
 
 		private final String prefix;
 
@@ -38,6 +42,58 @@ public final class Goal
 	public static Goal diary(String name)
 	{
 		return new Goal(Type.DIARY, name);
+	}
+
+	/** A level goal, such as 70 Agility; null for a skill without levels or a level outside 2 to 99. */
+	public static Goal level(Skill skill, int level)
+	{
+		if (skill == null || skill == Skill.OVERALL || level < 2 || level > 99)
+		{
+			return null;
+		}
+		return new Goal(Type.SKILL, skill.getName() + " " + level);
+	}
+
+	/** The skill of a level goal, or null for any other goal. */
+	public Skill getSkill()
+	{
+		if (type != Type.SKILL)
+		{
+			return null;
+		}
+		int space = name.lastIndexOf(' ');
+		if (space <= 0)
+		{
+			return null;
+		}
+		try
+		{
+			Skill skill = Skill.valueOf(name.substring(0, space).toUpperCase(Locale.ROOT));
+			return skill == Skill.OVERALL ? null : skill;
+		}
+		catch (IllegalArgumentException e)
+		{
+			return null;
+		}
+	}
+
+	/** The level a level goal aims for, or 0 for any other goal. */
+	public int getLevel()
+	{
+		if (type != Type.SKILL)
+		{
+			return 0;
+		}
+		int space = name.lastIndexOf(' ');
+		try
+		{
+			int level = Integer.parseInt(name.substring(space + 1));
+			return level >= 2 && level <= 99 ? level : 0;
+		}
+		catch (NumberFormatException | IndexOutOfBoundsException e)
+		{
+			return 0;
+		}
 	}
 
 	public Type getType()
@@ -72,6 +128,12 @@ public final class Goal
 				if (type == Type.QUEST_CAPE)
 				{
 					return QUEST_CAPE;
+				}
+				if (type == Type.SKILL)
+				{
+					// Rebuilt from its parts, so "skill:agility 70" and other spellings land on one goal.
+					Goal parsed = new Goal(Type.SKILL, name);
+					return level(parsed.getSkill(), parsed.getLevel());
 				}
 				return name.isEmpty() ? null : new Goal(type, name);
 			}

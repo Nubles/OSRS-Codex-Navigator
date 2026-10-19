@@ -62,6 +62,8 @@ public final class Planner
 				return planQuest(goal, account);
 			case DIARY:
 				return planDiary(goal, account);
+			case SKILL:
+				return planLevel(goal, account);
 			case QUEST_CAPE:
 			default:
 				return planQuestCape(goal, account);
@@ -106,6 +108,124 @@ public final class Planner
 		addSkills(own, diary.skills);
 		return build(goal, diary.name + " Diary", "Achievement diary", account.diaryDone(diary.name),
 			closure, own, diary.questPoints, diary.combatLevel, true, account);
+	}
+
+	/**
+	 * A level in one skill: no quests on the way, only the training. The subtitle says what reaching it opens,
+	 * which is usually why a player sets one.
+	 */
+	private Plan planLevel(Goal goal, AccountSnapshot account)
+	{
+		Skill skill = goal.getSkill();
+		int level = goal.getLevel();
+		if (skill == null || level == 0)
+		{
+			return unknown(goal);
+		}
+		Map<Skill, Integer> targets = new EnumMap<>(Skill.class);
+		targets.put(skill, level);
+		boolean complete = account.isLoggedIn() && account.level(skill) >= level;
+		// Miniquests are left out of the count, as the quest counts elsewhere leave them out.
+		int opens = opens(skill, level, account, false).size();
+		String subtitle = "Level goal" + (opens > 0 ? " · opens " + opens + (opens == 1 ? " quest" : " quests") : "");
+		return build(goal, level + " " + skill.getName(), subtitle, complete, new LinkedHashSet<>(), targets, 0, 0,
+			false, account);
+	}
+
+	/**
+	 * The unfinished quests (miniquests too, when asked) whose own requirement in this skill is above the current
+	 * level and no more than {@code level}: what training to that level opens. Highest requirement last, so the
+	 * list reads in the order the levels come. Members' quests are left out on a free-to-play account.
+	 */
+	public List<QuestDef> opens(Skill skill, int level, AccountSnapshot account, boolean includeMiniquests)
+	{
+		int current = account.level(skill);
+		List<QuestDef> out = new ArrayList<>();
+		for (QuestDef q : data.quests())
+		{
+			Integer need = need(q.skills, skill);
+			if (need == null || need <= current || need > level || account.questDone(q.name)
+				|| q.miniquest && !includeMiniquests || !account.isMembers() && account.isLoggedIn() && !data.isFree(q))
+			{
+				continue;
+			}
+			out.add(q);
+		}
+		out.sort(Comparator.comparingInt((QuestDef q) -> need(q.skills, skill)).thenComparing(q -> q.name));
+		return out;
+	}
+
+	/** The unfinished diary tiers whose requirement in this skill is above the current level and no more than {@code level}. */
+	public List<DiaryDef> diariesOpened(Skill skill, int level, AccountSnapshot account)
+	{
+		int current = account.level(skill);
+		List<DiaryDef> out = new ArrayList<>();
+		for (DiaryDef d : data.diaries())
+		{
+			Integer need = need(d.skills, skill);
+			if (need != null && need > current && need <= level && !account.diaryDone(d.name))
+			{
+				out.add(d);
+			}
+		}
+		out.sort(Comparator.comparingInt((DiaryDef d) -> need(d.skills, skill)).thenComparing(d -> d.name));
+		return out;
+	}
+
+	/** A requirement for this skill in a requirement map keyed by skill name, or null. */
+	public static Integer need(Map<String, Integer> skills, Skill skill)
+	{
+		for (Map.Entry<String, Integer> e : skills.entrySet())
+		{
+			if (skill == skill(e.getKey()))
+			{
+				return e.getValue();
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Levels worth offering as a goal in this skill, above the current level, at most {@code max} of them in
+	 * order: the next levels that open quests or diary tiers, the next round ten, and 99.
+	 */
+	public List<Integer> suggestedLevels(Skill skill, AccountSnapshot account, boolean includeMiniquests, int max)
+	{
+		int current = Math.max(1, account.level(skill));
+		java.util.TreeSet<Integer> unlocks = new java.util.TreeSet<>();
+		for (QuestDef q : opens(skill, 99, account, includeMiniquests))
+		{
+			unlocks.add(need(q.skills, skill));
+		}
+		for (DiaryDef d : diariesOpened(skill, 99, account))
+		{
+			unlocks.add(need(d.skills, skill));
+		}
+		java.util.TreeSet<Integer> out = new java.util.TreeSet<>();
+		int round = Math.min(99, (current / 10 + 1) * 10);
+		if (round > current)
+		{
+			out.add(round);
+		}
+		if (current < 99)
+		{
+			out.add(99);
+		}
+		for (int level : unlocks)
+		{
+			if (out.size() >= max)
+			{
+				break;
+			}
+			out.add(level);
+		}
+		// Keep the nearest levels and 99 when there are too many.
+		List<Integer> list = new ArrayList<>(out);
+		while (list.size() > max && list.size() > 1)
+		{
+			list.remove(list.size() - 2);
+		}
+		return list;
 	}
 
 	private Plan planQuestCape(Goal goal, AccountSnapshot account)

@@ -6,8 +6,8 @@ import com.codex.navigator.data.QuestDef;
 import net.runelite.api.QuestState;
 
 /**
- * What naturally comes after a goal: the next tier of a diary, or the quest a finished quest leads
- * straight into. It lets a finished goal hand over to the next link in its chain with one click.
+ * What naturally comes after a goal: the next tier of a diary, the quest a finished quest leads
+ * straight into, or the next round ten after a level. It lets a finished goal hand over to the next link in its chain with one click.
  */
 public final class Chains
 {
@@ -78,6 +78,16 @@ public final class Chains
 					}
 				}
 				return best == null ? null : Goal.quest(best.name);
+			}
+			case SKILL:
+			{
+				// The next round ten past both the goal and the level now, then 99.
+				if (goal.getSkill() == null || goal.getLevel() == 0)
+				{
+					return null;
+				}
+				int from = Math.max(goal.getLevel(), account.level(goal.getSkill()));
+				return from >= 99 ? null : Goal.level(goal.getSkill(), Math.min(99, (from / 10 + 1) * 10));
 			}
 			default:
 				return null;

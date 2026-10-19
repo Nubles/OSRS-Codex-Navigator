@@ -34,4 +34,13 @@ interface Navigation
 
 	/** Chooses a session length and redraws the plan. */
 	void chooseSession(int choice);
+
+	/** True while the Goals view's level picker is open. */
+	boolean levelPickerOpen();
+
+	/** The skill chosen in the level picker, or null before one is chosen. */
+	Skill levelSkill();
+
+	/** Opens or closes the level picker with a skill chosen (or none), and redraws the Goals view. */
+	void levelPicker(boolean open, Skill skill);
 }
