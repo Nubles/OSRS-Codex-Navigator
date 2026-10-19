@@ -63,49 +63,91 @@ public class FocusOverlay extends Overlay
 		FontMetrics small = g.getFontMetrics();
 		g.setFont(Theme.title());
 		FontMetrics bold = g.getFontMetrics();
+		Layout l = layout;
+		if (l == null || l.view != v || !l.small.getFont().equals(small.getFont()) || !l.bold.getFont().equals(bold.getFont()))
+		{
+			// Clipping, the plaque's shape and its paints are worked out once per view, not every frame.
+			l = new Layout(v, small, bold);
+			layout = l;
+		}
 
-		String title = clip(v.title, bold, WIDTH - PAD * 2);
-		String step = v.step == null ? null : clip(v.step, small, WIDTH - PAD * 2);
-		int height = PAD + small.getHeight() + bold.getHeight() + 8 + (step != null ? small.getHeight() + 2 : 0) + PAD - 2;
-
-		RoundRectangle2D shape = new RoundRectangle2D.Float(0.5f, 0.5f, WIDTH - 1, height - 1, 10, 10);
-		g.setPaint(new GradientPaint(0, 0, Theme.alpha(Theme.CARD_TOP, 230), 0, height, Theme.alpha(Theme.INK_DEEP, 230)));
-		g.fill(shape);
-		g.setStroke(new BasicStroke(1f));
-		g.setColor(Theme.alpha(Theme.GOLD, 150));
-		g.draw(shape);
+		g.setPaint(l.fill);
+		g.fill(l.shape);
+		g.setStroke(STROKE);
+		g.setColor(RIM);
+		g.draw(l.shape);
 
 		int y = PAD + small.getAscent();
 		g.setFont(Theme.small());
 		shadow(g, v.label, PAD, y, Theme.GOLD);
-		if (v.progress >= 0)
+		if (l.pct != null)
 		{
-			String pct = Math.round(v.progress * 100) + "%";
-			shadow(g, pct, WIDTH - PAD - small.stringWidth(pct), y, Theme.progressColor(v.progress));
+			shadow(g, l.pct, WIDTH - PAD - l.pctWidth, y, l.pctColor);
 		}
 
 		y += bold.getAscent() + 2;
 		g.setFont(Theme.title());
-		shadow(g, title, PAD, y, Theme.GOLD_BRIGHT);
+		shadow(g, l.title, PAD, y, Theme.GOLD_BRIGHT);
 
 		y += 5;
-		int barW = WIDTH - PAD * 2;
 		g.setColor(Theme.INK_DEEP);
-		g.fillRoundRect(PAD, y, barW, 3, 3, 3);
-		int fill = v.progress < 0 ? 0 : (int) Math.round(barW * Math.min(1, v.progress));
-		if (fill > 0)
+		g.fillRoundRect(PAD, y, BAR_W, 3, 3, 3);
+		if (l.fillW > 0)
 		{
-			g.setPaint(new GradientPaint(PAD, 0, Theme.progressColor(0), PAD + barW, 0, Theme.progressColor(1)));
-			g.fillRoundRect(PAD, y, fill, 3, 3, 3);
+			g.setPaint(BAR);
+			g.fillRoundRect(PAD, y, l.fillW, 3, 3, 3);
 		}
 
-		if (step != null)
+		if (l.step != null)
 		{
 			y += 4 + small.getAscent() + 2;
 			g.setFont(Theme.small());
-			shadow(g, step, PAD, y, Theme.TEXT);
+			shadow(g, l.step, PAD, y, Theme.TEXT);
 		}
-		return new Dimension(WIDTH, height);
+		return l.size;
+	}
+
+	private static final int BAR_W = WIDTH - PAD * 2;
+	private static final BasicStroke STROKE = new BasicStroke(1f);
+	private static final Color RIM = Theme.alpha(Theme.GOLD, 150);
+	private static final Color FILL_TOP = Theme.alpha(Theme.CARD_TOP, 230);
+	private static final Color FILL_BOTTOM = Theme.alpha(Theme.INK_DEEP, 230);
+	private static final GradientPaint BAR = new GradientPaint(PAD, 0, Theme.progressColor(0), PAD + BAR_W, 0, Theme.progressColor(1));
+
+	private volatile Layout layout;
+
+	/** Everything about the plaque that depends only on the view and the fonts. */
+	private static final class Layout
+	{
+		final View view;
+		final FontMetrics small;
+		final FontMetrics bold;
+		final String title;
+		final String step;
+		final String pct;
+		final int pctWidth;
+		final Color pctColor;
+		final int fillW;
+		final RoundRectangle2D shape;
+		final GradientPaint fill;
+		final Dimension size;
+
+		Layout(View v, FontMetrics small, FontMetrics bold)
+		{
+			view = v;
+			this.small = small;
+			this.bold = bold;
+			title = clip(v.title, bold, WIDTH - PAD * 2);
+			step = v.step == null ? null : clip(v.step, small, WIDTH - PAD * 2);
+			pct = v.progress >= 0 ? Math.round(v.progress * 100) + "%" : null;
+			pctWidth = pct == null ? 0 : small.stringWidth(pct);
+			pctColor = Theme.progressColor(Math.max(0, v.progress));
+			fillW = v.progress < 0 ? 0 : (int) Math.round(BAR_W * Math.min(1, v.progress));
+			int height = PAD + small.getHeight() + bold.getHeight() + 8 + (step != null ? small.getHeight() + 2 : 0) + PAD - 2;
+			shape = new RoundRectangle2D.Float(0.5f, 0.5f, WIDTH - 1, height - 1, 10, 10);
+			fill = new GradientPaint(0, 0, FILL_TOP, 0, height, FILL_BOTTOM);
+			size = new Dimension(WIDTH, height);
+		}
 	}
 
 	private static void shadow(Graphics2D g, String text, int x, int y, Color color)

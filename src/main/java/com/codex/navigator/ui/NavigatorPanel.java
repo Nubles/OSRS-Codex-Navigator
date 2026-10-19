@@ -4,6 +4,7 @@ import com.codex.navigator.core.AccountSnapshot;
 import com.codex.navigator.core.Goal;
 import com.codex.navigator.core.GoalStore;
 import com.codex.navigator.core.Planner;
+import com.codex.navigator.core.PlayTime;
 import com.codex.navigator.core.Recommender;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
@@ -60,6 +61,14 @@ public class NavigatorPanel extends PluginPanel implements Navigation
 	private boolean showMetLevels;
 	private String visible = TABS[0];
 	private boolean active;
+	/** Two hours: an ordinary evening. */
+	private int sessionChoice = 1;
+	private boolean levelPickerOpen;
+	private PlayTime playTime;
+	private Skill levelSkill;
+	private ShareActions share;
+	private BooleanSupplier nameOnCards = () -> true;
+	private String shareNote;
 
 	public NavigatorPanel(Planner planner, Recommender recommender, GoalStore goals, SkillIconManager skillIcons,
 		BooleanSupplier includeMiniquests)
@@ -93,8 +102,13 @@ public class NavigatorPanel extends PluginPanel implements Navigation
 		add(content, BorderLayout.CENTER);
 
 		tabs.onChange(this::showTab);
-		goals.addListener(() -> SwingUtilities.invokeLater(this::refreshViews));
-		crest.update(account, planner.getData());
+		goals.addListener(() -> SwingUtilities.invokeLater(() ->
+		{
+			// A note about the last card belongs to the road it was made from.
+			shareNote = null;
+			refreshViews();
+		}));
+		crest.update(account, planner.getData(), planner.capeQuests());
 		refreshViews();
 	}
 
@@ -114,7 +128,7 @@ public class NavigatorPanel extends PluginPanel implements Navigation
 	public void update(AccountSnapshot snapshot)
 	{
 		account = snapshot;
-		crest.update(snapshot, planner.getData());
+		crest.update(snapshot, planner.getData(), planner.capeQuests());
 		refreshViews();
 	}
 
@@ -248,6 +262,107 @@ public class NavigatorPanel extends PluginPanel implements Navigation
 	{
 		showMetLevels = !showMetLevels;
 		replace(detail, buildDetail());
+	}
+
+	@Override
+	public int sessionChoice()
+	{
+		return sessionChoice;
+	}
+
+	@Override
+	public void chooseSession(int choice)
+	{
+		if (choice == sessionChoice)
+		{
+			return;
+		}
+		sessionChoice = choice;
+		redrawGoals();
+	}
+
+	@Override
+	public PlayTime playTime()
+	{
+		return playTime;
+	}
+
+	/** Called on the Swing thread when Codex Session Chronicle's journal has been read; null when it says nothing. */
+	public void setPlayTime(PlayTime time)
+	{
+		if (time == playTime)
+		{
+			return;
+		}
+		playTime = time;
+		refreshViews();
+	}
+
+	@Override
+	public boolean levelPickerOpen()
+	{
+		return levelPickerOpen;
+	}
+
+	@Override
+	public Skill levelSkill()
+	{
+		return levelSkill;
+	}
+
+	@Override
+	public void levelPicker(boolean open, Skill skill)
+	{
+		levelPickerOpen = open;
+		levelSkill = open ? skill : null;
+		redrawGoals();
+	}
+
+	private void redrawGoals()
+	{
+		if (TABS[1].equals(visible))
+		{
+			replace(goalsView, GoalsView.build(this));
+			revalidate();
+			repaint();
+		}
+		else
+		{
+			stale.add(TABS[1]);
+		}
+	}
+
+	/** Lets the Compass save and copy the road card; names go on it while the option is on. */
+	public void setShare(ShareActions share, BooleanSupplier nameOnCards)
+	{
+		this.share = share;
+		this.nameOnCards = nameOnCards;
+	}
+
+	/** Shows what became of a save or copy under the road's buttons. Swing thread only. */
+	public void shareNote(String note)
+	{
+		shareNote = note;
+		stale.add(TABS[0]);
+		rebuildVisible();
+	}
+
+	@Override
+	public ShareActions share()
+	{
+		return share;
+	}
+
+	@Override
+	public String cardName()
+	{
+		return nameOnCards.getAsBoolean() && account.isLoggedIn() ? account.getPlayerName() : null;
+	}
+
+	@Override
+	public String shareNote()
+	{
+		return shareNote;
 	}
 
 	@Override

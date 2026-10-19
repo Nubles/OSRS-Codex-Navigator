@@ -1,27 +1,37 @@
 package com.codex.navigator;
 
 import com.codex.navigator.core.AccountSnapshot;
-import com.codex.navigator.core.CompletionWatch;
-import com.codex.navigator.core.Goal;
 import com.codex.navigator.core.GoalStore;
+import com.codex.navigator.core.Pace;
 import com.codex.navigator.core.Plan;
 import com.codex.navigator.core.Planner;
+import com.codex.navigator.core.PlayTime;
 import com.codex.navigator.core.PublishGate;
 import com.codex.navigator.core.Recommender;
+import com.codex.navigator.core.Saved;
 import com.codex.navigator.core.Step;
 import com.codex.navigator.data.CodexData;
 import com.codex.navigator.data.QuestDef;
 import com.codex.navigator.overlay.FocusOverlay;
 import com.codex.navigator.ui.Icons;
 import com.codex.navigator.ui.NavigatorPanel;
+import com.codex.navigator.ui.ShareActions;
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import com.google.inject.Provides;
-import java.lang.reflect.Type;
+import java.awt.Toolkit;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ScheduledExecutorService;
+import javax.imageio.ImageIO;
 import javax.inject.Inject;
 import javax.swing.SwingUtilities;
 import net.runelite.api.ChatMessageType;
@@ -45,6 +55,7 @@ import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.chat.QueuedMessage;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ClientShutdown;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.events.RuneScapeProfileChanged;
 import net.runelite.client.game.SkillIconManager;
@@ -53,18 +64,25 @@ import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.overlay.OverlayManager;
+import net.runelite.client.util.Filepath;
 
 @PluginDescriptor(
 	name = "Codex Navigator",
 	description = "An account compass: every quest, diary and combat achievement tier, with the path to whatever you want next",
-	tags = {"quest", "diary", "goal", "planner", "progress", "achievement", "codex"}
+	tags = {"quest", "diary", "goal", "planner", "progress", "account", "achievement", "codex"}
 )
 public class CodexNavigatorPlugin extends Plugin
 {
 	private static final String GOALS_KEY = "goals";
-	private static final Type GOAL_LIST = new TypeToken<List<String>>()
-	{
-	}.getType();
+	/** What {@link Pace} has learned about this account's training speed, per RuneScape profile. */
+	static final String PACE_KEY = "pace";
+	/** Learned pace is saved at most this often while it changes, and always on logout and shutdown. */
+	private static final int PACE_SAVE_TICKS = 500;
+	/** Worlds whose stats are not the account's own, or that do not save: nothing is learned there. */
+	private static final Set<WorldType> NO_LEARNING = EnumSet.of(WorldType.LAST_MAN_STANDING, WorldType.PVP_ARENA,
+		WorldType.BETA_WORLD, WorldType.NOSAVE_MODE, WorldType.TOURNAMENT_WORLD, WorldType.FRESH_START_WORLD);
+	/** The pinned goals with progress, next step and what they still need, for other plugins to read. */
+	static final String BOARD_KEY = "goalBoard";
 	/** Varbits can change many times a second; refresh at most this often while they do. */
 	private static final int REFRESH_TICKS = 2;
 	/**
@@ -76,6 +94,11 @@ public class CodexNavigatorPlugin extends Plugin
 	private static final int XP_ONLY_TICKS = 10;
 	/** Varbits settle over the first ticks after login; completions seen then are not announced. */
 	private static final int WARMUP_TICKS = 8;
+	/** Codex Guardian's per-account one-life choice ("true" / "false"), read only. */
+	static final String GUARDIAN_GROUP = "codexguardian";
+	static final String GUARDIAN_ONE_LIFE_KEY = "oneLifeAccount";
+	/** RuneLite's name for the world flag Hardcore Worlds carry; matched by name so an older client reads false. */
+	private static final String HARDCORE_WORLD_TYPE = "HARDCORE_MAIN";
 
 	static final String[] DIARY_AREAS = {"Ardougne", "Desert", "Falador", "Fremennik", "Kandarin", "Karamja",
 		"Kourend", "Lumbridge", "Morytania", "Varrock", "Western", "Wilderness"};
@@ -128,16 +151,24 @@ public class CodexNavigatorPlugin extends Plugin
 	@Inject
 	private CodexNavigatorConfig config;
 
+	@Inject
+	private ScheduledExecutorService executor;
+
 	private final FocusOverlay overlay = new FocusOverlay();
 	private final Map<String, Quest> questsByName = new HashMap<>();
 	/** Last quest states read from the client; reused between the throttled quest reads. */
 	private final Map<String, QuestState> questCache = new HashMap<>();
-	/** Compares each publish with the one before, to announce the moment a pinned goal finishes. */
-	private final CompletionWatch completion = new CompletionWatch();
+	/** How fast this account trains each skill, learned while the plugin runs. Touched on the client thread only. */
+	private final Pace pace = new Pace();
+	/** The RuneScape profile {@link #pace} was loaded from and is saved back to. */
+	private String paceProfile;
+	private int lastPaceSave;
 
 	private GoalStore goals;
 	private Planner planner;
 	private Recommender recommender;
+	/** Plans the pinned goals for the board, the finished-goal check and the overlay, off the client thread. */
+	private GoalWork work;
 	private NavigatorPanel panel;
 	private NavigationButton navButton;
 
@@ -153,6 +184,18 @@ public class CodexNavigatorPlugin extends Plugin
 	private int lastQuestTick = -QUEST_TICKS;
 	private int loginTick;
 	private int lastQuestPoints = -1;
+	/**
+	 * Set when the profile changes and cleared by the next publish: until then the snapshot still belongs to
+	 * the previous profile, and a board written from it would land under the new one.
+	 */
+	private boolean boardHeld;
+	/**
+	 * Set when a board was due in the first ticks after login, while quest and diary varbits are still arriving: a
+	 * board written then would tell other plugins your goals had gone back to zero. It is written once they settle.
+	 */
+	private boolean boardDeferred;
+	/** Set by a world hop, so the login after it waits for varbits like any other. */
+	private boolean hopped;
 
 	@Provides
 	CodexNavigatorConfig provideConfig(ConfigManager configManager)
@@ -166,6 +209,56 @@ public class CodexNavigatorPlugin extends Plugin
 		CodexData data = CodexData.load(gson);
 		planner = new Planner(data);
 		recommender = new Recommender(planner);
+		// The lane this run of the plugin made; a board it hands on is dropped if the plugin stopped meanwhile.
+		GoalWork[] self = new GoalWork[1];
+		GoalWork lane = new GoalWork(planner, recommender, gson, executor, new GoalWork.Settings()
+		{
+			@Override
+			public boolean showOverlay()
+			{
+				return config.showOverlay();
+			}
+
+			@Override
+			public boolean includeMiniquests()
+			{
+				return config.includeMiniquests();
+			}
+
+			@Override
+			public boolean suggestWithoutFocus()
+			{
+				return config.suggestWithoutFocus();
+			}
+		}, new GoalWork.Out()
+		{
+			@Override
+			public void board(String profile, String json)
+			{
+				// Written on the client thread, where other plugins have always heard of a new board.
+				clientThread.invokeLater(() ->
+				{
+					if (!self[0].isClosed())
+					{
+						configManager.setConfiguration(CodexNavigatorConfig.GROUP, profile, BOARD_KEY, json);
+					}
+				});
+			}
+
+			@Override
+			public void finished(List<Plan> plans)
+			{
+				announce(plans);
+			}
+
+			@Override
+			public void overlay(FocusOverlay.View view)
+			{
+				overlay.setView(view);
+			}
+		});
+		self[0] = lane;
+		work = lane;
 		for (Quest quest : Quest.values())
 		{
 			questsByName.put(quest.getName(), quest);
@@ -175,9 +268,25 @@ public class CodexNavigatorPlugin extends Plugin
 		goals = new GoalStore();
 		goals.setSaver(this::saveGoals);
 		goals.addListener(this::updateOverlay);
+		goals.addListener(() -> clientThread.invokeLater(this::writeBoard));
 		loadGoals();
+		loadPace();
 
 		panel = new NavigatorPanel(planner, recommender, goals, skillIconManager, config::includeMiniquests);
+		panel.setShare(new ShareActions()
+		{
+			@Override
+			public void save(BufferedImage card, String fileName)
+			{
+				saveCard(card, fileName);
+			}
+
+			@Override
+			public void copy(BufferedImage card)
+			{
+				copyCard(card);
+			}
+		}, config::nameOnCard);
 		navButton = NavigationButton.builder()
 			.tooltip("Codex Navigator")
 			.icon(Icons.compass(16))
@@ -186,6 +295,7 @@ public class CodexNavigatorPlugin extends Plugin
 			.build();
 		clientToolbar.addNavigation(navButton);
 		overlayManager.add(overlay);
+		readPlayTime();
 
 		clientThread.invokeLater(() ->
 		{
@@ -200,18 +310,45 @@ public class CodexNavigatorPlugin extends Plugin
 	@Override
 	protected void shutDown()
 	{
+		// First, so no board, chat line or overlay view is produced after this point.
+		work.close();
+		savePace();
+		pace.load(null);
+		paceProfile = null;
 		overlayManager.remove(overlay);
 		clientToolbar.removeNavigation(navButton);
 		overlay.setView(null);
 		questsByName.clear();
 		questCache.clear();
-		completion.reset();
 		snapshot = AccountSnapshot.empty();
 		gate.reset();
 		heldBack = null;
 		offlinePins = null;
+		boardHeld = false;
+		boardDeferred = false;
 		panel = null;
 		goals = null;
+	}
+
+	@Subscribe
+	public void onClientShutdown(ClientShutdown event)
+	{
+		// Closing the client while logged in reaches neither the login screen nor shutDown, and ConfigManager
+		// writes its changes to disk in this same event, so the save is made here and sent on by hand.
+		CompletableFuture<Void> done = new CompletableFuture<>();
+		clientThread.invokeLater(() ->
+		{
+			try
+			{
+				savePace();
+				configManager.sendConfig();
+			}
+			finally
+			{
+				done.complete(null);
+			}
+		});
+		event.waitFor(done);
 	}
 
 	@Subscribe
@@ -220,18 +357,28 @@ public class CodexNavigatorPlugin extends Plugin
 		GameState state = event.getGameState();
 		if (state == GameState.LOGGED_IN)
 		{
-			if (!snapshot.isLoggedIn())
+			// A world hop is a fresh login too: the varbits arrive again over the first ticks.
+			if (!snapshot.isLoggedIn() || hopped)
 			{
+				hopped = false;
 				markLogin();
 			}
 			dirty = true;
 			questsPending = true;
 		}
+		else if (state == GameState.HOPPING || state == GameState.CONNECTION_LOST)
+		{
+			hopped |= state == GameState.HOPPING;
+			// The time away is not training; the next drop in each skill starts a fresh bout.
+			pace.pause();
+		}
 		else if (state == GameState.LOGIN_SCREEN)
 		{
+			pace.pause();
+			savePace();
 			questCache.clear();
 			lastQuestPoints = -1;
-			completion.reset();
+			work.forget();
 			heldBack = null;
 			publish(AccountSnapshot.empty(), true);
 		}
@@ -240,14 +387,27 @@ public class CodexNavigatorPlugin extends Plugin
 	@Subscribe
 	public void onRuneScapeProfileChanged(RuneScapeProfileChanged event)
 	{
-		completion.reset();
+		// What was learned belongs to the profile it was learned on, which is the one being left.
+		savePace();
+		loadPace();
+		work.forget();
+		boardHeld = true;
+		// Publish afresh for the new profile even if the read happens to match, so its board is written.
+		gate.reset();
+		dirty = true;
 		loadGoals();
+		readPlayTime();
 	}
 
 	@Subscribe
 	public void onStatChanged(StatChanged event)
 	{
 		dirty = true;
+		if (config.learnPace() && client.getGameState() == GameState.LOGGED_IN && paceProfile != null
+			&& Collections.disjoint(client.getWorldType(), NO_LEARNING))
+		{
+			pace.observe(event.getSkill(), event.getXp(), System.currentTimeMillis());
+		}
 	}
 
 	@Subscribe
@@ -260,9 +420,38 @@ public class CodexNavigatorPlugin extends Plugin
 	@Subscribe
 	public void onConfigChanged(ConfigChanged event)
 	{
-		if (!CodexNavigatorConfig.GROUP.equals(event.getGroup()) || GOALS_KEY.equals(event.getKey()))
+		if (GUARDIAN_GROUP.equals(event.getGroup()) && GUARDIAN_ONE_LIFE_KEY.equals(event.getKey()))
+		{
+			// Marked one-life (or not) in Guardian: suggestions change order.
+			clientThread.invokeLater(() -> dirty = true);
+			return;
+		}
+		if (PlayTime.GROUP.equals(event.getGroup()) && PlayTime.JOURNAL.equals(event.getKey())
+			&& (event.getProfile() == null || event.getProfile().equals(configManager.getRSProfileKey())))
+		{
+			// Session Chronicle filed a session: the daily habit may have moved.
+			readPlayTime();
+			return;
+		}
+		if (!CodexNavigatorConfig.GROUP.equals(event.getGroup()) || GOALS_KEY.equals(event.getKey())
+			|| BOARD_KEY.equals(event.getKey()) || PACE_KEY.equals(event.getKey())
+			|| event.getKey().endsWith(Saved.UNREADABLE))
 		{
 			return;
+		}
+		if ("oneLifeCare".equals(event.getKey()))
+		{
+			clientThread.invokeLater(() -> dirty = true);
+		}
+		if ("learnPace".equals(event.getKey()))
+		{
+			// Estimates switch between the learned pace and the steady rates: read the account again.
+			clientThread.invokeLater(() ->
+			{
+				pace.pause();
+				gate.reset();
+				dirty = true;
+			});
 		}
 		updateOverlay();
 		NavigatorPanel target = panel;
@@ -276,6 +465,20 @@ public class CodexNavigatorPlugin extends Plugin
 	public void onGameTick(GameTick event)
 	{
 		tick++;
+		if (tick - lastPaceSave >= PACE_SAVE_TICKS)
+		{
+			savePace();
+		}
+		if (boardDeferred && settled())
+		{
+			boardDeferred = false;
+			// The quests cached during the login churn may predate their varbits, and are otherwise not read again
+			// for QUEST_TICKS: read them now, so the first board written is a settled one.
+			questsPending = true;
+			lastQuestTick = tick - QUEST_TICKS;
+			refresh();
+			writeBoard();
+		}
 		if (dirty && tick - lastRefreshTick >= REFRESH_TICKS)
 		{
 			refresh();
@@ -288,6 +491,12 @@ public class CodexNavigatorPlugin extends Plugin
 		}
 	}
 
+	/** True once the varbits sent at login have had time to arrive. */
+	private boolean settled()
+	{
+		return tick - loginTick >= WARMUP_TICKS;
+	}
+
 	private void markLogin()
 	{
 		loginTick = tick;
@@ -295,22 +504,32 @@ public class CodexNavigatorPlugin extends Plugin
 		dirty = true;
 	}
 
+	/**
+	 * Reads how much this account plays a day from Codex Session Chronicle's journal, read only; nothing when
+	 * Chronicle is not installed or has too little to go on, and the panel then shows no dates.
+	 */
+	private void readPlayTime()
+	{
+		// A long journal takes tens of milliseconds to read, and Chronicle files one on the client thread.
+		String journal = configManager.getRSProfileConfiguration(PlayTime.GROUP, PlayTime.JOURNAL);
+		NavigatorPanel target = panel;
+		GoalWork lane = work;
+		if (target != null && lane != null)
+		{
+			lane.run(() ->
+			{
+				PlayTime time = PlayTime.read(gson, journal, System.currentTimeMillis());
+				SwingUtilities.invokeLater(() -> target.setPlayTime(time));
+			});
+		}
+	}
+
 	private void loadGoals()
 	{
-		String json = configManager.getRSProfileConfiguration(CodexNavigatorConfig.GROUP, GOALS_KEY);
-		List<String> keys = null;
-		if (json != null && !json.isEmpty())
-		{
-			try
-			{
-				keys = gson.fromJson(json, GOAL_LIST);
-			}
-			catch (RuntimeException e)
-			{
-				keys = null;
-			}
-		}
-		List<String> extra = configManager.getRSProfileKey() != null ? offlinePins : null;
+		String profile = configManager.getRSProfileKey();
+		String raw = configManager.getRSProfileConfiguration(CodexNavigatorConfig.GROUP, GOALS_KEY);
+		List<String> keys = Saved.goalKeys(gson, raw);
+		List<String> extra = profile != null ? offlinePins : null;
 		if (extra != null)
 		{
 			offlinePins = null;
@@ -318,7 +537,61 @@ public class CodexNavigatorPlugin extends Plugin
 		GoalStore store = goals;
 		if (store != null)
 		{
+			if (profile != null && raw != null)
+			{
+				// The next pin saves the list back; anything in it this version could not read is kept aside first.
+				GoalStore probe = new GoalStore();
+				probe.load(keys);
+				keepAside(profile, GOALS_KEY, raw, probe.goals().size());
+			}
 			store.load(keys, extra);
+		}
+	}
+
+	/** Loads what has been learned about the active profile's training speed; nothing when logged out. */
+	private void loadPace()
+	{
+		paceProfile = configManager.getRSProfileKey();
+		Map<String, double[]> saved = null;
+		String raw = null;
+		if (paceProfile != null)
+		{
+			raw = configManager.getConfiguration(CodexNavigatorConfig.GROUP, paceProfile, PACE_KEY);
+			saved = Saved.pace(gson, raw);
+		}
+		pace.load(saved);
+		if (raw != null)
+		{
+			keepAside(paceProfile, PACE_KEY, raw, pace.learnedSkills());
+		}
+	}
+
+	/**
+	 * Keeps a saved value of which only {@code kept} entries could be read under its key plus
+	 * {@link Saved#UNREADABLE}, before the next save writes over it, so a damaged or newer-version value is never
+	 * lost. Written once for each value read in part, and not again while the same text is already kept.
+	 */
+	private void keepAside(String profile, String key, String raw, int kept)
+	{
+		if (Saved.keptAll(gson, raw, kept))
+		{
+			return;
+		}
+		String aside = key + Saved.UNREADABLE;
+		if (!raw.equals(configManager.getConfiguration(CodexNavigatorConfig.GROUP, profile, aside)))
+		{
+			configManager.setConfiguration(CodexNavigatorConfig.GROUP, profile, aside, raw);
+		}
+	}
+
+	/** Saves the learned pace to the profile it belongs to, if anything new was learned since the last save. */
+	private void savePace()
+	{
+		lastPaceSave = tick;
+		String profile = paceProfile;
+		if (profile != null && pace.takeChanged())
+		{
+			configManager.setConfiguration(CodexNavigatorConfig.GROUP, profile, PACE_KEY, gson.toJson(pace.toSaved()));
 		}
 	}
 
@@ -346,7 +619,9 @@ public class CodexNavigatorPlugin extends Plugin
 			return;
 		}
 		AccountSnapshot.Builder b = new AccountSnapshot.Builder().loggedIn(true)
-			.members(client.getWorldType().contains(WorldType.MEMBERS));
+			.members(client.getWorldType().contains(WorldType.MEMBERS))
+			.ironman(client.getVarbitValue(VarbitID.IRONMAN) != 0)
+			.oneLife(config.oneLifeCare() && oneLife());
 		Player local = client.getLocalPlayer();
 		if (local != null && local.getName() != null)
 		{
@@ -402,7 +677,38 @@ public class CodexNavigatorPlugin extends Plugin
 			b.combatAchievements(CodexData.COMBAT_ACHIEVEMENT_TIERS[i], client.getVarbitValue(COMBAT_ACHIEVEMENT_VARBITS[i]));
 		}
 		b.combatAchievementPoints(client.getVarbitValue(VarbitID.CA_POINTS));
+		if (config.learnPace())
+		{
+			b.pace(pace.factors()).paceHours(pace.hoursLearned());
+		}
 		publish(b.build(), false);
+	}
+
+	/**
+	 * Whether this account has one life: a hardcore ironman or hardcore group ironman, any account on a Hardcore
+	 * World, or one marked one-life in Codex Guardian (read only; without Guardian that part is simply false).
+	 */
+	private boolean oneLife()
+	{
+		int type = client.getVarbitValue(VarbitID.IRONMAN);
+		if (type == 3 || type == 5)
+		{
+			return true;
+		}
+		for (WorldType world : client.getWorldType())
+		{
+			if (HARDCORE_WORLD_TYPE.equals(world.name()))
+			{
+				return true;
+			}
+		}
+		return markedOneLife(configManager.getRSProfileConfiguration(GUARDIAN_GROUP, GUARDIAN_ONE_LIFE_KEY));
+	}
+
+	/** True only for Guardian's own "true"; anything else, damaged or missing, is not a one-life mark. */
+	static boolean markedOneLife(String saved)
+	{
+		return "true".equals(saved);
 	}
 
 	private void readQuests()
@@ -441,8 +747,13 @@ public class CodexNavigatorPlugin extends Plugin
 			return;
 		}
 		snapshot = next;
-		announceCompletions(next);
-		updateOverlay();
+		boardHeld = false;
+		GoalStore store = goals;
+		if (store != null)
+		{
+			// Varbits settle over the first ticks after login; completions seen then are not announced.
+			work.published(next, store, boardProfile(next), tick - loginTick >= WARMUP_TICKS && config.announceCompletions());
+		}
 		NavigatorPanel target = panel;
 		if (target != null)
 		{
@@ -450,19 +761,41 @@ public class CodexNavigatorPlugin extends Plugin
 		}
 	}
 
-	/** Posts a chat line the moment a pinned goal is finished, once varbits have settled after login. */
-	private void announceCompletions(AccountSnapshot account)
+	/** Saves the goal board for other plugins when it has changed; the planning is done off the client thread. */
+	private void writeBoard()
 	{
 		GoalStore store = goals;
-		if (store == null || !account.isLoggedIn() || account.getPlayerName() == null)
+		AccountSnapshot account = snapshot;
+		String profile = boardProfile(account);
+		if (store != null && profile != null)
 		{
-			return;
+			work.board(account, store, profile);
 		}
-		List<Plan> finished = completion.finished(planner, store.goals(), account);
-		if (tick - loginTick < WARMUP_TICKS || !config.announceCompletions())
+	}
+
+	/**
+	 * The profile a board worked out from {@code account} may be saved under, or null when none may be written yet.
+	 * Only a logged-in, settled read is written: progress worked out from a logged-out snapshot, or from varbits
+	 * still arriving after login, would tell readers every goal had gone back to zero.
+	 */
+	private String boardProfile(AccountSnapshot account)
+	{
+		String profile = configManager.getRSProfileKey();
+		if (goals == null || planner == null || boardHeld || !account.isLoggedIn() || profile == null)
 		{
-			return;
+			return null;
 		}
+		if (!settled())
+		{
+			boardDeferred = true;
+			return null;
+		}
+		return profile;
+	}
+
+	/** Posts a chat line for each pinned goal just finished. */
+	private void announce(List<Plan> finished)
+	{
 		for (Plan plan : finished)
 		{
 			String message = new ChatMessageBuilder()
@@ -478,44 +811,15 @@ public class CodexNavigatorPlugin extends Plugin
 		}
 	}
 
+	/** Redraws the overlay off the client thread; called from whichever thread changed a pin or a setting. */
 	private void updateOverlay()
 	{
-		AccountSnapshot account = snapshot;
+		GoalWork lane = work;
 		GoalStore store = goals;
-		if (!config.showOverlay() || !account.isLoggedIn() || planner == null || store == null)
+		if (lane != null && store != null)
 		{
-			overlay.setView(null);
-			return;
+			lane.overlay(snapshot, store);
 		}
-		Goal focus = store.focus();
-		if (focus != null)
-		{
-			Plan plan = planner.plan(focus, account);
-			Step next = plan.getNext();
-			if (plan.isComplete())
-			{
-				overlay.setView(new FocusOverlay.View("CODEX  ·  COMPLETE", plan.getTitle(), 1,
-					"Pick your next goal in the Codex"));
-			}
-			else
-			{
-				overlay.setView(new FocusOverlay.View("CODEX  ·  FOCUS", plan.getTitle(), plan.getProgress(),
-					next == null ? null : stepText(next)));
-			}
-			return;
-		}
-		if (config.suggestWithoutFocus())
-		{
-			List<Recommender.Pick> picks = recommender.readyNow(account, config.includeMiniquests(), 1);
-			if (!picks.isEmpty())
-			{
-				Recommender.Pick pick = picks.get(0);
-				overlay.setView(new FocusOverlay.View("CODEX  ·  SUGGESTED", pick.getQuest().name, -1,
-					pick.getReason() != null ? pick.getReason() : "Ready to start"));
-				return;
-			}
-		}
-		overlay.setView(null);
 	}
 
 	static String stepText(Step step)
@@ -525,5 +829,70 @@ public class CodexNavigatorPlugin extends Plugin
 			return (step.getStatus() == Step.Status.IN_PROGRESS ? "Continue " : "Start ") + step.getTitle();
 		}
 		return step.getTitle();
+	}
+
+	/** Asks where to save the road card (on the Swing thread, where the buttons run), then writes it off that thread. */
+	private void saveCard(BufferedImage card, String fileName)
+	{
+		NavigatorPanel view = panel;
+		if (view == null)
+		{
+			return;
+		}
+		List<Filepath> chosen = new Filepath.Chooser()
+			.setIsSave()
+			.setAcceptsFiles()
+			.setDialogTitle("Save road card")
+			.addExtensionFilter("PNG image", "png")
+			.setDefaultExtension("png")
+			.setFileName(fileName)
+			.showDialog(view);
+		if (chosen == null || chosen.isEmpty())
+		{
+			return;
+		}
+		Filepath target = chosen.get(0);
+		executor.execute(() ->
+		{
+			String note;
+			try (OutputStream out = target.openOutputStream())
+			{
+				ImageIO.write(card, "png", out);
+				note = "Saved as " + target.getFileName() + ".";
+			}
+			catch (IOException e)
+			{
+				note = "The card could not be saved: " + e.getMessage();
+			}
+			String shown = note;
+			SwingUtilities.invokeLater(() ->
+			{
+				NavigatorPanel p = panel;
+				if (p != null)
+				{
+					p.shareNote(shown);
+				}
+			});
+		});
+	}
+
+	/** Puts the road card on the clipboard; the buttons call this on the Swing thread. */
+	private void copyCard(BufferedImage card)
+	{
+		String note;
+		try
+		{
+			Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new ImageTransfer(ImageTransfer.opaque(card)), null);
+			note = "Copied. Paste it anywhere you share pictures.";
+		}
+		catch (IllegalStateException e)
+		{
+			note = "The clipboard is busy, try again in a moment.";
+		}
+		NavigatorPanel p = panel;
+		if (p != null)
+		{
+			p.shareNote(note);
+		}
 	}
 }

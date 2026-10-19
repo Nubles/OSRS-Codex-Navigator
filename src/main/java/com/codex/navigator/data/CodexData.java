@@ -42,12 +42,19 @@ public final class CodexData
 		Map<String, Integer> combatAchievementTasks;
 	}
 
+	/** boosts.json: per quest, the skill requirements a temporary boost can meet, with their level. */
+	private static final class RawBoosts
+	{
+		Map<String, Map<String, Integer>> quests;
+	}
+
 	private final Map<String, QuestDef> quests = new LinkedHashMap<>();
 	private final Map<String, DiaryDef> diaries = new LinkedHashMap<>();
 	private final Map<String, Integer> combatAchievementTasks;
 	private final Map<String, Integer> unlocks = new HashMap<>();
 	private final Map<String, List<String>> questsNeeding = new HashMap<>();
 	private final Map<String, List<String>> diariesNeeding = new HashMap<>();
+	private Map<String, Map<String, Integer>> boostable = Collections.emptyMap();
 
 	public CodexData(List<QuestDef> questList, List<DiaryDef> diaryList, Map<String, Integer> caTasks)
 	{
@@ -74,13 +81,49 @@ public final class CodexData
 			try (Reader reader = new InputStreamReader(in, StandardCharsets.UTF_8))
 			{
 				Raw raw = gson.fromJson(reader, Raw.class);
-				return new CodexData(raw.quests, raw.diaries, raw.combatAchievementTasks);
+				CodexData data = new CodexData(raw.quests, raw.diaries, raw.combatAchievementTasks);
+				data.boostable = loadBoosts(gson);
+				return data;
 			}
 		}
 		catch (IOException e)
 		{
 			throw new IllegalStateException("Could not read codex-data.json", e);
 		}
+	}
+
+	/** The boostable requirements; none at all if the file is missing, which only costs the boost hints. */
+	private static Map<String, Map<String, Integer>> loadBoosts(Gson gson) throws IOException
+	{
+		try (InputStream in = CodexData.class.getResourceAsStream("/com/codex/navigator/boosts.json"))
+		{
+			if (in == null)
+			{
+				return Collections.emptyMap();
+			}
+			try (Reader reader = new InputStreamReader(in, StandardCharsets.UTF_8))
+			{
+				RawBoosts raw = gson.fromJson(reader, RawBoosts.class);
+				return raw == null || raw.quests == null ? Collections.emptyMap() : raw.quests;
+			}
+		}
+	}
+
+	/** Replaces the boostable requirements, for tests. */
+	public void setBoostable(Map<String, Map<String, Integer>> value)
+	{
+		boostable = value == null ? Collections.emptyMap() : value;
+	}
+
+	/**
+	 * True when the quest's requirement of this skill at this level may be met with a temporary boost. Only
+	 * requirements Quest Helper marks boostable count; an unmarked one is treated as needing the real level.
+	 */
+	public boolean boostable(String quest, String skill, int level)
+	{
+		Map<String, Integer> skills = boostable.get(quest);
+		Integer marked = skills == null ? null : skills.get(skill);
+		return marked != null && marked == level;
 	}
 
 	/** Counts, for every quest, how many quests and diaries need it somewhere down their chain. */

@@ -1,7 +1,10 @@
 package com.codex.navigator.ui;
 
 import com.codex.navigator.core.AccountSnapshot;
+import com.codex.navigator.core.Boosts;
+import com.codex.navigator.core.Effort;
 import com.codex.navigator.core.Goal;
+import com.codex.navigator.core.Hazards;
 import com.codex.navigator.core.Plan;
 import com.codex.navigator.core.Planner;
 import com.codex.navigator.core.SkillGap;
@@ -55,6 +58,11 @@ final class DetailView
 		stack.add(backRow);
 
 		stack.add(hero(nav, plan));
+		Card risks = risks(nav, plan);
+		if (risks != null)
+		{
+			stack.add(risks);
+		}
 
 		requirements(stack, nav, plan, showMet, toggleMet);
 		if (goal.getType() == Goal.Type.DIARY && !plan.isComplete())
@@ -80,7 +88,7 @@ final class DetailView
 				}
 				shown.add(step);
 			}
-			stack.add(new SectionHeader("Path", plan.getQuestsDone() + "/" + plan.getQuestsTotal()));
+			stack.add(new SectionHeader("Path", toGo(plan)));
 			Card pathCard = new Card(new BorderLayout());
 			pathCard.setBorder(new EmptyBorder(6, 8, 6, 8));
 			StackPanel rows = new StackPanel(0, 0);
@@ -118,6 +126,10 @@ final class DetailView
 		{
 			leadsTo(stack, nav, goal.getName());
 		}
+		if (goal.getType() == Goal.Type.SKILL && goal.getSkill() != null)
+		{
+			opens(stack, nav, goal);
+		}
 		return stack;
 	}
 
@@ -127,9 +139,11 @@ final class DetailView
 		AccountSnapshot account = nav.account();
 		List<JPanel> unmetRows = new ArrayList<>();
 		List<JPanel> metRows = new ArrayList<>();
+		int boostOnly = 0;
 		for (SkillGap gap : plan.getSkills())
 		{
 			(gap.isMet() ? metRows : unmetRows).add(skillRow(nav, gap));
+			boostOnly += gap.isBoostable() ? 1 : 0;
 		}
 		if (plan.getQuestPointTarget() > 0)
 		{
@@ -149,7 +163,9 @@ final class DetailView
 		{
 			return;
 		}
-		stack.add(new SectionHeader("Requirements", unmetRows.isEmpty() ? "all met" : unmetRows.size() + " to go"));
+		int toTrain = unmetRows.size() - boostOnly;
+		stack.add(new SectionHeader("Requirements", unmetRows.isEmpty() ? "all met"
+			: toTrain == 0 ? boostOnly + " to boost" : unmetRows.size() + " to go"));
 		Card card = new Card(new BorderLayout());
 		StackPanel list = new StackPanel(5, 0);
 		for (JPanel row : unmetRows)
@@ -217,6 +233,61 @@ final class DetailView
 		}
 	}
 
+	/** Rows listed under Opens before the rest fold into the header's count. */
+	private static final int OPENS_SHOWN = 8;
+
+	/**
+	 * The quests and diary tiers a level goal opens: those whose requirement in the skill lies between the level
+	 * now and the goal, each with the level it asks for and whether anything else still holds it back.
+	 */
+	private static void opens(StackPanel stack, Navigation nav, Goal goal)
+	{
+		AccountSnapshot account = nav.account();
+		if (!account.isLoggedIn())
+		{
+			return;
+		}
+		Planner planner = nav.planner();
+		net.runelite.api.Skill skill = goal.getSkill();
+		// Quests and tiers together, in the order their levels come.
+		List<Object[]> rows = new ArrayList<>();
+		for (QuestDef def : planner.opens(skill, goal.getLevel(), account, nav.includeMiniquests()))
+		{
+			int need = Planner.need(def.skills, skill);
+			List<String> blockers = planner.blockers(def, account);
+			// The skill itself is one blocker; whatever else is left is what the level alone will not fix.
+			blockers.remove(skill.getName() + " " + need);
+			Step.Status status = blockers.isEmpty() ? Step.Status.READY : Step.Status.BLOCKED;
+			String detail = skill.getName() + " " + need + (blockers.isEmpty() ? "  ·  then ready"
+				: "  ·  also " + blockers.get(0) + (blockers.size() > 1 ? " +" + (blockers.size() - 1) : ""));
+			rows.add(new Object[]{need, Row.of(status, def.name, detail, null, null, () -> nav.open(Goal.quest(def.name)))});
+		}
+		for (com.codex.navigator.data.DiaryDef def : planner.diariesOpened(skill, goal.getLevel(), account))
+		{
+			int need = Planner.need(def.skills, skill);
+			rows.add(new Object[]{need, Row.of(Step.Status.BLOCKED, def.name + " Diary", skill.getName() + " " + need
+				+ "  ·  diary tier", null, null, () -> nav.open(Goal.diary(def.name)))});
+		}
+		if (rows.isEmpty())
+		{
+			return;
+		}
+		rows.sort(java.util.Comparator.comparingInt(r -> (Integer) r[0]));
+		stack.add(new SectionHeader("Opens", String.valueOf(rows.size())));
+		int shown = Math.min(OPENS_SHOWN, rows.size());
+		for (int i = 0; i < shown; i++)
+		{
+			stack.add((JComponent) rows.get(i)[1]);
+		}
+		if (rows.size() > shown)
+		{
+			JLabel tail = Ui.label("+ " + (rows.size() - shown) + " more up to " + skill.getName() + " " + goal.getLevel(),
+				Theme.small(), Theme.TEXT_FAINT);
+			tail.setBorder(new EmptyBorder(0, 4, 0, 0));
+			stack.add(tail);
+		}
+	}
+
 	private static JLabel toggle(String text, Runnable action)
 	{
 		JLabel toggle = Ui.label(text, Theme.small(), Theme.GOLD);
@@ -236,6 +307,83 @@ final class DetailView
 		return toggle;
 	}
 
+	/** Most quests a path's risk card names; the rest are counted. */
+	private static final int RISKS_SHOWN = 4;
+
+	/**
+	 * The deadly fights and Wilderness trips still ahead on this path. A quest's own risk is shown to every account,
+	 * since it is worth knowing before you start; the risks along a longer path only on one life, where they decide
+	 * what to prepare for. Null when there is nothing to say.
+	 */
+	private static Card risks(Navigation nav, Plan plan)
+	{
+		AccountSnapshot account = nav.account();
+		List<String> quests = new ArrayList<>();
+		for (Step step : plan.getPath())
+		{
+			if (step.getKind() == Step.Kind.QUEST && step.getStatus() != Step.Status.DONE && step.getQuest() != null
+				&& Hazards.of(step.getQuest()) != null && !quests.contains(step.getQuest()))
+			{
+				quests.add(step.getQuest());
+			}
+		}
+		boolean single = plan.getGoal().getType() == Goal.Type.QUEST;
+		if (single)
+		{
+			quests.retainAll(java.util.Collections.singletonList(plan.getGoal().getName()));
+		}
+		if (quests.isEmpty() || !single && !account.isOneLife())
+		{
+			return null;
+		}
+		Card card = new Card(new BorderLayout(0, 4));
+		card.setBorder(new EmptyBorder(8, 10, 8, 10));
+		JPanel text = new JPanel();
+		text.setOpaque(false);
+		text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
+		String head = account.isOneLife() ? "ON ONE LIFE" : Hazards.of(quests.get(0)).getKind() == Hazards.Hazard.Kind.WILDERNESS
+			? "INTO THE WILDERNESS" : "A FIGHT TO PREPARE FOR";
+		text.add(Ui.label(head, Theme.small(), Theme.EMBER));
+		if (single)
+		{
+			text.add(Ui.wrapped(Hazards.of(quests.get(0)).getLine() + ".", Theme.body(), Theme.TEXT, 190));
+		}
+		else
+		{
+			text.add(Ui.wrapped(quests.size() == 1 ? "One quest on this path asks for a real risk."
+				: quests.size() + " quests on this path ask for a real risk.", Theme.small(), Theme.TEXT_MUTED, 190));
+			for (int i = 0; i < Math.min(RISKS_SHOWN, quests.size()); i++)
+			{
+				String quest = quests.get(i);
+				JLabel row = Ui.wrapped(quest + ": " + Hazards.of(quest).getLine(), Theme.small(), Theme.TEXT, 190);
+				row.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+				row.addMouseListener(new MouseAdapter()
+				{
+					@Override
+					public void mouseReleased(MouseEvent e)
+					{
+						nav.open(Goal.quest(quest));
+					}
+				});
+				row.setBorder(new EmptyBorder(3, 0, 0, 0));
+				text.add(row);
+			}
+			if (quests.size() > RISKS_SHOWN)
+			{
+				text.add(Ui.label("and " + (quests.size() - RISKS_SHOWN) + " more", Theme.small(), Theme.TEXT_FAINT));
+			}
+		}
+		if (account.isOneLife())
+		{
+			JLabel note = Ui.wrapped(single ? "Suggested after safer quests until you pin it." : "Plan your gear for these.",
+				Theme.small(), Theme.TEXT_FAINT, 190);
+			note.setBorder(new EmptyBorder(3, 0, 0, 0));
+			text.add(note);
+		}
+		card.add(text, BorderLayout.CENTER);
+		return card;
+	}
+
 	private static Card hero(Navigation nav, Plan plan)
 	{
 		Card card = new Card(new BorderLayout(0, 10));
@@ -247,6 +395,21 @@ final class DetailView
 		titles.setLayout(new BoxLayout(titles, BoxLayout.Y_AXIS));
 		titles.add(Ui.wrapped(plan.getTitle(), Theme.title(), Theme.GOLD_BRIGHT, 168));
 		titles.add(Ui.wrapped(plan.getSubtitle(), Theme.small(), Theme.TEXT_MUTED, 168));
+		if (plan.getHoursLeft() > 0 && !plan.isAwaitingTasks())
+		{
+			boolean ownPace = usesPace(plan);
+			// Wrapped: "at your pace" on a long goal runs past the card's edge on one line.
+			JLabel time = Ui.wrapped("About " + Effort.format(plan.getHoursLeft()).substring(1) + " of play left"
+				+ (ownPace ? " at your pace" : ""), Theme.small(), Theme.TEXT_FAINT, 176);
+			time.setToolTipText(ownPace ? "Training at the pace you have shown, plus a typical play-through of each quest left"
+				: "Training at steady rates plus a typical play-through of each quest left");
+			titles.add(time);
+			JLabel when = when(nav, plan, true);
+			if (when != null)
+			{
+				titles.add(when);
+			}
+		}
 		card.add(titles, BorderLayout.NORTH);
 
 		JPanel middle = new JPanel(new BorderLayout(10, 0));
@@ -298,12 +461,31 @@ final class DetailView
 
 	private static JPanel skillRow(Navigation nav, SkillGap gap)
 	{
+		String tip = gap.isMet() ? null : Planner.formatXp(gap.xpToGo()) + " xp to go, about "
+			+ Effort.format(gap.hours()).substring(1) + (gap.getPace() != 1 ? " at your pace" : "");
+		if (gap.isBoostable())
+		{
+			// No training needed: the level is met on the day with a pie or a potion.
+			Boosts.Boost boost = Boosts.of(gap.getSkill());
+			String note = "Boost with " + boost.getItem() + " (+" + boost.amount(gap.getCurrent()) + ")";
+			return meterRow(nav.skillIcon(gap.getSkill()), gap.getSkill().getName(), gap.getCurrent(), gap.getTarget(),
+				gap.fraction(), note + " when the quest asks for it, or train: " + tip, note);
+		}
 		return meterRow(nav.skillIcon(gap.getSkill()), gap.getSkill().getName(), gap.getCurrent(), gap.getTarget(),
-			gap.fraction(), gap.isMet() ? null : Planner.formatXp(gap.xpToGo()) + " xp to go");
+			gap.fraction(), tip, null);
 	}
 
-	/** An icon, a name, "current / target" and a slim bar; met rows fade back and turn green. */
 	private static JPanel meterRow(BufferedImage icon, String name, int current, int target, double fraction, String tip)
+	{
+		return meterRow(icon, name, current, target, fraction, tip, null);
+	}
+
+	/**
+	 * An icon, a name, "current / target" and a slim bar; met rows fade back and turn green. A boost note, when
+	 * given, sits under the bar in teal and the figures turn teal too: the level is as good as met.
+	 */
+	private static JPanel meterRow(BufferedImage icon, String name, int current, int target, double fraction, String tip,
+		String boostNote)
 	{
 		boolean met = current >= target;
 		JPanel row = new JPanel(new BorderLayout(6, 2));
@@ -322,17 +504,91 @@ final class DetailView
 		JPanel line = new JPanel(new BorderLayout());
 		line.setOpaque(false);
 		line.add(Ui.label(name, Theme.small(), met ? Theme.TEXT_MUTED : Theme.TEXT), BorderLayout.WEST);
-		line.add(Ui.label(current + " / " + target, Theme.small(), met ? Theme.GREEN : Theme.GOLD), BorderLayout.EAST);
+		// A met level says what was needed: "40 / 10" reads like a shortfall at a glance.
+		JLabel figures = Ui.label(met ? current + "  (needs " + target + ")" : current + " / " + target, Theme.small(),
+			met ? Theme.GREEN : boostNote != null ? Theme.TEAL : Theme.GOLD);
+		if (met)
+		{
+			figures.setToolTipText(name + " " + current);
+		}
+		line.add(figures, BorderLayout.EAST);
 		right.add(line, BorderLayout.NORTH);
 		ProgressBar bar = new ProgressBar(4);
 		bar.setProgress(fraction, met, false);
 		right.add(bar, BorderLayout.CENTER);
+		if (boostNote != null)
+		{
+			right.add(Ui.label(boostNote, Theme.small(), Theme.TEAL), BorderLayout.SOUTH);
+		}
 		row.add(right, BorderLayout.CENTER);
 		if (tip != null)
 		{
 			row.setToolTipText(tip);
 		}
 		return row;
+	}
+
+	/**
+	 * "Around 3 Nov at your 40 min a day" (or just "Around 3 Nov" when short), from how much the account has played
+	 * lately by Codex Session Chronicle; null without Chronicle or with nothing left to play.
+	 */
+	static JLabel when(Navigation nav, Plan plan, boolean full)
+	{
+		com.codex.navigator.core.PlayTime time = nav.playTime();
+		if (time == null || plan.isComplete() || plan.getHoursLeft() <= 0 || plan.isAwaitingTasks())
+		{
+			return null;
+		}
+		long now = System.currentTimeMillis();
+		java.time.ZoneId zone = java.time.ZoneId.systemDefault();
+		String date = time.dateText(plan.getHoursLeft(), now, zone);
+		String text = full ? time.describe(plan.getHoursLeft(), now, zone) : date == null ? "Over a year off" : "Around " + date;
+		JLabel label = Ui.label(text, Theme.small(), Theme.TEAL);
+		label.setToolTipText("If your play goes to this goal, at the " + time.rateText() + " you have played lately ("
+			+ time.getSessions() + " sessions in Codex Session Chronicle)");
+		return label;
+	}
+
+	/**
+	 * The road's flag line: "Around 3 Nov" (or "Over a year off") when Chronicle gives a day; null without one, or
+	 * once nothing is left to do. The play left is on the focus card just above, so the flag does not repeat it.
+	 */
+	static String flagText(Navigation nav, Plan plan)
+	{
+		if (plan.isComplete() || plan.getHoursLeft() <= 0 || plan.isAwaitingTasks())
+		{
+			return null;
+		}
+		com.codex.navigator.core.PlayTime time = nav.playTime();
+		if (time == null)
+		{
+			return null;
+		}
+		String date = time.dateText(plan.getHoursLeft(), System.currentTimeMillis(), java.time.ZoneId.systemDefault());
+		return date == null ? "Over a year off" : "Around " + date;
+	}
+
+	/**
+	 * The Path header's count: the quests still ahead ("12 to go"), as the road counts them. The ring above already
+	 * shows how many are done, so the header does not repeat that figure.
+	 */
+	static String toGo(Plan plan)
+	{
+		int ahead = Math.max(0, plan.getQuestsTotal() - plan.getQuestsDone());
+		return ahead == 0 ? "all done" : ahead + " to go";
+	}
+
+	/** True when a level still to train is timed at the player's learned pace rather than the steady rates. */
+	static boolean usesPace(Plan plan)
+	{
+		for (SkillGap gap : plan.getSkills())
+		{
+			if (!gap.isMet() && !gap.isBoostable() && gap.getPace() != 1)
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private static JPanel spacer(int height)

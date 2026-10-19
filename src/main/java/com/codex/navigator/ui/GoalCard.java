@@ -1,5 +1,8 @@
 package com.codex.navigator.ui;
 
+import com.codex.navigator.core.Chains;
+import com.codex.navigator.core.Effort;
+import com.codex.navigator.core.Goal;
 import com.codex.navigator.core.Plan;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
@@ -17,6 +20,14 @@ final class GoalCard
 
 	static Card build(Navigation nav, Plan plan, boolean focus, boolean showActions)
 	{
+		return build(nav, plan, focus, showActions, true);
+	}
+
+	/**
+	 * @param showDate false where the day is drawn elsewhere, as under the Compass's focus where the road's flag carries it
+	 */
+	static Card build(Navigation nav, Plan plan, boolean focus, boolean showActions, boolean showDate)
+	{
 		boolean done = plan.isComplete();
 		Card card = new Card(new BorderLayout(0, 8));
 		card.setBorder(new EmptyBorder(10, 10, 10, 10));
@@ -28,7 +39,13 @@ final class GoalCard
 		int size = done && !focus ? 30 : focus ? 50 : 40;
 		ProgressRing ring = new ProgressRing(size, focus ? 5f : 4f);
 		ring.setProgress(plan.getProgress(), done, false);
-		if (plan.isAwaitingTasks())
+		// Logged out, the account is unknown: no figure is better than a confident 0%.
+		boolean known = nav.account().isLoggedIn();
+		if (!known)
+		{
+			ring.setCenterText("-", Theme.TEXT_FAINT);
+		}
+		else if (plan.isAwaitingTasks())
 		{
 			ring.setCenterText("Tasks");
 		}
@@ -64,18 +81,44 @@ final class GoalCard
 		else
 		{
 			text.add(Ui.wrapped(plan.getSubtitle(), Theme.small(), Theme.TEXT_MUTED, textWidth));
-			if (plan.getQuestsTotal() > 1)
+			if (!known)
+			{
+				text.add(Ui.wrapped("Progress shows once you log in", Theme.small(), Theme.TEXT_FAINT, textWidth));
+			}
+			else if (plan.getQuestsTotal() > 1)
 			{
 				text.add(Ui.label(plan.getQuestsDone() + " of " + plan.getQuestsTotal() + " quests done", Theme.small(),
 					Theme.TEXT_FAINT));
+			}
+			if (known && plan.getHoursLeft() > 0 && !plan.isAwaitingTasks())
+			{
+				JLabel time = Ui.label(Effort.format(plan.getHoursLeft()) + " of play left", Theme.small(), Theme.TEXT_FAINT);
+				time.setToolTipText(DetailView.usesPace(plan)
+					? "Training at the pace you have shown, plus a typical play-through of each quest left"
+					: "Training at steady rates plus a typical play-through of each quest left");
+				text.add(time);
+				JLabel when = showDate ? DetailView.when(nav, plan, false) : null;
+				if (when != null)
+				{
+					text.add(when);
+				}
 			}
 		}
 		top.add(text, BorderLayout.CENTER);
 		card.add(top, BorderLayout.NORTH);
 
+		Goal after = done ? Chains.next(nav.planner(), plan.getGoal(), nav.account(), nav.includeMiniquests()) : null;
+		if (after != null && nav.goals().isPinned(after))
+		{
+			after = null;
+		}
 		if (!done || focus)
 		{
-			card.add(new NextStepBox(plan.getNext(), 150), BorderLayout.CENTER);
+			card.add(after != null ? chain(nav, after, focus) : new NextStepBox(plan.getNext(), 150), BorderLayout.CENTER);
+		}
+		else if (after != null && !showActions)
+		{
+			card.add(chain(nav, after, focus), BorderLayout.CENTER);
 		}
 
 		if (showActions)
@@ -97,6 +140,10 @@ final class GoalCard
 				line.add(actions, BorderLayout.EAST);
 				text.add(line);
 				card.setBorder(new EmptyBorder(8, 10, 8, 10));
+				if (after != null)
+				{
+					card.add(chain(nav, after, focus), BorderLayout.SOUTH);
+				}
 			}
 			else
 			{
@@ -105,6 +152,36 @@ final class GoalCard
 		}
 		card.onClick(() -> nav.open(plan.getGoal()));
 		return card;
+	}
+
+	/**
+	 * The next link in a finished goal's chain, ready to pin: the next diary tier, or the quest this one
+	 * leads straight into. Pressing it on the focus card makes the successor the new focus.
+	 */
+	static JPanel chain(Navigation nav, Goal next, boolean asFocus)
+	{
+		Plan plan = nav.planner().plan(next, nav.account());
+		JPanel box = new JPanel(new BorderLayout(6, 0));
+		box.setOpaque(false);
+		box.setBorder(new EmptyBorder(6, 0, 0, 0));
+		JPanel text = new JPanel();
+		text.setOpaque(false);
+		text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
+		text.add(Ui.label("NEXT IN LINE", Theme.small(), Theme.GOLD));
+		JLabel name = Ui.label(plan.getTitle(), Theme.body(), Theme.TEXT);
+		name.setToolTipText(plan.getTitle());
+		name.setMinimumSize(new java.awt.Dimension(10, name.getPreferredSize().height));
+		text.add(name);
+		text.setMinimumSize(new java.awt.Dimension(10, 10));
+		text.setPreferredSize(new java.awt.Dimension(10, text.getPreferredSize().height));
+		box.add(text, BorderLayout.CENTER);
+		JPanel holder = new JPanel(new BorderLayout());
+		holder.setOpaque(false);
+		// After the focus is reached, its successor takes over as focus; otherwise it joins the list.
+		holder.add(asFocus ? new CodexButton("Focus", true, () -> nav.goals().makeFocus(next))
+			: new CodexButton("Pin", true, () -> nav.goals().toggle(next)), BorderLayout.SOUTH);
+		box.add(holder, BorderLayout.EAST);
+		return box;
 	}
 
 	static JLabel hint(String text)

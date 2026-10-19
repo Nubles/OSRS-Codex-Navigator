@@ -12,6 +12,8 @@ public class ProgressBar extends JComponent
 {
 	private final Animator animator = new Animator(this);
 	private boolean complete;
+	/** Where the bar stood before, for a bar showing a gain; below zero for an ordinary bar. */
+	private double baseline = -1;
 
 	public ProgressBar(int height)
 	{
@@ -25,6 +27,16 @@ public class ProgressBar extends JComponent
 	{
 		this.complete = complete;
 		animator.set(Math.max(0, Math.min(1, progress)), animate);
+	}
+
+	/**
+	 * Shows the bar as a gain: the part up to {@code before} in the quiet ramp, the rest lit in bright gold, so a
+	 * plan's effect reads at a glance.
+	 */
+	public void setBaseline(double before)
+	{
+		baseline = Math.max(0, Math.min(1, before));
+		repaint();
 	}
 
 	@Override
@@ -49,7 +61,21 @@ public class ProgressBar extends JComponent
 			{
 				g.setPaint(new GradientPaint(0, 0, Theme.progressColor(0), w, 0, Theme.progressColor(1)));
 			}
-			g.fill(new RoundRectangle2D.Float(0, 0, fill, h, arc, arc));
+			if (baseline >= 0 && !complete)
+			{
+				g.setColor(Theme.GOLD_BRIGHT);
+				g.fill(new RoundRectangle2D.Float(0, 0, fill, h, arc, arc));
+				float base = (float) (w * baseline);
+				if (base > 0)
+				{
+					g.setColor(Theme.GOLD_DIM);
+					g.fill(new RoundRectangle2D.Float(0, 0, Math.max(h, base), h, arc, arc));
+				}
+			}
+			else
+			{
+				g.fill(new RoundRectangle2D.Float(0, 0, fill, h, arc, arc));
+			}
 			g.setColor(Theme.alpha(java.awt.Color.WHITE, 40));
 			g.drawLine(Math.round(arc / 2), 0, Math.round(fill - arc / 2), 0);
 		}
