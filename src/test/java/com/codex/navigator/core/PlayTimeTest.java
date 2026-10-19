@@ -13,8 +13,9 @@ import org.junit.Test;
 
 /**
  * Codex Session Chronicle saves its journal under {@code codexsessionchronicle.journal}: a list of sessions, each
- * with {@code startedAt} and {@code playedMs}. The fixture was written by Chronicle's own Chronicle and Journal
- * classes (three evenings of 90, 45 and 120 minutes), so a change to that shape fails here.
+ * with {@code startedAt} and {@code playedMs}. The fixture is a byte copy of Chronicle's own
+ * {@code chronicle-journal.json}, the file its JournalFixtureTest checks its writer against (two sessions: Vorkath for
+ * 26 min 15 s, then an hour of Mining); copy it again whenever Chronicle's changes.
  */
 public class PlayTimeTest
 {
@@ -32,11 +33,24 @@ public class PlayTimeTest
 	}
 
 	@Test
-	public void chroniclesJournalGivesADailyHabitAndADate()
+	public void chroniclesJournalIsRead()
 	{
-		// Six days after the first evening: 255 minutes counted over the seven-day floor is about 36 minutes a day.
+		// Six days after the first session: 86.25 minutes counted over the seven-day floor.
 		long now = T0 + 6 * DAY;
 		PlayTime time = PlayTime.read(new Gson(), fixture(), now);
+		assertNotNull(time);
+		assertEquals(2, time.getSessions());
+		assertEquals((1_575_000 + 3_600_000) / 3_600_000.0 / 7, time.getHoursPerDay(), 1e-9);
+	}
+
+	@Test
+	public void threeEveningsGiveADailyHabitAndADate()
+	{
+		// Evenings of 90, 45 and 120 minutes; six days after the first, 255 minutes over seven days is about 36 a day.
+		String json = "[{\"startedAt\":" + T0 + ",\"playedMs\":5400000},{\"startedAt\":" + (T0 + 2 * DAY)
+			+ ",\"playedMs\":2700000},{\"startedAt\":" + (T0 + 5 * DAY) + ",\"playedMs\":7200000}]";
+		long now = T0 + 6 * DAY;
+		PlayTime time = PlayTime.read(new Gson(), json, now);
 		assertNotNull(time);
 		assertEquals(3, time.getSessions());
 		assertEquals(255 / 60.0 / 7, time.getHoursPerDay(), 1e-9);

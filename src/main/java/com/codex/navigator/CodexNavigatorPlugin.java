@@ -196,6 +196,8 @@ public class CodexNavigatorPlugin extends Plugin
 	 * board written then would tell other plugins your goals had gone back to zero. It is written once they settle.
 	 */
 	private boolean boardDeferred;
+	/** Set by a world hop, so the login after it waits for varbits like any other. */
+	private boolean hopped;
 
 	@Provides
 	CodexNavigatorConfig provideConfig(ConfigManager configManager)
@@ -293,8 +295,10 @@ public class CodexNavigatorPlugin extends Plugin
 		GameState state = event.getGameState();
 		if (state == GameState.LOGGED_IN)
 		{
-			if (!snapshot.isLoggedIn())
+			// A world hop is a fresh login too: the varbits arrive again over the first ticks.
+			if (!snapshot.isLoggedIn() || hopped)
 			{
+				hopped = false;
 				markLogin();
 			}
 			dirty = true;
@@ -302,6 +306,7 @@ public class CodexNavigatorPlugin extends Plugin
 		}
 		else if (state == GameState.HOPPING || state == GameState.CONNECTION_LOST)
 		{
+			hopped |= state == GameState.HOPPING;
 			// The time away is not training; the next drop in each skill starts a fresh bout.
 			pace.pause();
 		}

@@ -10,9 +10,10 @@ import java.util.Map;
  * key {@code codexnavigator.goalBoard}, so a companion plugin (another Codex plugin, say) can show or plan
  * around what the player is working toward without knowing anything about quests or diaries.
  *
- * <p>The shape is a contract: fields are only ever added, never renamed or removed, and {@link #version}
- * goes up only if that promise ever has to be broken. Numbers are rounded so the board changes when
- * something a reader would notice changes, not with every point of experience.
+ * <p>The shape is a contract: fields are only ever added, never renamed or removed. If that promise ever has to
+ * be broken, the new shape is saved under a new key (as {@code bankV1} and {@code kitsV1} are named), never under
+ * this one with a higher {@link #version}: no reader checks the version, so it is not a break signal. Numbers are
+ * rounded so the board changes when something a reader would notice changes, not with every point of experience.
  */
 public final class GoalBoard
 {
