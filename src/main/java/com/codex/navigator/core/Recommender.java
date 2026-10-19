@@ -198,7 +198,8 @@ public final class Recommender
 				continue;
 			}
 			List<SkillGap> gaps = planner.levelGapsOnly(q, account);
-			if (gaps == null || gaps.isEmpty())
+			// A quest a boost can start today is listed under boostNow instead.
+			if (gaps == null || gaps.isEmpty() || planner.boostGaps(q, account) != null)
 			{
 				continue;
 			}
@@ -228,6 +229,39 @@ public final class Recommender
 			picks.add(new Pick(q, reason.toString(), -hours / weight, gaps, hours, serves));
 		}
 		picks.sort(Comparator.comparingDouble(Pick::getScore).reversed().thenComparing(p -> p.getQuest().name));
+		return picks.size() > limit ? new ArrayList<>(picks.subList(0, limit)) : picks;
+	}
+
+	/**
+	 * Quests that can be started today with a pie or a potion: held back only by levels that may be boosted, each
+	 * within reach of its everyday boost. Ranked like {@link #readyNow}, goals first. Each pick's gaps are the
+	 * levels to boost and its reason names the first boost.
+	 */
+	public List<Pick> boostNow(AccountSnapshot account, List<Goal> goals, boolean includeMiniquests, int limit)
+	{
+		Map<String, List<Goal>> reach = goalReach(goals, account);
+		Goal focus = goals.isEmpty() ? null : goals.get(0);
+		List<Pick> picks = new ArrayList<>();
+		for (QuestDef q : data.quests())
+		{
+			if (!eligible(q, account, includeMiniquests))
+			{
+				continue;
+			}
+			List<SkillGap> gaps = planner.boostGaps(q, account);
+			if (gaps == null)
+			{
+				continue;
+			}
+			int unlocks = data.unlockCount(q.name);
+			List<Goal> serves = reach.getOrDefault(q.name, Collections.emptyList());
+			double worth = unlocks * 2.0 + q.points * 1.5 - (q.miniquest ? 1 : 0) + goalWorth(serves, focus);
+			double hours = Effort.questHours(q);
+			picks.add(new Pick(q, Planner.boostDetail(gaps), Math.max(0.2, worth) / (hours + 0.5), gaps, hours, serves));
+		}
+		picks.sort(Comparator.comparingInt((Pick p) -> tier(p.getServes(), focus))
+			.thenComparing(Comparator.comparingDouble(Pick::getScore).reversed())
+			.thenComparing(p -> p.getQuest().name));
 		return picks.size() > limit ? new ArrayList<>(picks.subList(0, limit)) : picks;
 	}
 

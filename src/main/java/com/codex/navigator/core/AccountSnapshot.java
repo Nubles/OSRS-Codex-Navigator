@@ -28,6 +28,8 @@ public final class AccountSnapshot
 	private final int combatLevel;
 	private final int combatAchievementPoints;
 	private final boolean members;
+	private final Map<Skill, Double> pace;
+	private final Map<Skill, Double> paceHours;
 
 	private AccountSnapshot(Builder b)
 	{
@@ -42,6 +44,8 @@ public final class AccountSnapshot
 		combatLevel = b.combatLevel;
 		combatAchievementPoints = b.combatAchievementPoints;
 		members = b.members;
+		pace = Collections.unmodifiableMap(new EnumMap<>(b.pace));
+		paceHours = Collections.unmodifiableMap(new EnumMap<>(b.paceHours));
 	}
 
 	public static AccountSnapshot empty()
@@ -131,10 +135,50 @@ public final class AccountSnapshot
 		return members;
 	}
 
+	/**
+	 * How many times faster than {@link Effort}'s steady rates this player trains the skill, as learned by
+	 * {@link Pace}; 1 when nothing has been learned yet.
+	 */
+	public double pace(Skill skill)
+	{
+		return pace.getOrDefault(skill, 1.0);
+	}
+
+	/** The learned pace of every skill that has one. */
+	public Map<Skill, Double> paces()
+	{
+		return pace;
+	}
+
+	/** Hours of training the skill's pace was learned from; 0 when it has none. */
+	public double paceHours(Skill skill)
+	{
+		return paceHours.getOrDefault(skill, 0.0);
+	}
+
+	/**
+	 * A builder holding everything in this snapshot, for asking "what if": a plan for an evening adds the
+	 * quests and experience it expects and plans again.
+	 */
+	public Builder toBuilder()
+	{
+		Builder b = new Builder().loggedIn(loggedIn).playerName(playerName).questPoints(questPoints)
+			.combatLevel(combatLevel).combatAchievementPoints(combatAchievementPoints).members(members);
+		b.levels.putAll(levels);
+		b.xp.putAll(xp);
+		b.quests.putAll(quests);
+		b.diariesDone.addAll(diariesDone);
+		b.combatAchievementsDone.putAll(combatAchievementsDone);
+		b.pace.putAll(pace);
+		b.paceHours.putAll(paceHours);
+		return b;
+	}
+
 	/** Changes whenever anything the panel shows changes, so unchanged ticks can be skipped. */
 	public int signature()
 	{
-		return Objects.hash(structureSignature(), xp);
+		// Learned pace drifts slowly while training, so it rides with experience and is throttled the same way.
+		return Objects.hash(structureSignature(), xp, pace);
 	}
 
 	/**
@@ -160,6 +204,8 @@ public final class AccountSnapshot
 		private int combatLevel = 3;
 		private int combatAchievementPoints;
 		private boolean members = true;
+		private final Map<Skill, Double> pace = new EnumMap<>(Skill.class);
+		private final Map<Skill, Double> paceHours = new EnumMap<>(Skill.class);
 
 		public Builder loggedIn(boolean value)
 		{
@@ -225,6 +271,28 @@ public final class AccountSnapshot
 		public Builder members(boolean value)
 		{
 			members = value;
+			return this;
+		}
+
+		/** The learned pace of each skill; see {@link AccountSnapshot#pace(Skill)}. */
+		public Builder pace(Map<Skill, Double> value)
+		{
+			pace.clear();
+			if (value != null)
+			{
+				pace.putAll(value);
+			}
+			return this;
+		}
+
+		/** The hours of training each skill's pace was learned from. */
+		public Builder paceHours(Map<Skill, Double> value)
+		{
+			paceHours.clear();
+			if (value != null)
+			{
+				paceHours.putAll(value);
+			}
 			return this;
 		}
 

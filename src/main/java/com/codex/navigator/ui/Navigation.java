@@ -28,4 +28,10 @@ interface Navigation
 	void showTab(int tab);
 
 	void showAtlas(int list);
+
+	/** Which session length is chosen in the Goals view's session plan, as an index into its choices. */
+	int sessionChoice();
+
+	/** Chooses a session length and redraws the plan. */
+	void chooseSession(int choice);
 }

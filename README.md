@@ -15,6 +15,9 @@ It is the first plugin in the **Codex** suite: a family of RuneLite plugins that
 - **Account crest.** One ring for your whole account, plus ledgers for quests, diaries and combat achievement tasks.
 - **Compass.** Your focus goal and its next step, then quests in progress, the **best next** quests and the quests held back by only a little training. Best next puts the quests on the way to your focus first, then those on the way to your other goals, then the rest by how much they open per hour. Every suggestion says about how long it takes.
 - **Goals.** Pin any quest, diary tier or the quest cape. The first pin is your focus; every goal shows its progress, its next step and about how much play is left. Finished goals move to a Completed list, a line in your chatbox tells you the moment one is done, and each offers the **next in line** (the next diary tier, or the quest it leads into) to pin with one click.
+- **Next session.** Pick one to four hours and the Codex fills them from your goals: whole quests and levels first, then training for whatever time is left, each step unlocking the next. Under the plan, every goal shows how far the session moves it ("Regicide 62% to 81%").
+- **Boost and go.** Quests you can start today with a pie or a potion: held back only by levels that the quest lets you boost, each within reach of an everyday boost ("Summer pie for Agility 56"). Path pages mark those levels in teal, and they cost no training time in any estimate.
+- **Your pace.** The Codex learns how fast you really train each skill from the experience you gain while it runs, and times every estimate with it. The Compass lists what it has learned ("Agility · 38% faster · from 3.4 h").
 - **Your route.** With two or more goals pinned, their paths are laid over one another into a single route. A quest or level that several goals share appears once, and the steps that move the most goals for the least time come first.
 - **Atlas.** Search and filter every quest, see each area's diary tiers as seals, and track combat achievement tiers.
 - **Path pages.** Open any goal to see every level, quest point and combat level it still needs with live bars, every quest on the way as a timeline (done, in progress, ready, or blocked and by what), and for a quest, what finishing it leads to.
@@ -24,7 +27,8 @@ It is the first plugin in the **Codex** suite: a family of RuneLite plugins that
 
 - **Diaries.** The client tells the Codex which diary tiers are complete, but not which of their tasks you have done. Once every level and quest a tier needs is met, the Codex says **Tasks** rather than showing a 99% it cannot measure.
 - **Free worlds.** On a free-to-play world, only free quests are suggested and diaries are left out, since they cannot be started there.
-- **Time estimates.** Times assume steady, ordinary training methods and a typical first play-through of each quest. They are there to compare one choice with another, so they read as "about" and err a little long.
+- **Time estimates.** Times assume steady, ordinary training methods and a typical first play-through of each quest, until the Codex has seen at least 15 minutes of your own training in a skill; then they move toward your pace over the first hour. Breaks, quest rewards and lamps are not counted as training. They are there to compare one choice with another, so they read as "about".
+- **Boosts.** A level counts as boostable only where Quest Helper marks the requirement as boostable, and only for skills with a plain, repeatable boost: pies, potions and the dwarven stout. Boost when the quest asks for the level; some quests check it at the start, others part-way through.
 - **Logged out.** Goals you pin while logged out are added to your account's goals when you next log in.
 
 <p align="center">
@@ -33,7 +37,7 @@ It is the first plugin in the **Codex** suite: a family of RuneLite plugins that
 
 ## Rules posture
 
-Codex Navigator only reads client state you can already see (quest states, varbits, levels) and draws its own panel and overlay. It does not click, move items, change menus, send chat messages or touch the network; the only thing it writes to the chatbox is an optional line that only you can see. Nothing leaves your computer, and pinned goals are saved per account (and per game mode, such as Leagues) in your RuneLite profile.
+Codex Navigator only reads client state you can already see (quest states, varbits, levels) and draws its own panel and overlay. It does not click, move items, change menus, send chat messages or touch the network; the only thing it writes to the chatbox is an optional line that only you can see. Nothing leaves your computer, and pinned goals and your learned pace are saved per account (and per game mode, such as Leagues) in your RuneLite profile.
 
 ## For other plugins
 
@@ -72,10 +76,13 @@ Codex Navigator saves two keys per RuneScape profile in the `codexnavigator` con
 | Suggest when unfocused | On | With nothing pinned, the plaque suggests the best quest to start. |
 | Include miniquests | On | Lists and suggests miniquests alongside quests. |
 | Announce finished goals | On | A chatbox line the moment a pinned goal is complete. |
+| Learn my pace | On | Times training by how fast you really train each skill. Off uses the steady rates. |
 
 ## Data
 
 Quest and diary requirements are bundled in `src/main/resources/com/codex/navigator/codex-data.json`. They are generated from the [Fate Locked](https://github.com/Nubles/OSRS-Fate-Locked) dataset, with names mapped to RuneLite's `Quest` enum so progress can be read from the game. To regenerate the data, see `tools/build-codex-data.py`.
+
+Which skill requirements can be boosted comes from [Quest Helper](https://github.com/Zoinkwiz/quest-helper) (BSD 2-Clause, see `THIRD_PARTY_NOTICES.md`) and is bundled as `boosts.json`; `tools/build-boosts.py` rebuilds it.
 
 ## Development
 

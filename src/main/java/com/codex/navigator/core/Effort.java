@@ -56,7 +56,7 @@ public final class Effort
 	}
 
 	/** Experience per hour while training at this level. */
-	static double xpPerHour(Skill skill, int level)
+	public static double xpPerHour(Skill skill, int level)
 	{
 		int[] r = RATES.getOrDefault(skill, new int[]{10_000, 40_000, 90_000});
 		if (level <= 50)
@@ -71,6 +71,45 @@ public final class Effort
 	 * the early levels count at early rates. Zero when the level is already reached.
 	 */
 	public static double trainingHours(Skill skill, int currentXp, int target)
+	{
+		return trainingHours(skill, currentXp, target, 1);
+	}
+
+	/**
+	 * Hours to train to {@code target} for a player who trains {@code pace} times faster than the steady rates
+	 * (see {@link Pace}). A pace of 1 is the table itself.
+	 */
+	public static double trainingHours(Skill skill, int currentXp, int target, double pace)
+	{
+		return tableHours(skill, currentXp, target) / (pace > 0 ? pace : 1);
+	}
+
+	/**
+	 * The experience reached after {@code hours} of training from {@code currentXp} at the given pace, never past
+	 * {@code capXp}. The inverse of {@link #trainingHours(Skill, int, int, double)}, for planning a fixed amount of time.
+	 */
+	public static int xpAfter(Skill skill, int currentXp, double hours, double pace, int capXp)
+	{
+		double left = hours * (pace > 0 ? pace : 1);
+		int xp = Math.max(0, currentXp);
+		int level = Math.max(1, Experience.getLevelForXp(xp));
+		while (left > 0 && xp < capXp)
+		{
+			int levelEnd = level < Experience.MAX_REAL_LEVEL ? Math.min(capXp, Experience.getXpForLevel(level + 1)) : capXp;
+			double rate = xpPerHour(skill, level);
+			double needed = (levelEnd - xp) / rate;
+			if (needed > left)
+			{
+				return (int) Math.min(capXp, xp + left * rate);
+			}
+			left -= needed;
+			xp = levelEnd;
+			level++;
+		}
+		return Math.min(xp, capXp);
+	}
+
+	private static double tableHours(Skill skill, int currentXp, int target)
 	{
 		int goal = Experience.getXpForLevel(Math.max(1, Math.min(target, Experience.MAX_REAL_LEVEL)));
 		if (currentXp >= goal)

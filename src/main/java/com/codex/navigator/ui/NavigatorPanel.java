@@ -60,6 +60,8 @@ public class NavigatorPanel extends PluginPanel implements Navigation
 	private boolean showMetLevels;
 	private String visible = TABS[0];
 	private boolean active;
+	/** Two hours: an ordinary evening. */
+	private int sessionChoice = 1;
 
 	public NavigatorPanel(Planner planner, Recommender recommender, GoalStore goals, SkillIconManager skillIcons,
 		BooleanSupplier includeMiniquests)
@@ -248,6 +250,28 @@ public class NavigatorPanel extends PluginPanel implements Navigation
 	{
 		showMetLevels = !showMetLevels;
 		replace(detail, buildDetail());
+	}
+
+	@Override
+	public int sessionChoice()
+	{
+		return sessionChoice;
+	}
+
+	@Override
+	public void chooseSession(int choice)
+	{
+		if (choice == sessionChoice)
+		{
+			return;
+		}
+		sessionChoice = choice;
+		if (TABS[1].equals(visible))
+		{
+			replace(goalsView, GoalsView.build(this));
+			revalidate();
+			repaint();
+		}
 	}
 
 	@Override

@@ -165,6 +165,13 @@ public final class Planner
 		double score = 0;
 		int items = 0;
 		double hours = 0;
+		// A level counts as boostable only if every requirement above the current level allows a boost and the
+		// everyday boost reaches it. A diary's own levels are never marked, so they always need training.
+		Map<Skill, Boolean> boostable = new EnumMap<>(Skill.class);
+		for (Map.Entry<Skill, Integer> e : targets.entrySet())
+		{
+			boostable.put(e.getKey(), account.level(e.getKey()) >= e.getValue());
+		}
 
 		for (String name : closure)
 		{
@@ -194,6 +201,7 @@ public final class Planner
 				hours += Effort.questHours(quest);
 			}
 			addSkills(targets, quest.skills);
+			markBoostable(boostable, quest, account);
 			questPointTarget = Math.max(questPointTarget, quest.questPoints);
 			combatTarget = Math.max(combatTarget, quest.combatLevel);
 		}
@@ -201,15 +209,18 @@ public final class Planner
 		List<SkillGap> skills = new ArrayList<>();
 		for (Map.Entry<Skill, Integer> e : targets.entrySet())
 		{
-			SkillGap gap = new SkillGap(e.getKey(), account.level(e.getKey()), e.getValue(), account.xp(e.getKey()));
+			SkillGap gap = new SkillGap(e.getKey(), account.level(e.getKey()), e.getValue(), account.xp(e.getKey()),
+				account.pace(e.getKey()), boostable.getOrDefault(e.getKey(), false));
 			skills.add(gap);
 			score += gap.fraction();
-			hours += gap.hours();
+			// A level a pie or potion covers costs no training time.
+			hours += gap.isBoostable() ? 0 : gap.hours();
 			items++;
 		}
-		// Unmet levels quickest first, so the next step is the level that frees the path soonest.
-		skills.sort(Comparator.comparing(SkillGap::isMet).thenComparingDouble(SkillGap::hours)
-			.thenComparingInt(SkillGap::xpToGo));
+		// Unmet levels quickest first, so the next step is the level that frees the path soonest; levels a boost
+		// covers go after the ones that need training.
+		skills.sort(Comparator.comparing(SkillGap::isMet).thenComparing(SkillGap::isBoostable)
+			.thenComparingDouble(SkillGap::hours).thenComparingInt(SkillGap::xpToGo));
 
 		if (questPointTarget > 0)
 		{
@@ -260,7 +271,7 @@ public final class Planner
 		}
 		for (SkillGap gap : skills)
 		{
-			if (!gap.isMet())
+			if (!gap.isMet() && !gap.isBoostable())
 			{
 				return trainStep(gap);
 			}
@@ -314,6 +325,11 @@ public final class Planner
 		{
 			return new Step(Step.Kind.QUEST, Step.Status.READY, quest.name, "Ready to start", quest.name, null);
 		}
+		List<SkillGap> boosts = boostGaps(quest, account);
+		if (boosts != null)
+		{
+			return new Step(Step.Kind.QUEST, Step.Status.READY, quest.name, boostDetail(boosts), quest.name, null);
+		}
 		String detail = "Needs " + blockers.get(0) + (blockers.size() > 1 ? " +" + (blockers.size() - 1) + " more" : "");
 		return new Step(Step.Kind.QUEST, Step.Status.BLOCKED, quest.name, detail, quest.name, null);
 	}
@@ -348,6 +364,58 @@ public final class Planner
 		return blockers;
 	}
 
+	/**
+	 * The levels to boost for a quest held back only by levels that its everyday boosts cover, such as Regicide
+	 * at 52 Agility (a summer pie gives +5). Null when anything else holds it back, when a level may not be
+	 * boosted or the boost falls short, and when nothing holds it back at all.
+	 */
+	public List<SkillGap> boostGaps(QuestDef quest, AccountSnapshot account)
+	{
+		List<SkillGap> gaps = levelGapsOnly(quest, account);
+		if (gaps == null || gaps.isEmpty())
+		{
+			return null;
+		}
+		List<SkillGap> out = new ArrayList<>();
+		for (SkillGap gap : gaps)
+		{
+			if (!data.boostable(quest.name, gap.getSkill().getName(), gap.getTarget())
+				|| !Boosts.reaches(gap.getSkill(), gap.getCurrent(), gap.getTarget()))
+			{
+				return null;
+			}
+			out.add(new SkillGap(gap.getSkill(), gap.getCurrent(), gap.getTarget(), account.xp(gap.getSkill()),
+				gap.getPace(), true));
+		}
+		return out;
+	}
+
+	/** "Boost Agility 52 to 56 with a summer pie (+5)", with "+1 more" when there are several. */
+	public static String boostDetail(List<SkillGap> gaps)
+	{
+		SkillGap first = gaps.get(0);
+		String text = Boosts.describe(first.getSkill(), first.getCurrent(), first.getTarget());
+		return gaps.size() > 1 ? text + " +" + (gaps.size() - 1) + " more" : text;
+	}
+
+	/** Clears a skill's boostable mark when this quest asks for more than the current level without allowing a boost. */
+	private void markBoostable(Map<Skill, Boolean> boostable, QuestDef quest, AccountSnapshot account)
+	{
+		for (Map.Entry<String, Integer> e : quest.skills.entrySet())
+		{
+			Skill skill = skill(e.getKey());
+			if (skill == null)
+			{
+				continue;
+			}
+			int current = account.level(skill);
+			int need = e.getValue();
+			boolean ok = current >= need
+				|| data.boostable(quest.name, skill.getName(), need) && Boosts.reaches(skill, current, need);
+			boostable.merge(skill, ok, Boolean::logicalAnd);
+		}
+	}
+
 	/** Level gaps for a quest whose prerequisite quests are all done, or null if a quest is still missing. */
 	public List<SkillGap> levelGapsOnly(QuestDef quest, AccountSnapshot account)
 	{
@@ -368,7 +436,7 @@ public final class Planner
 			Skill skill = skill(e.getKey());
 			if (skill != null && account.level(skill) < e.getValue())
 			{
-				gaps.add(new SkillGap(skill, account.level(skill), e.getValue(), account.xp(skill)));
+				gaps.add(new SkillGap(skill, account.level(skill), e.getValue(), account.xp(skill), account.pace(skill), false));
 			}
 		}
 		return gaps;

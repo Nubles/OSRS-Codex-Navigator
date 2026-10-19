@@ -52,4 +52,15 @@ public interface CodexNavigatorConfig extends Config
 	{
 		return true;
 	}
+
+	@ConfigItem(
+		keyName = "learnPace",
+		name = "Learn my pace",
+		description = "Times training estimates by how fast you really train each skill, learned while you play",
+		position = 5
+	)
+	default boolean learnPace()
+	{
+		return true;
+	}
 }

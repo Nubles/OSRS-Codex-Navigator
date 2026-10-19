@@ -1,6 +1,7 @@
 package com.codex.navigator.ui;
 
 import com.codex.navigator.core.AccountSnapshot;
+import com.codex.navigator.core.Boosts;
 import com.codex.navigator.core.Effort;
 import com.codex.navigator.core.Goal;
 import com.codex.navigator.core.Plan;
@@ -128,9 +129,11 @@ final class DetailView
 		AccountSnapshot account = nav.account();
 		List<JPanel> unmetRows = new ArrayList<>();
 		List<JPanel> metRows = new ArrayList<>();
+		int boostOnly = 0;
 		for (SkillGap gap : plan.getSkills())
 		{
 			(gap.isMet() ? metRows : unmetRows).add(skillRow(nav, gap));
+			boostOnly += gap.isBoostable() ? 1 : 0;
 		}
 		if (plan.getQuestPointTarget() > 0)
 		{
@@ -150,7 +153,9 @@ final class DetailView
 		{
 			return;
 		}
-		stack.add(new SectionHeader("Requirements", unmetRows.isEmpty() ? "all met" : unmetRows.size() + " to go"));
+		int toTrain = unmetRows.size() - boostOnly;
+		stack.add(new SectionHeader("Requirements", unmetRows.isEmpty() ? "all met"
+			: toTrain == 0 ? boostOnly + " to boost" : unmetRows.size() + " to go"));
 		Card card = new Card(new BorderLayout());
 		StackPanel list = new StackPanel(5, 0);
 		for (JPanel row : unmetRows)
@@ -250,9 +255,11 @@ final class DetailView
 		titles.add(Ui.wrapped(plan.getSubtitle(), Theme.small(), Theme.TEXT_MUTED, 168));
 		if (plan.getHoursLeft() > 0 && !plan.isAwaitingTasks())
 		{
-			JLabel time = Ui.label("About " + Effort.format(plan.getHoursLeft()).substring(1) + " of play left",
-				Theme.small(), Theme.TEXT_FAINT);
-			time.setToolTipText("Training at steady rates plus a typical play-through of each quest left");
+			boolean ownPace = usesPace(plan);
+			JLabel time = Ui.label("About " + Effort.format(plan.getHoursLeft()).substring(1) + " of play left"
+				+ (ownPace ? " at your pace" : ""), Theme.small(), Theme.TEXT_FAINT);
+			time.setToolTipText(ownPace ? "Training at the pace you have shown, plus a typical play-through of each quest left"
+				: "Training at steady rates plus a typical play-through of each quest left");
 			titles.add(time);
 		}
 		card.add(titles, BorderLayout.NORTH);
@@ -306,12 +313,31 @@ final class DetailView
 
 	private static JPanel skillRow(Navigation nav, SkillGap gap)
 	{
+		String tip = gap.isMet() ? null : Planner.formatXp(gap.xpToGo()) + " xp to go, about "
+			+ Effort.format(gap.hours()).substring(1) + (gap.getPace() != 1 ? " at your pace" : "");
+		if (gap.isBoostable())
+		{
+			// No training needed: the level is met on the day with a pie or a potion.
+			Boosts.Boost boost = Boosts.of(gap.getSkill());
+			String note = "Boost with " + boost.getItem() + " (+" + boost.amount(gap.getCurrent()) + ")";
+			return meterRow(nav.skillIcon(gap.getSkill()), gap.getSkill().getName(), gap.getCurrent(), gap.getTarget(),
+				gap.fraction(), note + " when the quest asks for it, or train: " + tip, note);
+		}
 		return meterRow(nav.skillIcon(gap.getSkill()), gap.getSkill().getName(), gap.getCurrent(), gap.getTarget(),
-			gap.fraction(), gap.isMet() ? null : Planner.formatXp(gap.xpToGo()) + " xp to go, about " + Effort.format(gap.hours()).substring(1));
+			gap.fraction(), tip, null);
 	}
 
-	/** An icon, a name, "current / target" and a slim bar; met rows fade back and turn green. */
 	private static JPanel meterRow(BufferedImage icon, String name, int current, int target, double fraction, String tip)
+	{
+		return meterRow(icon, name, current, target, fraction, tip, null);
+	}
+
+	/**
+	 * An icon, a name, "current / target" and a slim bar; met rows fade back and turn green. A boost note, when
+	 * given, sits under the bar in teal and the figures turn teal too: the level is as good as met.
+	 */
+	private static JPanel meterRow(BufferedImage icon, String name, int current, int target, double fraction, String tip,
+		String boostNote)
 	{
 		boolean met = current >= target;
 		JPanel row = new JPanel(new BorderLayout(6, 2));
@@ -330,17 +356,35 @@ final class DetailView
 		JPanel line = new JPanel(new BorderLayout());
 		line.setOpaque(false);
 		line.add(Ui.label(name, Theme.small(), met ? Theme.TEXT_MUTED : Theme.TEXT), BorderLayout.WEST);
-		line.add(Ui.label(current + " / " + target, Theme.small(), met ? Theme.GREEN : Theme.GOLD), BorderLayout.EAST);
+		line.add(Ui.label(current + " / " + target, Theme.small(), met ? Theme.GREEN : boostNote != null ? Theme.TEAL : Theme.GOLD),
+			BorderLayout.EAST);
 		right.add(line, BorderLayout.NORTH);
 		ProgressBar bar = new ProgressBar(4);
 		bar.setProgress(fraction, met, false);
 		right.add(bar, BorderLayout.CENTER);
+		if (boostNote != null)
+		{
+			right.add(Ui.label(boostNote, Theme.small(), Theme.TEAL), BorderLayout.SOUTH);
+		}
 		row.add(right, BorderLayout.CENTER);
 		if (tip != null)
 		{
 			row.setToolTipText(tip);
 		}
 		return row;
+	}
+
+	/** True when a level still to train is timed at the player's learned pace rather than the steady rates. */
+	static boolean usesPace(Plan plan)
+	{
+		for (SkillGap gap : plan.getSkills())
+		{
+			if (!gap.isMet() && !gap.isBoostable() && gap.getPace() != 1)
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private static JPanel spacer(int height)

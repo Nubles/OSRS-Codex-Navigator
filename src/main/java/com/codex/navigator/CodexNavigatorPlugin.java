@@ -6,6 +6,7 @@ import com.codex.navigator.core.CompletionWatch;
 import com.codex.navigator.core.Goal;
 import com.codex.navigator.core.GoalBoard;
 import com.codex.navigator.core.GoalStore;
+import com.codex.navigator.core.Pace;
 import com.codex.navigator.core.Plan;
 import com.codex.navigator.core.Planner;
 import com.codex.navigator.core.PublishGate;
@@ -21,9 +22,12 @@ import com.google.gson.reflect.TypeToken;
 import com.google.inject.Provides;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.inject.Inject;
 import javax.swing.SwingUtilities;
 import net.runelite.api.ChatMessageType;
@@ -64,6 +68,16 @@ import net.runelite.client.ui.overlay.OverlayManager;
 public class CodexNavigatorPlugin extends Plugin
 {
 	private static final String GOALS_KEY = "goals";
+	/** What {@link Pace} has learned about this account's training speed, per RuneScape profile. */
+	static final String PACE_KEY = "pace";
+	private static final Type PACE_MAP = new TypeToken<Map<String, double[]>>()
+	{
+	}.getType();
+	/** Learned pace is saved at most this often while it changes, and always on logout and shutdown. */
+	private static final int PACE_SAVE_TICKS = 500;
+	/** Worlds whose stats are not the account's own, or that do not save: nothing is learned there. */
+	private static final Set<WorldType> NO_LEARNING = EnumSet.of(WorldType.LAST_MAN_STANDING, WorldType.PVP_ARENA,
+		WorldType.BETA_WORLD, WorldType.NOSAVE_MODE, WorldType.TOURNAMENT_WORLD, WorldType.FRESH_START_WORLD);
 	/** The pinned goals with progress, next step and what they still need, for other plugins to read. */
 	static final String BOARD_KEY = "goalBoard";
 	private static final Type GOAL_LIST = new TypeToken<List<String>>()
@@ -138,6 +152,11 @@ public class CodexNavigatorPlugin extends Plugin
 	private final Map<String, QuestState> questCache = new HashMap<>();
 	/** Compares each publish with the one before, to announce the moment a pinned goal finishes. */
 	private final CompletionWatch completion = new CompletionWatch();
+	/** How fast this account trains each skill, learned while the plugin runs. Touched on the client thread only. */
+	private final Pace pace = new Pace();
+	/** The RuneScape profile {@link #pace} was loaded from and is saved back to. */
+	private String paceProfile;
+	private int lastPaceSave;
 
 	private GoalStore goals;
 	private Planner planner;
@@ -188,6 +207,7 @@ public class CodexNavigatorPlugin extends Plugin
 		goals.addListener(this::updateOverlay);
 		goals.addListener(() -> clientThread.invokeLater(this::writeBoard));
 		loadGoals();
+		loadPace();
 
 		panel = new NavigatorPanel(planner, recommender, goals, skillIconManager, config::includeMiniquests);
 		navButton = NavigationButton.builder()
@@ -212,6 +232,9 @@ public class CodexNavigatorPlugin extends Plugin
 	@Override
 	protected void shutDown()
 	{
+		savePace();
+		pace.load(null);
+		paceProfile = null;
 		overlayManager.remove(overlay);
 		clientToolbar.removeNavigation(navButton);
 		overlay.setView(null);
@@ -241,8 +264,15 @@ public class CodexNavigatorPlugin extends Plugin
 			dirty = true;
 			questsPending = true;
 		}
+		else if (state == GameState.HOPPING || state == GameState.CONNECTION_LOST)
+		{
+			// The time away is not training; the next drop in each skill starts a fresh bout.
+			pace.pause();
+		}
 		else if (state == GameState.LOGIN_SCREEN)
 		{
+			pace.pause();
+			savePace();
 			questCache.clear();
 			lastQuestPoints = -1;
 			completion.reset();
@@ -254,6 +284,9 @@ public class CodexNavigatorPlugin extends Plugin
 	@Subscribe
 	public void onRuneScapeProfileChanged(RuneScapeProfileChanged event)
 	{
+		// What was learned belongs to the profile it was learned on, which is the one being left.
+		savePace();
+		loadPace();
 		completion.reset();
 		lastBoard = null;
 		boardHeld = true;
@@ -267,6 +300,11 @@ public class CodexNavigatorPlugin extends Plugin
 	public void onStatChanged(StatChanged event)
 	{
 		dirty = true;
+		if (config.learnPace() && client.getGameState() == GameState.LOGGED_IN && paceProfile != null
+			&& Collections.disjoint(client.getWorldType(), NO_LEARNING))
+		{
+			pace.observe(event.getSkill(), event.getXp(), System.currentTimeMillis());
+		}
 	}
 
 	@Subscribe
@@ -280,9 +318,19 @@ public class CodexNavigatorPlugin extends Plugin
 	public void onConfigChanged(ConfigChanged event)
 	{
 		if (!CodexNavigatorConfig.GROUP.equals(event.getGroup()) || GOALS_KEY.equals(event.getKey())
-			|| BOARD_KEY.equals(event.getKey()))
+			|| BOARD_KEY.equals(event.getKey()) || PACE_KEY.equals(event.getKey()))
 		{
 			return;
+		}
+		if ("learnPace".equals(event.getKey()))
+		{
+			// Estimates switch between the learned pace and the steady rates: read the account again.
+			clientThread.invokeLater(() ->
+			{
+				pace.pause();
+				gate.reset();
+				dirty = true;
+			});
 		}
 		updateOverlay();
 		NavigatorPanel target = panel;
@@ -296,6 +344,10 @@ public class CodexNavigatorPlugin extends Plugin
 	public void onGameTick(GameTick event)
 	{
 		tick++;
+		if (tick - lastPaceSave >= PACE_SAVE_TICKS)
+		{
+			savePace();
+		}
 		if (dirty && tick - lastRefreshTick >= REFRESH_TICKS)
 		{
 			refresh();
@@ -339,6 +391,40 @@ public class CodexNavigatorPlugin extends Plugin
 		if (store != null)
 		{
 			store.load(keys, extra);
+		}
+	}
+
+	/** Loads what has been learned about the active profile's training speed; nothing when logged out. */
+	private void loadPace()
+	{
+		paceProfile = configManager.getRSProfileKey();
+		Map<String, double[]> saved = null;
+		if (paceProfile != null)
+		{
+			String json = configManager.getConfiguration(CodexNavigatorConfig.GROUP, paceProfile, PACE_KEY);
+			if (json != null && !json.isEmpty())
+			{
+				try
+				{
+					saved = gson.fromJson(json, PACE_MAP);
+				}
+				catch (RuntimeException e)
+				{
+					saved = null;
+				}
+			}
+		}
+		pace.load(saved);
+	}
+
+	/** Saves the learned pace to the profile it belongs to, if anything new was learned since the last save. */
+	private void savePace()
+	{
+		lastPaceSave = tick;
+		String profile = paceProfile;
+		if (profile != null && pace.takeChanged())
+		{
+			configManager.setConfiguration(CodexNavigatorConfig.GROUP, profile, PACE_KEY, gson.toJson(pace.toSaved()));
 		}
 	}
 
@@ -422,6 +508,10 @@ public class CodexNavigatorPlugin extends Plugin
 			b.combatAchievements(CodexData.COMBAT_ACHIEVEMENT_TIERS[i], client.getVarbitValue(COMBAT_ACHIEVEMENT_VARBITS[i]));
 		}
 		b.combatAchievementPoints(client.getVarbitValue(VarbitID.CA_POINTS));
+		if (config.learnPace())
+		{
+			b.pace(pace.factors()).paceHours(pace.hoursLearned());
+		}
 		publish(b.build(), false);
 	}
 

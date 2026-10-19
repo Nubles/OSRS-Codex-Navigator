@@ -1,6 +1,7 @@
 package com.codex.navigator.ui;
 
 import com.codex.navigator.core.AccountSnapshot;
+import com.codex.navigator.core.Boosts;
 import com.codex.navigator.core.Effort;
 import com.codex.navigator.core.Goal;
 import com.codex.navigator.core.Plan;
@@ -74,6 +75,19 @@ final class CompassView
 			}
 		}
 
+		List<Recommender.Pick> boosts = rec.boostNow(account, pinned, nav.includeMiniquests(), 3);
+		if (!boosts.isEmpty())
+		{
+			stack.add(new SectionHeader("Boost and go"));
+			for (Recommender.Pick pick : boosts)
+			{
+				QuestDef q = pick.getQuest();
+				stack.add(Row.of(Step.Status.READY, q.name, boostSubtitle(pick),
+					pick.getServes().isEmpty() ? null : new Pill("Goal", Theme.GOLD), null,
+					() -> nav.open(Goal.quest(q.name))));
+			}
+		}
+
 		List<Recommender.Pick> almost = rec.almostThere(account, pinned, nav.includeMiniquests(), 4);
 		if (!almost.isEmpty())
 		{
@@ -96,7 +110,24 @@ final class CompassView
 				stack.add(diaryRow(nav, plan));
 			}
 		}
+
+		if (!account.paces().isEmpty())
+		{
+			stack.add(new SectionHeader("Your pace"));
+			stack.add(PaceCard.build(nav));
+		}
 		return stack;
+	}
+
+	/**
+	 * The boost to use, such as "Summer pie for Agility 56", with "+1" for each further level to boost. The quest's
+	 * page has the full wording, with the levels from and to.
+	 */
+	static String boostSubtitle(Recommender.Pick pick)
+	{
+		List<SkillGap> gaps = pick.getGaps();
+		SkillGap first = gaps.get(0);
+		return Boosts.brief(first.getSkill(), first.getTarget()) + (gaps.size() > 1 ? " +" + (gaps.size() - 1) : "");
 	}
 
 	/**

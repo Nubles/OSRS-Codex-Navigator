@@ -196,7 +196,8 @@ public class GoalsAndTimeTest
 	@Test
 	public void routeTakesTheDeepestLevelAnyGoalNeeds()
 	{
-		AccountSnapshot account = level(fresh(), Skill.AGILITY, 10).build();
+		// At 5 Agility a summer pie (+5) falls short of Troll Stronghold's 15, so both goals need the training.
+		AccountSnapshot account = level(fresh(), Skill.AGILITY, 5).build();
 		Route route = Route.build(planner, Arrays.asList(Goal.quest("Troll Stronghold"), Goal.quest("Regicide")), account);
 		Route.Leg agility = null;
 		for (Route.Leg leg : route.getLegs())

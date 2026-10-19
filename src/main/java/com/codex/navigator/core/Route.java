@@ -23,12 +23,20 @@ public final class Route
 		private final Step step;
 		private final List<Goal> serves;
 		private final double hours;
+		private final int target;
 
-		Leg(Step step, List<Goal> serves, double hours)
+		Leg(Step step, List<Goal> serves, double hours, int target)
 		{
 			this.step = step;
 			this.serves = Collections.unmodifiableList(serves);
 			this.hours = hours;
+			this.target = target;
+		}
+
+		/** The level a training step trains to; 0 for anything else. */
+		public int getTarget()
+		{
+			return target;
 		}
 
 		public Step getStep()
@@ -85,6 +93,7 @@ public final class Route
 		Map<String, Double> hours = new LinkedHashMap<>();
 		Map<Skill, SkillGap> deepest = new EnumMap<>(Skill.class);
 		Map<String, Boolean> waiting = new LinkedHashMap<>();
+		Map<String, Integer> targets = new LinkedHashMap<>();
 		int open = 0;
 		for (Goal goal : pinned)
 		{
@@ -113,7 +122,8 @@ public final class Route
 			}
 			for (SkillGap gap : plan.getSkills())
 			{
-				if (gap.isMet())
+				// A level a boost covers is part of its quest's step, not something to train.
+				if (gap.isMet() || gap.isBoostable())
 				{
 					continue;
 				}
@@ -140,12 +150,14 @@ public final class Route
 			String key = "s:" + gap.getSkill().name();
 			steps.put(key, Planner.trainStep(gap));
 			hours.put(key, gap.hours());
+			targets.put(key, gap.getTarget());
 		}
 
 		List<Leg> legs = new ArrayList<>();
 		for (Map.Entry<String, Step> e : steps.entrySet())
 		{
-			legs.add(new Leg(e.getValue(), serves.get(e.getKey()), hours.getOrDefault(e.getKey(), 0.0)));
+			legs.add(new Leg(e.getValue(), serves.get(e.getKey()), hours.getOrDefault(e.getKey(), 0.0),
+				targets.getOrDefault(e.getKey(), 0)));
 		}
 		Goal focus = pinned.isEmpty() ? null : pinned.get(0);
 		legs.sort(Comparator.comparingInt(Route::urgency)
