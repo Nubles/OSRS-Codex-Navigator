@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import javax.inject.Inject;
 import javax.swing.SwingUtilities;
 import net.runelite.api.ChatMessageType;
@@ -51,6 +52,7 @@ import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.chat.QueuedMessage;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ClientShutdown;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.events.RuneScapeProfileChanged;
 import net.runelite.client.game.SkillIconManager;
@@ -249,6 +251,27 @@ public class CodexNavigatorPlugin extends Plugin
 		boardHeld = false;
 		panel = null;
 		goals = null;
+	}
+
+	@Subscribe
+	public void onClientShutdown(ClientShutdown event)
+	{
+		// Closing the client while logged in reaches neither the login screen nor shutDown, and ConfigManager
+		// writes its changes to disk in this same event, so the save is made here and sent on by hand.
+		CompletableFuture<Void> done = new CompletableFuture<>();
+		clientThread.invokeLater(() ->
+		{
+			try
+			{
+				savePace();
+				configManager.sendConfig();
+			}
+			finally
+			{
+				done.complete(null);
+			}
+		});
+		event.waitFor(done);
 	}
 
 	@Subscribe
