@@ -64,7 +64,7 @@ Your pinned goals are shared the other way: Bank Steward, Annals, Plunder Pilot,
 
 ## Privacy and rules
 
-Navigator only reads what the client already shows you (quest states, diary and combat achievement progress, levels) and draws its own panel and overlay. It does not click, change menus, send chat or touch the network; its one chatbox line is seen only by you. Pinned goals and your learned pace are saved per account in your RuneLite profile and never leave your computer. A damaged save loses only the entries that cannot be read.
+Navigator only reads what the client already shows you (quest states, diary and combat achievement progress, levels) and draws its own panel and overlay. It does not click, change menus, send chat or touch the network; its one chatbox line is seen only by you. Pinned goals and your learned pace are saved per account in your RuneLite profile and never leave your computer. A damaged save loses only the entries that cannot be read, and a save it can read only in part (damaged, or from a newer version) is copied aside unchanged before anything is saved over it.
 
 ## For other plugins
 
