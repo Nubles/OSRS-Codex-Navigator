@@ -6,7 +6,7 @@ It is the first plugin in the **Codex** suite: a family of RuneLite plugins that
 
 <p align="center">
   <img src="docs/screenshots/1-compass.png" width="225" alt="Compass view">
-  <img src="docs/screenshots/8-detail-cape.png" width="225" alt="Quest cape path">
+  <img src="docs/screenshots/10-road.png" width="225" alt="The road to the quest cape">
   <img src="docs/screenshots/4-atlas-diaries.png" width="225" alt="Diary atlas">
 </p>
 
@@ -14,6 +14,7 @@ It is the first plugin in the **Codex** suite: a family of RuneLite plugins that
 
 - **Account crest.** One ring for your whole account, plus ledgers for quests, diaries and combat achievement tasks.
 - **Compass.** Your focus goal and its next step, then quests in progress, the **best next** quests and the quests held back by only a little training. Best next puts the quests on the way to your focus first, then those on the way to your other goals, then the rest by how much they open per hour. Every suggestion says about how long it takes.
+- **The road.** Under your focus, the Compass draws the way there as a winding road on an old map: every quest on the way is a stone, gold behind you, a glowing stone for the next one (the same step the focus card names), plain stones ahead and red-rimmed ones still held back, with a Boss or Wildy mark on one life. The goal is a flag at the end with the day you should reach it (with Chronicle) or the play left. A long goal such as the quest cape keeps a window around where you stand and counts the rest. Click a stone to open its quest.
 - **Goals.** Pin any quest, diary tier, the quest cape or a level. The first pin is your focus; every goal shows its progress, its next step and about how much play is left. Finished goals move to a Completed list, a line in your chatbox tells you the moment one is done, and each offers the **next in line** (the next diary tier, or the quest it leads into) to pin with one click.
 - **Level goals.** "Aiming for a level?" on the Goals tab opens a skill grid; pick a skill and the Codex offers the levels worth aiming for: the next ones that open a quest or diary tier (in teal, with how many), the next round ten, and 99. A level goal's page lists everything it opens in level order, and whether anything else still holds each quest back. When you reach it, the next round ten is offered to pin.
 - **A date on every goal.** With Codex Session Chronicle installed, the Codex reads how much you have played over the last two weeks and turns each goal's hours of play into a day on the calendar ("Around 3 Nov at your 40 min a day"). Without Chronicle, or with fewer than two sessions in its journal, no date is shown.
