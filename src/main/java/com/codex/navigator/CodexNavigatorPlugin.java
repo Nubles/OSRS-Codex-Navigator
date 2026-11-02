@@ -1,5 +1,6 @@
 package com.codex.navigator;
 
+import com.codex.navigator.notes.FieldNotes;
 import com.codex.navigator.core.AccountSnapshot;
 import com.codex.navigator.core.GoalStore;
 import com.codex.navigator.core.Pace;
@@ -151,6 +152,9 @@ public class CodexNavigatorPlugin extends Plugin
 	@Inject
 	private CodexNavigatorConfig config;
 
+	/** The optional local record of what the plugin read and decided. */
+	private FieldNotes notes;
+
 	@Inject
 	private ScheduledExecutorService executor;
 
@@ -206,6 +210,11 @@ public class CodexNavigatorPlugin extends Plugin
 	@Override
 	protected void startUp()
 	{
+		notes = new FieldNotes(this::getPluginDirectory, gson);
+		if (config.fieldNotes())
+		{
+			notes.open();
+		}
 		CodexData data = CodexData.load(gson);
 		planner = new Planner(data);
 		recommender = new Recommender(planner);
@@ -310,6 +319,11 @@ public class CodexNavigatorPlugin extends Plugin
 	@Override
 	protected void shutDown()
 	{
+		if (notes != null)
+		{
+			notes.shutdown();
+			notes = null;
+		}
 		// First, so no board, chat line or overlay view is produced after this point.
 		work.close();
 		savePace();
@@ -420,6 +434,18 @@ public class CodexNavigatorPlugin extends Plugin
 	@Subscribe
 	public void onConfigChanged(ConfigChanged event)
 	{
+		if (CodexNavigatorConfig.GROUP.equals(event.getGroup()) && "fieldNotes".equals(event.getKey()) && notes != null)
+		{
+			if (config.fieldNotes())
+			{
+				notes.open();
+			}
+			else
+			{
+				notes.close();
+			}
+			return;
+		}
 		if (GUARDIAN_GROUP.equals(event.getGroup()) && GUARDIAN_ONE_LIFE_KEY.equals(event.getKey()))
 		{
 			// Marked one-life (or not) in Guardian: suggestions change order.
@@ -748,6 +774,18 @@ public class CodexNavigatorPlugin extends Plugin
 		}
 		snapshot = next;
 		boardHeld = false;
+		if (notes.isOpen() && next.isLoggedIn())
+		{
+			// What the account was read as: quests, diaries, levels. Experience and pace are left out, as they move every tick.
+			com.google.gson.JsonElement read = notes.safe(next);
+			com.google.gson.JsonObject n = read.isJsonObject() ? read.getAsJsonObject() : new com.google.gson.JsonObject();
+			n.remove("playerName");
+			n.remove("xp");
+			n.remove("pace");
+			n.remove("paceHours");
+			n.addProperty("settled", tick - loginTick >= WARMUP_TICKS);
+			notes.noteChanged("account", n);
+		}
 		GoalStore store = goals;
 		if (store != null)
 		{
