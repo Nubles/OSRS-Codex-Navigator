@@ -11,6 +11,7 @@ Names are rewritten to match net.runelite.api.Quest so quest state can be read
 from the client.
 """
 import json
+import os
 import sys
 
 ALIASES = {
@@ -82,6 +83,12 @@ def main(path):
             'allQuests': QUEST_CAPE in d['quests'],
             'quests': [name(p) for p in d['quests'] if p != QUEST_CAPE],
         })
+    # Fate Locked's diary levels mixed in quest and lower-tier levels and had wrong ones; each tier's own task
+    # levels were checked against the OSRS wiki and Quest Helper on 2026-11-03 and are kept in diary-skills.json.
+    fixed = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'diary-skills.json')))
+    for d in out['diaries']:
+        if d['name'] in fixed:
+            d['skills'] = dict(sorted(fixed[d['name']].items()))
     known = {q['name'] for q in out['quests']}
     unknown = sorted({p for q in out['quests'] for p in q['prereqs'] if p not in known}
                      | {p for d in out['diaries'] for p in d['quests'] if p not in known})
