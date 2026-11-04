@@ -22,14 +22,14 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import net.runelite.client.ui.components.IconTextField;
 
-/** Everything in the Codex, searchable: quests, diaries, combat achievement tiers and chompy hats. */
+/** Everything in the Codex, searchable: quests, diaries, combat achievement tiers, chompy hats and sea charts. */
 final class AtlasView extends JPanel
 {
 	private static final String[] FILTERS = {"All", "Ready", "To do", "Done"};
 
 	private final Navigation nav;
 	private final IconTextField search = new IconTextField();
-	private final Segmented kind = new Segmented(false, "Quests", "Diaries", "Combat", "Chompy");
+	private final Segmented kind = new Segmented(false, "Quests", "Diaries", "Combat", "Chompy", "Charts");
 	private final Segmented filter = new Segmented(false, FILTERS);
 	private final JScrollPane scroll;
 
@@ -83,7 +83,7 @@ final class AtlasView extends JPanel
 		add(scroll, BorderLayout.CENTER);
 	}
 
-	/** Switches to one of the lists: 0 quests, 1 diaries, 2 combat achievements, 3 chompy hats. */
+	/** Switches to one of the lists: 0 quests, 1 diaries, 2 combat achievements, 3 chompy hats, 4 sea charts. */
 	void showList(int list)
 	{
 		kind.setSelected(list, true);
@@ -103,6 +103,9 @@ final class AtlasView extends JPanel
 				break;
 			case 3:
 				list = ChompyView.atlas(nav);
+				break;
+			case 4:
+				list = ChartingView.atlas(nav);
 				break;
 			default:
 				list = quests();

@@ -1,0 +1,353 @@
+Kharidian Sea	1	Generic	Find a crashed glider south of the Karamja Shipyard.
+Kharidian Sea	1	Generic	Find the wreck of the Pandemonium II west of the Pandemonium.
+Kharidian Sea	1	Generic	Find the wreck of the Pandemonium III west of the Kharidian Bandit Camp.
+Kharidian Sea	1	Spyglass	Use your spyglass to admire Chartin' Charles McAtless in the cave on the Pandemonium.
+Kharidian Sea	1	Spyglass	Use your spyglass to get a good view of the Pandemonium from the cave entrance on the island.
+Kharidian Sea	12	Crate	Find a Sealed crate near the Pandemonium and sample the contents.
+Kharidian Sea	22	Current	Test the currents south west of the Kharidian Bandit Camp.
+Kharidian Sea	38	Diving	With help from a mermaid guide, document the water depth south west of the Pandemonium.
+Bay of Sarim	1	Generic	Find a treacherous rock formation near Draynor Village.
+Bay of Sarim	1	Generic	Find the wreck of the Grandyozenaym north east of the Wizards' Tower.
+Bay of Sarim	1	Generic	Interact with the salvaging station in Port Sarim.
+Bay of Sarim	1	Generic	Look at the port task board in Port Sarim.
+Bay of Sarim	1	Spyglass	Use your spyglass to get a good view of the Wizards' Tower from the north.
+Bay of Sarim	22	Current	Test the currents south of the small island in the Bay of Sarim.
+Gu'tanoth Bay	1	Generic	Find the wreck of an ogre ship in Gu'tanoth Bay.
+Gu'tanoth Bay	1	Spyglass	Use your spyglass to get a good view of the island in Gu'tanoth Bay from the east.
+Gu'tanoth Bay	12	Crate	Find a Sealed crate near Yanille and sample the contents.
+Gu'tanoth Bay	38	Diving	With help from a mermaid guide, document the water depth south of the Yanille Chain.
+Gu'tanoth Bay	57	Weather	Help the meteorologist document the local weather north east of Rantz's cave.
+Sea of Souls	1	Generic	Find the wreck of the Soul Searcher south west of the Tear of the Soul.
+Sea of Souls	12	Crate	Find a Sealed crate off the southern coast of the Isle of Souls and sample the contents.
+Sea of Souls	38	Diving	With help from a mermaid guide, document the water depth east of the shipyard in the Sea of Souls.
+Sea of Souls	61	Spyglass	Use your spyglass to get a good view of the surrounding sea from the Tear of the Soul. Beware of Fetid waters!
+Lumbridge Basin	1	Generic	Find a treacherous rock formation south of Lumbridge Swamp.
+Lumbridge Basin	1	Generic	Find an unfortunate corpse on a small island south east of Tutorial Island.
+Lumbridge Basin	1	Spyglass	Use your spyglass to get a good view of the western mine in Lumbridge Swamp from the south.
+Lumbridge Basin	12	Crate	Find a Sealed crate in the Lum Lagoon and sample the contents.
+Lumbridge Basin	22	Current	Test the currents west of the Lum Lagoon.
+Mudskipper Sound	1	Generic	Find a strange stone tablet south east of Musa Point.
+Mudskipper Sound	1	Generic	Find the wreck of the Salty Grouper south west of Tutorial Island.
+Mudskipper Sound	1	Spyglass	Use your spyglass to get a good view of the Karamja Shipyard from the east.
+Mudskipper Sound	12	Crate	Find a Sealed crate near Mudskipper Point and sample the contents.
+Mudskipper Sound	22	Current	Test the currents at the mouth of the River Amja south of Musa Point.
+Mudskipper Sound	38	Diving	With help from a mermaid guide, document the water depth south of Mudskipper Point.
+Rimmington Strait	1	Generic	Find a treacherous rock formation west of the Crafting Guild.
+Rimmington Strait	1	Generic	Find a warning about dragons east of Crandor.
+Rimmington Strait	1	Spyglass	Use your spyglass to get a good view of the Karamja Volcano from the north.
+Rimmington Strait	22	Current	Test the currents south west of the Makeover Mage's home.
+Rimmington Strait	57	Weather	Help the meteorologist document the local weather on a small island west of Rimmington.
+Catherby Bay	1	Generic	Find evidence of megashrimp activity east of the Legends' Guild.
+Catherby Bay	1	Generic	Find some odd aquatic plant life west of the Dark Wizards' Tower.
+Catherby Bay	1	Spyglass	Use your spyglass to get a good view of Keep le Faye from the east.
+Catherby Bay	12	Crate	Find a Sealed crate near Entrana and sample the contents.
+Catherby Bay	22	Current	Test the currents south west of the Obelisk of Water.
+Catherby Bay	38	Diving	With help from a mermaid guide, document the water depth west of the entrance to Taverley Dungeon.
+Brimhaven Passage	1	Generic	Find a set of someone else's charts south of the Fishing Platform and copy them.
+Brimhaven Passage	1	Generic	Find the wreck of the Shelled Snail east of Witchaven.
+Brimhaven Passage	1	Spyglass	Use your spyglass to get a good view of the Fishing Platform from the south.
+Brimhaven Passage	22	Current	Test the currents south east of Ardougne Zoo.
+Strait of Khazard	1	Generic	Find a notice from General Khazard south east of Port Khazard.
+Strait of Khazard	1	Generic	Find a rowboat off the west coast of Karamja near Port Khazard.
+Strait of Khazard	1	Generic	Find what remains of Colbansea Island in the middle of the Strait of Khazard.
+Strait of Khazard	1	Spyglass	Use your spyglass to get a good view of the Tower of Life from the east.
+Strait of Khazard	12	Crate	Find a Sealed crate near the Yanille Chain and sample the contents.
+Strait of Khazard	22	Current	Test the currents west of the trawler in Port Khazard.
+Strait of Khazard	38	Diving	With help from a mermaid guide, document the water depth south west of Brimhaven.
+Strait of Khazard	57	Weather	Help the meteorologist document the local weather on a small island north of Port Khazard.
+Feldip Gulf	1	Generic	Find an odd geological phenomenon in the middle of the Feldip Gulf.
+Feldip Gulf	12	Crate	Find a Sealed crate in the middle of the Feldip Gulf and sample the contents.
+Feldip Gulf	22	Current	Test the currents south east of Rantz's cave.
+Kharazi Strait	1	Generic	Find a crashed glider north of Ape Atoll.
+Kharazi Strait	1	Generic	Find a map south west of the Kharazi Jungle and copy it.
+Kharazi Strait	1	Generic	Find some curious rapids west of Rock Island Prison.
+Kharazi Strait	12	Crate	Find a Sealed crate near Rock Island Prison and sample the contents.
+Kharazi Strait	22	Current	Test the currents off the south western coast of the Kharazi Jungle.
+Kharazi Strait	24	Spyglass	Use your spyglass to get a good view of a cave in the Kharazi Jungle from the south. Beware of Stormy seas!
+Oo'glog Channel	1	Generic	Find the corpse of a sea monster north east of Corsair Cove.
+Oo'glog Channel	1	Generic	Find the wreck of the bananaless boat west of Ape Atoll.
+Oo'glog Channel	1	Spyglass	Use your spyglass to get a good view of the throne in Corsair Cove from the east.
+Oo'glog Channel	12	Crate	Find a Sealed crate south of Corsair Cove and sample the contents.
+Oo'glog Channel	38	Diving	With help from a mermaid guide, document the water depth south west of Corsair Cove.
+Arrow Passage	1	Generic	Find some interesting aquatic life north west of Crash Island.
+Arrow Passage	1	Spyglass	Use your spyglass to get a good view of the temple on Ape Atoll from the east.
+Arrow Passage	12	Crate	Find a Sealed crate off the eastern coast of Ape Atoll and sample the contents.
+Arrow Passage	38	Diving	With help from a mermaid guide, document the water depth north of Crash Island.
+Arrow Passage	57	Weather	Help the meteorologist document the local weather on a small island south of Crash Island.
+Menaphite Sea	1	Generic	Find some collected sand on an island west of Menaphos.
+Menaphite Sea	1	Spyglass	Use your spyglass to get a good view of the pyramid in Menaphos from the west.
+Menaphite Sea	12	Crate	Find a Sealed crate near Menaphos and sample the contents.
+Menaphite Sea	22	Current	Test the currents north of the island south of Menaphos.
+Menaphite Sea	38	Diving	With help from a mermaid guide, document the water depth in the middle of the Menaphite Sea.
+The Simian Sea	1	Generic	Find a makeshift flag near Cape Atoll.
+The Simian Sea	1	Spyglass	Use your spyglass to get a good view of the Void Knights' Outpost from the north.
+The Simian Sea	12	Crate	Find a Sealed crate near the Void Knights' Outpost and sample the contents.
+The Simian Sea	22	Current	Test the currents south west of Cape Atoll.
+The Simian Sea	22	Current	Test the currents south of the pest-filled island near the Void Knights' Outpost.
+The Storm Tempor	24	Generic	Find something trying to leech power from the Storm Tempor.
+The Storm Tempor	24	Generic	Find the wreck of the Desert Trout south of Tempoross Cove.
+The Storm Tempor	24	Current	Test the currents west of Tempoross Cove.
+The Storm Tempor	24	Spyglass	Use your spyglass to get a good view of the Ruins of Unkah from north of the docks.
+The Storm Tempor	57	Weather	Help the meteorologist document the local weather on a small island east of the Kharazi Jungle.
+Turtle Belt	1	Generic	Find a treasure chest south east of Dognose Island.
+Turtle Belt	12	Crate	Find a Sealed crate near Dognose Island and sample the contents.
+Turtle Belt	22	Current	Test the currents south west of the remote island in the Turtle Belt.
+Turtle Belt	38	Diving	With help from a mermaid guide, document the water depth in the middle of the Turtle Belt.
+Turtle Belt	40	Spyglass	Use your spyglass to get a good view of the surrounding sea from Dognose Island.
+Sea of Shells	47	Generic	Find the nest of a fearless bird on the Onyx Crest.
+Sea of Shells	45	Spyglass	Use your spyglass to get a good view of the Summer Shore from the cliffs above it on the Great Conch.
+Sea of Shells	12	Crate	Find a Sealed crate off the western coast of the Great Conch and sample the contents.
+Sea of Shells	22	Current	Test the currents near the Summer Shore docks on the Great Conch.
+Sea of Shells	38	Diving	With help from a mermaid guide, document the water depth south of the Onyx Crest.
+Red Reef	1	Generic	Find the corpse of a wayward shifter on a small island south of Red Rock.
+Red Reef	12	Crate	Find a Sealed crate near Red Rock and sample the contents.
+Red Reef	22	Current	Test the currents north east of Red Rock.
+Red Reef	38	Diving	With help from a mermaid guide, document the water depth north of Red Rock.
+Anglerfish's Light	1	Generic	Find an odd light south west of Last Light.
+Anglerfish's Light	1	Spyglass	Use your spyglass to get a good view of Last Light from the east.
+Anglerfish's Light	12	Crate	Find a Sealed crate near Last Light and sample the contents.
+Anglerfish's Light	38	Diving	With help from a mermaid guide, document the water depth in the middle of Anglerfish's Light.
+Anglerfish's Light	57	Weather	Help the meteorologist document the local weather on a small island south of Last Light.
+Bay of Elidinis	1	Generic	Find a damaged golem east of Menaphos.
+Bay of Elidinis	1	Spyglass	Use your spyglass to get a good view of the Abalone Cliffs from the north east.
+Bay of Elidinis	12	Crate	Find a Sealed crate south of Menaphos and sample the contents.
+Bay of Elidinis	22	Current	Test the currents to the south west of the Elid Delta.
+Bay of Elidinis	38	Diving	With help from a mermaid guide, document the water depth in the south east of the Bay of Elidinis.
+Tortugan Sea	1	Generic	Find a notable small shell north east of the Great Conch.
+Tortugan Sea	45	Generic	Find a strange apple tree somewhere on the Great Conch.
+Tortugan Sea	1	Spyglass	Use your spyglass to get a good view of the coast of the Great Conch from the north east.
+Tortugan Sea	22	Current	Test the currents to the east of the eastern pier on the Great Conch.
+Tortugan Sea	38	Diving	With help from a mermaid guide, document the water depth east of the Great Conch.
+Pearl Bank	1	Generic	Find a ship in a bottle south of the Little Pearl.
+Pearl Bank	12	Crate	Find a Sealed crate south west of the Little Pearl and sample the contents.
+Pearl Bank	22	Current	Test the currents to the south west of the Little Pearl.
+Pearl Bank	38	Diving	With help from a mermaid guide, document the water depth in the south of the Pearl Bank.
+Pearl Bank	57	Weather	Help the meteorologist document the local weather at the south east tip of Cape Conch.
+The Lonely Sea	1	Generic	Find some dragon scales on Charred Island.
+The Lonely Sea	12	Crate	Find a Sealed crate north of the cathedral on Wyrmscraig and sample the contents.
+The Lonely Sea	22	Current	Test the currents west of Charred Island.
+The Lonely Sea	38	Diving	With help from a mermaid guide, document the water depth in the far south of the Lonely Sea.
+Fortis Bay	1	Generic	Find a nest on Vatrachos Island.
+Fortis Bay	1	Spyglass	Use your spyglass to get a good view of the Fortis Colosseum from the south.
+Fortis Bay	12	Crate	Find a Sealed crate east of Stonecutter Outpost and sample the contents.
+Fortis Bay	22	Current	Test the currents north east of Stonecutter Outpost.
+Fortis Bay	38	Diving	With help from a mermaid guide, document the water depth north of Vatrachos Island.
+Aureum Coast	1	Generic	Find the wreck of the Counterweight north west of Deepfin Point.
+Aureum Coast	1	Spyglass	Use your spyglass to get a good view of the south eastern temple in the Avium Savannah from the south.
+Aureum Coast	12	Crate	Find a Sealed crate in the middle of the Aureum Coast and sample the contents.
+Aureum Coast	38	Diving	With help from a mermaid guide, document the water depth south of Vatrachos Island.
+Aureum Coast	57	Weather	Help the meteorologist document the local weather south east of Stonecutter Outpost.
+Wyrm's Waters	1	Generic	Find an interesting book on the Shimmering Atoll.
+Wyrm's Waters	1	Spyglass	Use your spyglass to get a good view of the Colossal Wyrm Remains from the south.
+Wyrm's Waters	12	Crate	Find a Sealed crate near the Shimmering Atoll and sample the contents.
+Wyrm's Waters	22	Current	Test the currents within the Shimmering Atoll.
+Wyrm's Waters	38	Diving	With help from a mermaid guide, document the water depth east of the Shimmering Atoll.
+Mythic Sea	12	Crate	Find a Sealed crate west of the Void Knights' Outpost and sample the contents.
+Mythic Sea	51	Generic	Find an abandoned camp on Anglers' Retreat.
+Mythic Sea	40	Current	Test the currents east of Anglers' Retreat.
+Mythic Sea	40	Diving	With help from a mermaid guide, document the water depth south of the Myths' Guild.
+Breakbone Strait	40	Generic	Find a chest of equipment north of the Myths' Guild.
+Breakbone Strait	40	Crate	Find a Sealed crate near the Tear of the Soul and sample the contents.
+Breakbone Strait	40	Current	Test the currents off the eastern coast of the Isle of Souls.
+Breakbone Strait	40	Spyglass	Use your spyglass to get a good view of the Myths' Guild from the west.
+Breakbone Strait	57	Weather	Help the meteorologist document the local weather on the eastern coast of the Isle of Souls.
+Backwater	40	Crate	Find a Sealed crate off the north eastern coast of the Isle of Souls and sample the contents.
+Backwater	40	Crate	Find a Sealed crate off the western coast of the Feldip Hills and sample the contents.
+Backwater	40	Generic	Find some interesting coral south east of the Poison Waste.
+Backwater	40	Current	Test the currents at the mouth of the River Dougne west of Chompy Marsh.
+Backwater	40	Spyglass	Use your spyglass to get a good view of Chompy Marsh from the south.
+Backwater	40	Diving	With help from a mermaid guide, document the water depth south of Jiggig.
+Zul-Egil	1	Spyglass	Use your spyglass to get a good view of the ruined tower on the Isle of Souls from the south.
+Zul-Egil	40	Crate	Find a Sealed crate south of the poison waste and sample the contents.
+Zul-Egil	40	Generic	Find a toxic hazard in the middle of Zul-Egil.
+Zul-Egil	40	Spyglass	Use your spyglass to get a good view of Zul-Andra from the south.
+The Skullhorde	1	Generic	Find the wreck of the Balanced Ballast south west of the Void Knights' Outpost.
+The Skullhorde	12	Crate	Find a Sealed crate in the middle of the Skullhorde and sample the contents.
+The Skullhorde	22	Current	Test the currents west of the Isle of Bones.
+The Skullhorde	38	Diving	With help from a mermaid guide, document the water depth south west of the Isle of Bones.
+The Skullhorde	57	Weather	Help the meteorologist document the local weather on the Isle of Bones.
+Soul Bay	1	Generic	Find some interesting sea life in the middle of Soul Bay.
+Soul Bay	12	Crate	Find a Sealed crate off the western coast of the Isle of Souls and sample the contents.
+Soul Bay	22	Current	Test the currents off the western coast of the Isle of Souls.
+Soul Bay	38	Diving	With help from a mermaid guide, document the water depth west of the Isle of Souls.
+Soul Bay	57	Weather	Help the meteorologist document the local weather on the south western coast of the Isle of Souls.
+Barracuda Belt	1	Generic	Find a spool of Barracuda grade rope east of Wintumber Island.
+Barracuda Belt	1	Generic	Find an odd statue on Wintumber Island.
+Barracuda Belt	1	Generic	Find the wreck of a Barracuda ship north east of Sunbleak Island.
+Barracuda Belt	12	Crate	Find a Sealed crate near the bank boat in the Barracuda Belt and sample the contents.
+Barracuda Belt	38	Diving	With help from a mermaid guide, document the water depth north of the bank boat in the Barracuda Belt.
+Barracuda Belt	57	Weather	Help the meteorologist document the local weather on a small island south east of Wintumber Island.
+The Everdeep	1	Generic	Find an odd shadow south of Deepfin Point.
+The Everdeep	1	Spyglass	Use your spyglass to get a good view of Deepfin Point from the south.
+The Everdeep	12	Crate	Find a Sealed crate west of Deepfin Point and sample the contents.
+The Everdeep	38	Diving	With help from a mermaid guide, document the water depth in the far south east of the Everdeep.
+The Everdeep	57	Weather	Help the meteorologist document the local weather on the western coast of Deepfin Point.
+Sapphire Sea	1	Generic	Find some odd sea life in the middle of the Sapphire Sea.
+Sapphire Sea	1	Spyglass	Use your spyglass to get a good view of the Crown Jewel from the east.
+Sapphire Sea	12	Crate	Find a Sealed crate where three waters meet in the Sapphire Sea and sample the contents.
+Sapphire Sea	22	Current	Test the currents west of the Crown Jewel.
+Sapphire Sea	38	Diving	With help from a mermaid guide, document the water depth south of the Crown Jewel.
+Rainbow Reef	72	Generic	Find a lost friend on Rainbow's End.
+Rainbow Reef	72	Generic	Find a rowboat to the far south of Rainbow's End.
+Rainbow Reef	72	Crate	Find a Sealed crate near Sunbleak Island and sample the contents.
+Rainbow Reef	72	Current	Test the currents north of Rainbow's End.
+Rainbow Reef	72	Diving	With help from a mermaid guide, document the water depth in the middle of Rainbow Reef.
+Southern Expanse	72	Crate	Find a Sealed crate near the Isle of Serpents and sample the contents.
+Southern Expanse	72	Generic	Find a useful sign to the far south of the Isle of Serpents.
+Southern Expanse	72	Weather	Help the meteorologist document the local weather on a small islands east of the Isle of Serpents.
+Southern Expanse	72	Diving	With help from a mermaid guide, document the water depth west of Sunbleak Island.
+Sunset Bay	1	Generic	Find a wrecked shiplike thing south of Villa Lucens.
+Sunset Bay	1	Spyglass	Use your spyglass to get a good view of Sunset Coast from the west.
+Sunset Bay	12	Crate	Find a Sealed crate near Mistrock and sample the contents.
+Sunset Bay	22	Current	Test the currents at the mouth of the River Varla.
+Sunset Bay	38	Diving	With help from a mermaid guide, document the water depth west of the Colossal Wyrm Remains.
+Misty Sea	1	Generic	Find some discarded fishing equipment in the middle of the Misty Sea.
+Misty Sea	1	Spyglass	Use your spyglass to get a good view of Mistrock from the south.
+Misty Sea	12	Crate	Find a Sealed crate near some shipwrecks in the Misty Sea and sample the contents.
+Misty Sea	38	Diving	With help from a mermaid guide, document the water depth in the south west of the Misty Sea.
+Dusk's Maw	1	Generic	Find a collapsed cave on a small island south west of the Tlati Rainforest.
+Dusk's Maw	12	Crate	Find a Sealed crate in the far west of Dusk's Maw and sample the contents.
+Dusk's Maw	22	Current	Test the currents south west of the Darkmoon Ravine.
+Dusk's Maw	38	Diving	With help from a mermaid guide, document the water depth north of the Darkmoon Ravine.
+Dusk's Maw	57	Weather	Help the meteorologist document the local weather on a small island north of Laguna Aurorae.
+Western Gate	?	Generic	Find evidence of the Sharhai east of Vatrachos Island.
+Western Gate	?	Generic	Find some some interesting sea life in the middle of the Western Gate.
+Western Gate	?	Crate	Find a Sealed crate in the middle of the Western Gate and sample the contents.
+Western Gate	?	Current	Test the currents east of Minotaurs' Rest.
+Western Gate	?	Diving	With help from a mermaid guide, document the water depth in the middle of the Western Gate.
+Crabclaw Bay	1	Generic	Find a sabotaged mooring point on Crabclaw Island.
+Crabclaw Bay	1	Spyglass	Use your spyglass to get a good view of Salvager Overlook from the west.
+Crabclaw Bay	1	Spyglass	Use your spyglass to get a good view of Crabclaw Island from the south west.
+Crabclaw Bay	38	Diving	With help from a mermaid guide, document the water depth in the south of Crabclaw Bay.
+Crabclaw Bay	57	Weather	Help the meteorologist document the local weather on a small island south of the Woodcutting Guild.
+Gulf of Kourend	1	Generic	Find something in desperate need of repair north east of Port Piscarilius.
+Gulf of Kourend	1	Spyglass	Use your spyglass to get a good view of Port Piscarilius from north of the Foodhall.
+Gulf of Kourend	12	Crate	Find a Sealed crate in the middle of the Gulf of Kourend and sample the contents.
+Gulf of Kourend	22	Current	Test the currents north west of the Dibber.
+Gulf of Kourend	38	Diving	With help from a mermaid guide, document the water depth north of the Dibber.
+Hosidian Sea	1	Generic	Find some discarded farming equipment east of Hosidius.
+Hosidian Sea	1	Spyglass	Use your spyglass to get a good view of the Tithe Farm from the north east.
+Hosidian Sea	12	Crate	Find a Sealed crate off the eastern coast of Hosidius and sample the contents.
+Hosidian Sea	38	Diving	With help from a mermaid guide, document the water depth in the east of the Hosidian Sea.
+Pilgrims' Passage	1	Generic	Find evidence of an experiment on Chinchompa Island.
+Pilgrims' Passage	12	Crate	Find a Sealed crate in the middle of Pilgrims' Passage and sample the contents.
+Pilgrims' Passage	22	Current	Test the currents west of Chinchompa Island.
+Pilgrims' Passage	38	Diving	With help from a mermaid guide, document the water depth north of Port Roberts.
+Pilgrims' Passage	57	Weather	Help the meteorologist document the local weather on a small island south east of the Tithe Farm.
+Litus Lucis	1	Generic	Find a strange corpse north east of Civitas illa Fortis.
+Litus Lucis	12	Crate	Find a Sealed crate in the middle of Litus Lucis and sample the contents.
+Litus Lucis	22	Current	Test the currents east of the Twilight Temple.
+Litus Lucis	38	Diving	With help from a mermaid guide, document the water depth north of the Fortis Colosseum.
+Litus Lucis	57	Weather	Help the meteorologist document the local weather on a small island north of Civitas illa Fortis.
+Porth Neigwl	66	Crate	Find a Sealed crate off the western coast of Isafdar and sample the contents.
+Porth Neigwl	66	Generic	Find some lost cargo south east of Lledrith Island.
+Porth Neigwl	66	Weather	Help the meteorologist document the local weather on a small island west of Zul-Andra.
+Porth Neigwl	66	Weather	Help the meteorologist document the local weather on a small island west of the Tyras Camp.
+Porth Neigwl	66	Current	Test the currents west of Lledrith Island.
+Porth Neigwl	66	Spyglass	Use your spyglass to get a good view of the Tyras Camp from the west.
+Porth Neigwl	66	Diving	With help from a mermaid guide, document the water depth west of Port Tyras.
+Tirannwn Bight	66	Generic	Find a deadly trap west of the Iorwerth Camp.
+Tirannwn Bight	66	Crate	Find a Sealed crate near Mynydd and sample the contents.
+Tirannwn Bight	66	Weather	Help the meteorologist document the local weather south west of Mynydd.
+Tirannwn Bight	66	Current	Test the currents at the mouth of the Afon Ganol west of the Iorwerth Camp.
+Tirannwn Bight	66	Spyglass	Use your spyglass to get a good view of Prifddinas' western gates from the south west.
+Tirannwn Bight	66	Diving	With help from a mermaid guide, document the water depth in the middle of the Tirannwn Bight.
+Crystal Sea	1	Generic	Find an elven shipwreck in the middle of the Crystal Sea.
+Crystal Sea	1	Generic	Find the visitors book for the Port Roberts jail.
+Crystal Sea	1	Spyglass	Use your spyglass to get a good view of Port Roberts from the south.
+Crystal Sea	12	Crate	Find a Sealed crate in the middle of the Crystal Sea and sample the contents.
+Crystal Sea	22	Current	Test the currents east of Port Roberts.
+Crystal Sea	38	Diving	With help from a mermaid guide, document the water depth in the middle of the Crystal Sea.
+Porth Gwenith	66	Crate	Find a Sealed crate near Ynysdail and sample the contents.
+Porth Gwenith	66	Generic	Find an unusual boat north of Gwenith.
+Porth Gwenith	66	Weather	Help the meteorologist document the local weather on a small island north west of Eagles' Peak.
+Porth Gwenith	66	Current	Test the currents north of Gwenith.
+Porth Gwenith	66	Diving	With help from a mermaid guide, document the water depth north of Gorlah.
+Piscatoris Sea	1	Generic	Find evidence of kraken activity south west of the Piscatoris Fishing Colony.
+Piscatoris Sea	1	Spyglass	Use your spyglass to get a good view of the Piscatoris Fishing Colony from the north west.
+Piscatoris Sea	12	Crate	Find a Sealed crate north west of the Piscatoris Fishing Colony and sample the contents.
+Piscatoris Sea	66	Diving	With help from a mermaid guide, document the water depth south west of Kraken Cove.
+Vagabonds Rest	1	Generic	Find a crate of discarded goods north of Drumstick Isle.
+Vagabonds Rest	1	Generic	Find a half-built ship west of Buccaneers' Haven.
+Vagabonds Rest	1	Spyglass	Use your spyglass to get a good view of Buccaneers' Haven from the north.
+Vagabonds Rest	12	Crate	Find a Sealed crate near Buccaneers' Haven and sample the contents.
+Vagabonds Rest	38	Diving	With help from a mermaid guide, document the water depth west of Buccaneers' Haven.
+Moonshadow	1	Generic	Find the wreck of the Lunar Longship south west of Pirates' Cove.
+Moonshadow	12	Crate	Find a Sealed crate south west of Lunar Isle and sample the contents.
+Moonshadow	22	Current	Test the currents west of Pirates' Cove.
+Moonshadow	38	Diving	With help from a mermaid guide, document the water depth in the south west of Lunar Isle.
+Fremensund	1	Generic	Find some suspicious eyes west of Rellekka.
+Fremensund	1	Spyglass	Use your spyglass to get a good view of the market in Rellekka from the north.
+Fremensund	12	Crate	Find a Sealed crate north of Rellekka and sample the contents.
+Fremensund	22	Current	Test the currents north of Rower's Arm.
+Fremensund	38	Diving	With help from a mermaid guide, document the water depth south of Waterbirth Island.
+Fremensund	57	Weather	Help the meteorologist document the local weather on a small island south west of Rellekka.
+Grandroot Bay	1	Generic	Find the roots of the Grand Tree in Grandroot Bay.
+Grandroot Bay	1	Spyglass	Use your spyglass to get a good view of the lighthouse on Rower's Arm from the south.
+Grandroot Bay	12	Crate	Find a Sealed crate in the middle of Grandroot Bay and sample the contents.
+Grandroot Bay	22	Current	Test the currents in the River Crannmor.
+Grandroot Bay	38	Diving	With help from a mermaid guide, document the water depth west of the Barbarian Outpost.
+Grandroot Bay	57	Weather	Help the meteorologist document the local weather west of the Barbarian Outpost.
+V's Belt	1	Generic	Find an informative sign on a small island south of Miscellania.
+V's Belt	1	Spyglass	Use your spyglass to get a good view of the castle on Miscellania from the west.
+V's Belt	12	Crate	Find a Sealed crate in the middle of V's Belt and sample the contents.
+V's Belt	22	Current	Test the currents north east of Jatizso.
+V's Belt	78	Diving	With help from a mermaid guide, document the water depth north west of Miscellania.
+Fremennik Strait	1	Generic	Find a discarded book south of Jatizso.
+Fremennik Strait	1	Spyglass	Use your spyglass to get a good view of the towers on the Fremennik Isles from the south.
+Fremennik Strait	12	Crate	Find a Sealed crate north west of the Piscatoris Fishing Colony and sample the contents.
+Fremennik Strait	22	Current	Test the currents west of Neitiznot.
+Fremennik Strait	57	Weather	Help the meteorologist document the local weather on the southern coast of Neitiznot.
+Idestia Strait	1	Spyglass	Use your spyglass to get a good view of the castle on Etceteria from the east.
+Idestia Strait	12	Crate	Find a Sealed crate south east of Etceteria and sample the contents.
+Idestia Strait	22	Current	Test the currents west of the hunter area near Trollweiss Mountain.
+Idestia Strait	78	Generic	Find a hunter free haven on a small island west of Trollweiss Mountain.
+Idestia Strait	78	Weather	Help the meteorologist document the local weather on a small island north of Etceteria.
+Idestia Strait	78	Diving	With help from a mermaid guide, document the water depth south of the Iceberg.
+Lunar Bay	1	Generic	Find evidence of some strong magical spells east of Lunar Isle.
+Lunar Bay	1	Spyglass	Use your spyglass to get a good view of the pirate galleon docked at Lunar Isle from the east.
+Lunar Bay	12	Crate	Find a Sealed crate near the Lunar Isle docks and sample the contents.
+Lunar Bay	22	Current	Test the currents south of the Astral Altar on Lunar Isle.
+Lunar Bay	38	Diving	With help from a mermaid guide, document the water depth north east of Pirates' Cove.
+Winter's Edge	1	Spyglass	Use your spyglass to get a good view of the town on Lunar Isle from the west.
+Winter's Edge	78	Crate	Find a Sealed crate near Brittle Isle and sample the contents.
+Winter's Edge	78	Generic	Find an odd dead plant on a small island north west of Lunar Isle.
+Winter's Edge	78	Weather	Help the meteorologist document the local weather on a small island north of the River of Souls.
+Winter's Edge	78	Current	Test the currents north east of the River of Souls.
+Winter's Edge	78	Diving	With help from a mermaid guide, document the water depth in the middle of Winter's Edge.
+Lunar Sea	78	Crate	Find a Sealed crate in the far north of the Lunar Sea and sample the contents.
+Lunar Sea	78	Generic	Find some cleaning supplies north of Lunar Isle.
+Lunar Sea	78	Spyglass	Use your spyglass to get a good view of Ungael from the west.
+Lunar Sea	78	Diving	With help from a mermaid guide, document the water depth in the north west of the Lunar Sea.
+Everwinter Sea	78	Crate	Find a Sealed crate in the far north of the Everwinter Sea and sample the contents.
+Everwinter Sea	78	Generic	Find some odd eggs north east of the Fishing Hamlet.
+Everwinter Sea	78	Weather	Help the meteorologist document the local weather on Brittle Isle.
+Everwinter Sea	78	Current	Test the currents near the shipwrecks in the Everwinter Sea.
+Everwinter Sea	78	Spyglass	Use your spyglass to get a good view of the area north of the River of Souls from the east.
+Everwinter Sea	78	Diving	With help from a mermaid guide, document the water depth north of the River of Souls.
+Kannski Tides	12	Crate	Find a Sealed crate in the waters of the Fremennik Isles and sample the contents.
+Kannski Tides	78	Generic	Find the wreck of the Fearless Fremennik south west of the Island of Stone.
+Kannski Tides	78	Current	Test the currents north of the western cave on the Fremennik Isles.
+Kannski Tides	78	Spyglass	Use your spyglass to get a good view of the ice trolls of the Fremennik Isles from the north.
+Kannski Tides	78	Diving	With help from a mermaid guide, document the water depth north of the Fremennik Isles.
+Weissmere	78	Crate	Find a Sealed crate in the middle of Weissmere and sample the contents.
+Weissmere	78	Generic	Find some missing mountaineering equipment north of Trollweiss Mountain.
+Weissmere	78	Current	Test the currents north west of Weiss.
+Weissmere	78	Spyglass	Use your spyglass to get a good view of the large rock formations in Weissmere from their centre.
+Weissmere	78	Diving	With help from a mermaid guide, document the water depth north west of Weiss.
+Stoneheart Sea	78	Crate	Find a Sealed crate in the far north of the Stoneheart Sea and sample the contents.
+Stoneheart Sea	78	Generic	Find a shark corpse on a small island north west of Etceteria.
+Stoneheart Sea	78	Weather	Help the meteorologist document the local weather on a small island south west of the Island of Stone.
+Stoneheart Sea	78	Current	Test the currents west of the Island of Stone.
+Stoneheart Sea	78	Spyglass	Use your spyglass to get a good view of the KGP training area from the west.
+Stoneheart Sea	78	Diving	With help from a mermaid guide, document the water depth north of the Island of Stone.
+Shiverwake Expanse	78	Crate	Find a Sealed crate near the large rock formations in Weissmere and sample the contents.
+Shiverwake Expanse	78	Generic	Find evidence of spying north east of the Iceberg.
+Shiverwake Expanse	78	Weather	Help the meteorologist document the local weather on the large rock formations in Weissmere.
+Shiverwake Expanse	78	Spyglass	Use your spyglass to get a good view of Grimstone from the west.
+Shiverwake Expanse	78	Diving	With help from a mermaid guide, document the water depth in the east of the Shiverwake Expanse.
+Weiss Melt	78	Generic	Find a failing boat north east of Weiss.
+Weiss Melt	78	Crate	Find a Sealed crate north of Grimstone and sample the contents.
+Weiss Melt	78	Weather	Help the meteorologist document the local weather on a small island north of the Frozen Waste Plateau.
+Weiss Melt	78	Current	Test the currents north of Weiss.
+Weiss Melt	78	Spyglass	Use your spyglass to get a good view of the agility course in the Wilderness from the north.

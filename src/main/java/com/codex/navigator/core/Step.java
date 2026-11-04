@@ -16,6 +16,8 @@ public final class Step
 		COMBAT_TASKS,
 		/** Chompy birds still to kill for a hat. */
 		CHOMPY,
+		/** A sea chart still to make. */
+		CHARTING,
 		CHECK
 	}
 

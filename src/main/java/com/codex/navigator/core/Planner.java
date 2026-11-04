@@ -83,6 +83,8 @@ public final class Planner
 				return planCombat(goal, account);
 			case CHOMPY:
 				return planChompy(goal, account);
+			case CHARTING:
+				return planCharting(goal, account);
 			case QUEST_CAPE:
 			default:
 				return planQuestCape(goal, account);
@@ -203,6 +205,62 @@ public final class Planner
 			: "Hunt a while and the Codex learns your kill rate";
 		return new Step(Step.Kind.CHOMPY, Step.Status.READY, "Kill " + formatXp(left) + " more chompy "
 			+ (left == 1 ? "bird" : "birds") + " for " + hat.getName(), detail, null, null);
+	}
+
+	/**
+	 * Every sea chart: the charts left as the game counts them, the Sailing level the last ones need, and the nearest
+	 * chart this player can make now as the next step. Timed at this player's own charts an hour once one is learned,
+	 * plus the Sailing training still in the way at steady rates.
+	 */
+	private Plan planCharting(Goal goal, AccountSnapshot account)
+	{
+		SeaCharting.View view = account.charting();
+		String title = "Sea charting";
+		String subtitle = "Sailing · " + SeaCharting.TOTAL + "\u00a0charts";
+		boolean known = account.isLoggedIn() && view.isKnown();
+		int done = known ? view.doneCount() : 0;
+		boolean complete = known && done >= SeaCharting.TOTAL;
+		List<SkillGap> skills = new ArrayList<>();
+		double hours = 0;
+		if (account.isLoggedIn() && !complete)
+		{
+			SkillGap gap = new SkillGap(Skill.SAILING, account.level(Skill.SAILING), SeaCharting.FULL_LEVEL,
+				account.xp(Skill.SAILING), account.pace(Skill.SAILING), false);
+			if (!gap.isMet())
+			{
+				skills.add(gap);
+				hours += gap.hours();
+			}
+			hours += view.hoursLeft();
+		}
+		double progress = complete ? 1 : Math.min(0.99, done / (double) SeaCharting.TOTAL);
+		Step next = complete ? null : chartingStep(view, account.isLoggedIn() ? account.level(Skill.SAILING) : 0, known);
+		return new Plan(goal, title, subtitle, complete, progress, new ArrayList<>(), skills, next, 0, 0, 0, 0,
+			view.getPerHour() > 0 ? hours : 0);
+	}
+
+	/** "Chart: <task>" for the nearest chart open at this level, or the level that opens the next one. */
+	static Step chartingStep(SeaCharting.View view, int level, boolean known)
+	{
+		if (!known)
+		{
+			return new Step(Step.Kind.CHARTING, Step.Status.UNKNOWN, "Log in to read your sea charts",
+				"The game keeps which charts are done", null, null);
+		}
+		List<SeaCharting.Near> near = view.nearest(level, 1);
+		if (!near.isEmpty())
+		{
+			SeaCharting.Chart c = near.get(0).getChart();
+			return new Step(Step.Kind.CHARTING, Step.Status.READY, c.getTask(),
+				c.getKind().getLabel() + " chart in " + c.getSea().getName(), null, null);
+		}
+		int at = view.nextLevel(level);
+		if (at > 0)
+		{
+			return new Step(Step.Kind.TRAIN, Step.Status.BLOCKED, "Train Sailing to " + at,
+				"For the next charts", null, Skill.SAILING);
+		}
+		return new Step(Step.Kind.CHARTING, Step.Status.READY, "Every chart is made", "Claim the bonus", null, null);
 	}
 
 	/** "Earn 37 more points", with the nearest task when the game's list is known. */

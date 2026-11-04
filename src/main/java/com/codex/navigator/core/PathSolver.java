@@ -48,7 +48,7 @@ public final class PathSolver
 	public static boolean solves(Goal goal)
 	{
 		return goal != null && goal.getType() != Goal.Type.SKILL && goal.getType() != Goal.Type.COMBAT
-			&& goal.getType() != Goal.Type.CHOMPY;
+			&& goal.getType() != Goal.Type.CHOMPY && goal.getType() != Goal.Type.CHARTING;
 	}
 
 	/** One step of the order. */
