@@ -70,6 +70,16 @@ final class DetailView
 			CombatView.goal(stack, nav, goal);
 			return stack;
 		}
+		if (goal.getType() == Goal.Type.CHARTING)
+		{
+			// The Sailing level the last charts need, when it is still to train.
+			if (!plan.getSkills().isEmpty())
+			{
+				requirements(stack, nav, plan, showMet, toggleMet);
+			}
+			ChartingView.goal(stack, nav, goal);
+			return stack;
+		}
 		if (goal.getType() == Goal.Type.CHOMPY)
 		{
 			ChompyView.goal(stack, nav, goal);

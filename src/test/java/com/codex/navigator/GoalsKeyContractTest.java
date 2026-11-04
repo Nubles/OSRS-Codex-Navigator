@@ -81,6 +81,12 @@ public class GoalsKeyContractTest
 		json = saved.get(saved.size() - 1);
 		assertEquals(Arrays.asList("diary:Ardougne Medium", "quest:Dragon Slayer II", "cape:Quest point cape", "ca:Hard",
 			"chompy:Ogre forester"), stewardReadGoals(gson, json));
+		// So is the sea charting goal.
+		store.toggle(Goal.charting());
+		json = saved.get(saved.size() - 1);
+		assertEquals(Arrays.asList("diary:Ardougne Medium", "quest:Dragon Slayer II", "cape:Quest point cape", "ca:Hard",
+			"chompy:Ogre forester", "charting:Sea charting"), stewardReadGoals(gson, json));
+		assertNotEquals("goals", CodexNavigatorPlugin.CHARTING_KEY);
 		// The chompy log has a key of its own too.
 		assertNotEquals("goals", CodexNavigatorPlugin.CHOMPY_KEY);
 		// The board other plugins may read has a key of its own.

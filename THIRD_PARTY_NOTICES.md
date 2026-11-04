@@ -1,8 +1,9 @@
 # Third-party notices
 
 `src/main/resources/com/codex/navigator/boosts.json` lists which quest skill requirements can be met with a
-temporary boost. It is derived from Quest Helper by Zoinkwiz and contributors
-(https://github.com/Zoinkwiz/quest-helper), used under the BSD 2-Clause License:
+temporary boost, and `src/main/resources/com/codex/navigator/sea-charts.tsv` takes eight chart levels the OSRS Wiki
+leaves blank (marked `qh`) from Quest Helper's sea charting list. Both are derived from Quest Helper by Zoinkwiz and
+contributors (https://github.com/Zoinkwiz/quest-helper), used under the BSD 2-Clause License:
 
 ```
 BSD 2-Clause License

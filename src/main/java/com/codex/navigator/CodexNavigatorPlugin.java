@@ -2,6 +2,7 @@ package com.codex.navigator;
 
 import com.codex.navigator.core.AccountSnapshot;
 import com.codex.navigator.core.ChompyHunt;
+import com.codex.navigator.core.SeaCharting;
 import com.codex.navigator.core.CombatTasks;
 import com.codex.navigator.core.GoalStore;
 import com.codex.navigator.core.Holdings;
@@ -49,6 +50,10 @@ import net.runelite.api.Item;
 import net.runelite.api.ItemContainer;
 import net.runelite.api.GameState;
 import net.runelite.api.Player;
+import net.runelite.api.WorldEntity;
+import net.runelite.api.WorldView;
+import net.runelite.api.coords.LocalPoint;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.Quest;
 import net.runelite.api.QuestState;
 import net.runelite.api.Skill;
@@ -85,8 +90,8 @@ import net.runelite.client.util.Text;
 
 @PluginDescriptor(
 	name = "Codex Navigator",
-	description = "An account compass: every quest, diary, combat achievement tier and chompy hat, with the path to whatever you want next",
-	tags = {"quest", "diary", "goal", "planner", "progress", "account", "achievement", "codex", "chompy"}
+	description = "An account compass: every quest, diary, combat achievement tier, chompy hat and sea chart, with the path to whatever you want next",
+	tags = {"quest", "diary", "goal", "planner", "progress", "account", "achievement", "codex", "chompy", "sailing", "charting"}
 )
 public class CodexNavigatorPlugin extends Plugin
 {
@@ -100,6 +105,12 @@ public class CodexNavigatorPlugin extends Plugin
 		WorldType.BETA_WORLD, WorldType.NOSAVE_MODE, WorldType.TOURNAMENT_WORLD, WorldType.FRESH_START_WORLD);
 	/** This account's chompy kills and learned kill rate ({@link ChompyHunt.Log}), per RuneScape profile. */
 	static final String CHOMPY_KEY = "chompyV1";
+	/** Where this account made each sea chart and its learned charting rate ({@link SeaCharting.Log}), per RuneScape profile. */
+	static final String CHARTING_KEY = "chartingV1";
+	/** Where the player is, for the nearest charts, is looked at this often while logged in. */
+	private static final int WHERE_TICKS = 10;
+	/** And only a move of more than this many tiles is worth reordering the nearest charts for. */
+	private static final int WHERE_STEP = 24;
 	/** The pinned goals with progress, next step and what they still need, for other plugins to read. */
 	static final String BOARD_KEY = "goalBoard";
 	/** Varbits can change many times a second; refresh at most this often while they do. */
@@ -202,7 +213,16 @@ public class CodexNavigatorPlugin extends Plugin
 	private final ChompyHunt.Log chompy = new ChompyHunt.Log();
 	/** The RuneScape profile {@link #chompy} was loaded from and is saved back to. */
 	private String chompyProfile;
-
+	/** Where charts were made and the time between them. Touched on the client thread only. */
+	private final SeaCharting.Log charting = new SeaCharting.Log();
+	/** The RuneScape profile {@link #charting} was loaded from and is saved back to. */
+	private String chartingProfile;
+	/** The charts done at the last read this session, or null before the first: a chart new since then was just made. */
+	private java.util.BitSet chartsSeen;
+	/** Where the player was at the last look, as published; {@code whereKnown} false before the first. */
+	private boolean whereKnown;
+	private int whereX;
+	private int whereY;
 	private GoalStore goals;
 	private Planner planner;
 	private Recommender recommender;
@@ -334,6 +354,7 @@ public class CodexNavigatorPlugin extends Plugin
 		loadGoals();
 		loadPace();
 		loadChompy();
+		loadCharting();
 
 		panel = new NavigatorPanel(planner, recommender, goals, skillIconManager, config::includeMiniquests);
 		panel.setShare(new ShareActions()
@@ -385,6 +406,10 @@ public class CodexNavigatorPlugin extends Plugin
 		paceProfile = null;
 		chompy.load(gson, null);
 		chompyProfile = null;
+		charting.load(gson, null);
+		chartingProfile = null;
+		chartsSeen = null;
+		whereKnown = false;
 		overlayManager.remove(overlay);
 		overlayManager.remove(skillTip);
 		SkillTabWidgets tab = skillTab;
@@ -451,11 +476,16 @@ public class CodexNavigatorPlugin extends Plugin
 			// The time away is not training; the next drop in each skill starts a fresh bout.
 			pace.pause();
 			chompy.pause();
+			charting.pause();
+			chartsSeen = null;
 		}
 		else if (state == GameState.LOGIN_SCREEN)
 		{
 			pace.pause();
 			chompy.pause();
+			charting.pause();
+			chartsSeen = null;
+			whereKnown = false;
 			savePace();
 			questCache.clear();
 			lastQuestPoints = -1;
@@ -472,6 +502,8 @@ public class CodexNavigatorPlugin extends Plugin
 		savePace();
 		loadPace();
 		loadChompy();
+		loadCharting();
+		chartsSeen = null;
 		work.forget();
 		boardHeld = true;
 		// Publish afresh for the new profile even if the read happens to match, so its board is written.
@@ -559,6 +591,7 @@ public class CodexNavigatorPlugin extends Plugin
 		}
 		if (!CodexNavigatorConfig.GROUP.equals(event.getGroup()) || GOALS_KEY.equals(event.getKey())
 			|| BOARD_KEY.equals(event.getKey()) || PACE_KEY.equals(event.getKey()) || CHOMPY_KEY.equals(event.getKey())
+			|| CHARTING_KEY.equals(event.getKey())
 			|| event.getKey().endsWith(Saved.UNREADABLE))
 		{
 			return;
@@ -675,6 +708,10 @@ public class CodexNavigatorPlugin extends Plugin
 			lastQuestTick = tick - QUEST_TICKS;
 			refresh();
 			writeBoard();
+		}
+		if (tick % WHERE_TICKS == 0 && client.getGameState() == GameState.LOGGED_IN)
+		{
+			lookWhere();
 		}
 		if (dirty && tick - lastRefreshTick >= REFRESH_TICKS)
 		{
@@ -933,11 +970,120 @@ public class CodexNavigatorPlugin extends Plugin
 		b.combatAchievementPoints(client.getVarbitValue(VarbitID.CA_POINTS));
 		b.combatTasks(readCombatTasks());
 		b.chompy(chompy.view());
+		b.charting(readCharting());
 		if (config.learnPace())
 		{
 			b.pace(pace.factors()).paceHours(pace.hoursLearned());
 		}
 		publish(b.build(), false);
+	}
+
+	/**
+	 * The charts done, from the game's varbits, with what was learned from the player's charting. A chart that turns
+	 * done while the player plays, once login has settled, was just made: where they are and when are learned from it.
+	 */
+	private SeaCharting.View readCharting()
+	{
+		java.util.BitSet done = SeaCharting.read(client::getVarbitValue);
+		if (!settled())
+		{
+			// Varbits are still arriving after login: what turns on now was charted before.
+			chartsSeen = null;
+		}
+		else if (chartsSeen == null)
+		{
+			chartsSeen = done;
+		}
+		else if (!done.equals(chartsSeen))
+		{
+			java.util.BitSet made = (java.util.BitSet) done.clone();
+			made.andNot(chartsSeen);
+			chartsSeen = done;
+			// More than a handful at once is the game catching up, not charting.
+			if (made.cardinality() <= 3 && chartingProfile != null && Collections.disjoint(client.getWorldType(), NO_LEARNING))
+			{
+				int[] where = where();
+				long now = System.currentTimeMillis();
+				for (int i = made.nextSetBit(0); i >= 0; i = made.nextSetBit(i + 1))
+				{
+					charting.charted(SeaCharting.charts().get(i), now, where, config.learnPace());
+				}
+				saveCharting();
+			}
+		}
+		return charting.view(true, done, whereKnown, whereX, whereY);
+	}
+
+	/** Looks where the player is and, after a real move, asks for a fresh read so the nearest charts follow. */
+	private void lookWhere()
+	{
+		int[] at = where();
+		if (at == null)
+		{
+			return;
+		}
+		if (!whereKnown || Math.abs(at[0] - whereX) > WHERE_STEP || Math.abs(at[1] - whereY) > WHERE_STEP)
+		{
+			whereKnown = true;
+			whereX = at[0];
+			whereY = at[1];
+			dirty = true;
+		}
+	}
+
+	/**
+	 * The player's world tile {x, y}: on a boat, where the boat is on the sea (the player stands in the boat's own
+	 * world view, whose tiles are not the sea's). Null when not known.
+	 */
+	private int[] where()
+	{
+		Player local = client.getLocalPlayer();
+		if (local == null)
+		{
+			return null;
+		}
+		WorldView view = local.getWorldView();
+		LocalPoint point = local.getLocalLocation();
+		if (view != null && !view.isTopLevel())
+		{
+			WorldView top = client.getTopLevelWorldView();
+			WorldEntity boat = top == null ? null : top.worldEntities().byIndex(view.getId());
+			point = boat == null ? null : boat.getLocalLocation();
+		}
+		if (point == null)
+		{
+			return null;
+		}
+		WorldPoint world = WorldPoint.fromLocalInstance(client, point);
+		return world == null ? null : new int[]{world.getX(), world.getY()};
+	}
+
+	/** Loads where this profile's charts were made and its charting rate; nothing when logged out. */
+	private void loadCharting()
+	{
+		chartingProfile = configManager.getRSProfileKey();
+		String raw = chartingProfile == null ? null
+			: configManager.getConfiguration(CodexNavigatorConfig.GROUP, chartingProfile, CHARTING_KEY);
+		int read = charting.load(gson, raw);
+		if (raw != null && read < 2)
+		{
+			// Part of it could not be read: keep the whole value aside before the next chart writes over it.
+			String aside = CHARTING_KEY + Saved.UNREADABLE;
+			if (!raw.equals(configManager.getConfiguration(CodexNavigatorConfig.GROUP, chartingProfile, aside)))
+			{
+				configManager.setConfiguration(CodexNavigatorConfig.GROUP, chartingProfile, aside, raw);
+			}
+		}
+	}
+
+	/** Saves the charting log to the profile it belongs to when it changed; a chart is rare enough to save each one. */
+	private void saveCharting()
+	{
+		String profile = chartingProfile;
+		if (profile != null && charting.takeChanged())
+		{
+			configManager.setConfiguration(CodexNavigatorConfig.GROUP, profile, CHARTING_KEY, charting.toJson(gson));
+		}
 	}
 
 	/** The game's task list (read once), what is done, the game's tier thresholds and the kill counts known. */

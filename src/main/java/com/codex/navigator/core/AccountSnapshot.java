@@ -34,6 +34,7 @@ public final class AccountSnapshot
 	private final Map<Skill, Double> paceHours;
 	private final CombatTasks combatTasks;
 	private final ChompyHunt.View chompy;
+	private final SeaCharting.View charting;
 
 	private AccountSnapshot(Builder b)
 	{
@@ -54,6 +55,7 @@ public final class AccountSnapshot
 		paceHours = Collections.unmodifiableMap(new EnumMap<>(b.paceHours));
 		combatTasks = b.combatTasks == null ? CombatTasks.EMPTY : b.combatTasks;
 		chompy = b.chompy == null ? ChompyHunt.View.NONE : b.chompy;
+		charting = b.charting == null ? SeaCharting.View.NONE : b.charting;
 	}
 
 	public static AccountSnapshot empty()
@@ -194,6 +196,12 @@ public final class AccountSnapshot
 		return chompy;
 	}
 
+	/** This account's sea charts and what was learned from its charting; {@link SeaCharting.View#NONE} logged out. */
+	public SeaCharting.View charting()
+	{
+		return charting;
+	}
+
 	/**
 	 * A builder holding everything in this snapshot, for asking "what if": a plan for an evening adds the
 	 * quests and experience it expects and plans again.
@@ -211,14 +219,16 @@ public final class AccountSnapshot
 		b.paceHours.putAll(paceHours);
 		b.combatTasks = combatTasks;
 		b.chompy = chompy;
+		b.charting = charting;
 		return b;
 	}
 
 	/** Changes whenever anything the panel shows changes, so unchanged ticks can be skipped. */
 	public int signature()
 	{
-		// Learned pace drifts slowly while training, so it rides with experience and is throttled the same way.
-		return Objects.hash(structureSignature(), xp, pace);
+		// Learned pace drifts slowly while training, so it rides with experience and is throttled the same way; so does
+		// where the player sails, which only reorders the nearest charts.
+		return Objects.hash(structureSignature(), xp, pace, charting.whereSignature());
 	}
 
 	/**
@@ -228,7 +238,7 @@ public final class AccountSnapshot
 	public int structureSignature()
 	{
 		return Objects.hash(loggedIn, playerName, levels, quests, diariesDone, combatAchievementsDone,
-			questPoints, combatLevel, combatAchievementPoints, members, ironman, oneLife, combatTasks.signature(), chompy);
+			questPoints, combatLevel, combatAchievementPoints, members, ironman, oneLife, combatTasks.signature(), chompy, charting);
 	}
 
 	public static final class Builder
@@ -250,6 +260,7 @@ public final class AccountSnapshot
 		private final Map<Skill, Double> paceHours = new EnumMap<>(Skill.class);
 		private CombatTasks combatTasks;
 		private ChompyHunt.View chompy;
+		private SeaCharting.View charting;
 
 		public Builder loggedIn(boolean value)
 		{
@@ -361,6 +372,12 @@ public final class AccountSnapshot
 		public Builder chompy(ChompyHunt.View value)
 		{
 			chompy = value;
+			return this;
+		}
+
+		public Builder charting(SeaCharting.View value)
+		{
+			charting = value;
 			return this;
 		}
 

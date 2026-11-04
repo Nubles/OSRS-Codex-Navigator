@@ -6,7 +6,7 @@ import net.runelite.api.Skill;
 
 /**
  * Something the player wants: a quest, a diary tier, the quest cape, a level in a skill, a combat achievement tier or a
- * chompy bird hat.
+ * chompy bird hat, or every sea chart.
  */
 public final class Goal
 {
@@ -20,7 +20,9 @@ public final class Goal
 		/** A combat achievement tier's reward, named by its tier like {@code Hard}. */
 		COMBAT("ca"),
 		/** A chompy bird hat from Rantz, named by the hat like {@code Ogre forester}. */
-		CHOMPY("chompy");
+		CHOMPY("chompy"),
+		/** Every sea chart, named {@link SeaCharting#GOAL_NAME}. */
+		CHARTING("charting");
 
 		private final String prefix;
 
@@ -73,6 +75,12 @@ public final class Goal
 	{
 		ChompyHunt.Hat h = ChompyHunt.hat(hat);
 		return h == null ? null : new Goal(Type.CHOMPY, h.getName());
+	}
+
+	/** Charting all of the seas: every chart task, and the bonus for the lot. */
+	public static Goal charting()
+	{
+		return new Goal(Type.CHARTING, SeaCharting.GOAL_NAME);
 	}
 
 	/** The skill of a level goal, or null for any other goal. */
@@ -163,6 +171,10 @@ public final class Goal
 				if (type == Type.CHOMPY)
 				{
 					return chompy(name);
+				}
+				if (type == Type.CHARTING)
+				{
+					return SeaCharting.GOAL_NAME.equalsIgnoreCase(name) ? charting() : null;
 				}
 				return name.isEmpty() ? null : new Goal(type, name);
 			}
