@@ -78,7 +78,7 @@ public class SettingsTest
 				keys.add(item.keyName());
 			}
 		}
-		for (String key : new String[]{"announceCompletions", "includeMiniquests", "learnPace", "nameOnCard", "oneLifeCare", "showOverlay", "suggestWithoutFocus"})
+		for (String key : new String[]{"announceCompletions", "includeMiniquests", "learnPace", "nameOnCard", "oneLifeCare", "showOverlay", "skillTabBars", "skillTabNextLevel", "suggestWithoutFocus"})
 		{
 			assertTrue(key, keys.contains(key));
 		}

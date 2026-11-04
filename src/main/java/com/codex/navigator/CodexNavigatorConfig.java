@@ -68,6 +68,31 @@ public interface CodexNavigatorConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "skillTabBars",
+		name = "Goal bars in skills tab",
+		description = "Each skill a pinned goal needs gets a slim gold bar toward that level in the skills tab,"
+			+ " marked when it holds a goal up; hover it to see which goals need it",
+		position = 4,
+		section = inGame
+	)
+	default boolean skillTabBars()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "skillTabNextLevel",
+		name = "Other skills to next level",
+		description = "Skills no pinned goal needs show a quieter bar toward their next level in the skills tab",
+		position = 5,
+		section = inGame
+	)
+	default boolean skillTabNextLevel()
+	{
+		return false;
+	}
+
+	@ConfigItem(
 		keyName = "includeMiniquests",
 		name = "Include miniquests",
 		description = "Lists and suggests miniquests alongside quests",

@@ -9,6 +9,7 @@ import com.codex.navigator.core.GoalStore;
 import com.codex.navigator.core.Plan;
 import com.codex.navigator.core.Planner;
 import com.codex.navigator.core.Recommender;
+import com.codex.navigator.core.SkillNeeds;
 import com.codex.navigator.core.Step;
 import com.codex.navigator.overlay.FocusOverlay;
 import com.google.gson.Gson;
@@ -21,9 +22,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  * The heavy part of a refresh: planning every pinned goal for the board other plugins read, the finished-goal
- * check and the overlay's focus line. With every goal in the game pinned this takes tens of milliseconds, a
- * visible stutter if done on the client thread, so the client thread only hands over the snapshot it read and the
- * work runs here, one job at a time and in the order handed over, on the background executor.
+ * check, the overlay's focus line and the skills tab bars. With every goal in the game pinned this takes tens of
+ * milliseconds, a visible stutter if done on the client thread, so the client thread only hands over the snapshot
+ * it read and the work runs here, one job at a time and in the order handed over, on the background executor.
  * <p>
  * Jobs never touch the client. What they produce goes out through {@link Out}: the board is written back on the
  * client thread (where other plugins have always heard of it), the overlay view is a single volatile field, and
@@ -44,6 +45,11 @@ final class GoalWork
 
 		/** Shows (or, with null, hides) the focus overlay. */
 		void overlay(FocusOverlay.View view);
+
+		/** The levels the pinned goals still need, for the skills tab bars. */
+		default void skills(SkillNeeds needs)
+		{
+		}
 	}
 
 	/** What the overlay should show, read on the lane so a setting change applies to the next job. */
@@ -54,6 +60,12 @@ final class GoalWork
 		boolean includeMiniquests();
 
 		boolean suggestWithoutFocus();
+
+		/** True while the skills tab shows goal bars; when false their planning is skipped. */
+		default boolean skillTabBars()
+		{
+			return false;
+		}
 	}
 
 	private final Planner planner;
@@ -234,6 +246,7 @@ final class GoalWork
 	private void overlayNow(AccountSnapshot account, GoalStore store)
 	{
 		out.overlay(view(account, store));
+		out.skills(settings.skillTabBars() ? SkillNeeds.of(planner, store.goals(), account) : SkillNeeds.none());
 	}
 
 	private FocusOverlay.View view(AccountSnapshot account, GoalStore store)

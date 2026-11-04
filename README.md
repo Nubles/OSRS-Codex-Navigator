@@ -22,6 +22,7 @@ Part of the **Codex** suite of RuneLite plugins, which share one look: warm ink,
 - **Path pages.** Open any goal for every level, quest point and combat level it still needs, every quest on the way as a timeline (done, in progress, ready, or blocked and by what), and what finishing it leads to.
 - **Your pace.** Navigator learns how fast you really train each skill from the experience you gain while it runs, and times every estimate with it.
 - **In-game plaque.** A small overlay with your focus and its next step; with nothing pinned it suggests the best quest to start.
+- **Skills tab bars.** Every skill a pinned goal still needs gets a slim gold bar in the game's own skills tab, running to the highest level your goals ask for and notched where lower goals fall. A small gold diamond marks a skill that is the next step of a goal: nothing else on its path can be done first. Rest the pointer on one for a note beside the tab naming each goal that needs it, its level and the experience left (or "boost" where a pie or potion covers it).
 
 <p align="center">
   <img src="docs/screenshots/10-road.png" width="225" alt="The road to Desert Treasure II, with a date">
@@ -33,6 +34,10 @@ Part of the **Codex** suite of RuneLite plugins, which share one look: warm ink,
 <p align="center">
   <img src="docs/screenshots/11-road-card.png" width="300" alt="Road card">
   <img src="docs/screenshots/9-overlay.png" width="300" alt="Focus overlay">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/13-skills-tab.png" width="476" alt="Goal bars in the skills tab, with the hover note">
 </p>
 
 ## Good to know
@@ -51,6 +56,8 @@ Part of the **Codex** suite of RuneLite plugins, which share one look: warm ink,
 | Show focus in game | On | The in-game plaque with your focus and its next step. |
 | Suggest with no focus | On | With nothing pinned, the plaque suggests the best quest to start. |
 | Announce finished goals | On | A chatbox line, seen only by you, the moment a pinned goal is complete. |
+| Goal bars in skills tab | On | A gold bar on each skill a pinned goal needs, toward that level, with a hover note. |
+| Other skills to next level | Off | Skills no goal needs show a quieter bar toward their next level. |
 | Include miniquests | On | Lists and suggests miniquests alongside quests. |
 | Learn my pace | On | Times training by how fast you really train each skill. Off uses steady rates. |
 | Hardcore care | On | On a one-life account, marks quests with a deadly fight or a Wilderness trip and suggests them after safer ones. |
