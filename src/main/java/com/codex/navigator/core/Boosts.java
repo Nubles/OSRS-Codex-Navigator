@@ -1,8 +1,12 @@
 package com.codex.navigator.core;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import net.runelite.api.Skill;
+import net.runelite.api.gameval.ItemID;
 
 /**
  * The everyday boost for each skill: one item a player can buy or make, and how many levels it adds. A quest
@@ -24,9 +28,17 @@ public final class Boosts
 		/** The skill that makes the item, or null when an ironman can buy it in a shop. */
 		private final Skill makeSkill;
 		private final int makeLevel;
+		/** The item's ids (each dose of a potion, each half of a pie), so a bank or pack can be checked for it. */
+		private final List<Integer> ids;
 
-		Boost(String item, int flat, int percent, Skill makeSkill, int makeLevel)
+		Boost(String item, int flat, int percent, Skill makeSkill, int makeLevel, int... ids)
 		{
+			List<Integer> list = new ArrayList<>();
+			for (int id : ids)
+			{
+				list.add(id);
+			}
+			this.ids = Collections.unmodifiableList(list);
 			this.item = item;
 			this.flat = flat;
 			this.percent = percent;
@@ -41,6 +53,12 @@ public final class Boosts
 		public boolean obtainable(AccountSnapshot account)
 		{
 			return !account.isIronman() || makeSkill == null || account.level(makeSkill) >= makeLevel;
+		}
+
+		/** Every id of the item: each dose of a potion, a pie whole or half. */
+		public List<Integer> getIds()
+		{
+			return ids;
 		}
 
 		/** The item in plain words, such as "a summer pie". */
@@ -61,21 +79,34 @@ public final class Boosts
 	static
 	{
 		// Make levels are for ironmen, who cannot buy from the Grand Exchange. Dwarven stout is sold in shops.
-		BOOSTS.put(Skill.AGILITY, new Boost("a summer pie", 5, 0, Skill.COOKING, 95));
-		BOOSTS.put(Skill.ATTACK, new Boost("a super attack", 5, 15, Skill.HERBLORE, 45));
-		BOOSTS.put(Skill.STRENGTH, new Boost("a super strength", 5, 15, Skill.HERBLORE, 55));
-		BOOSTS.put(Skill.DEFENCE, new Boost("a super defence", 5, 15, Skill.HERBLORE, 66));
-		BOOSTS.put(Skill.RANGED, new Boost("a ranging potion", 4, 10, Skill.HERBLORE, 72));
-		BOOSTS.put(Skill.MAGIC, new Boost("a magic potion", 4, 0, Skill.HERBLORE, 76));
-		BOOSTS.put(Skill.FISHING, new Boost("an admiral pie", 5, 0, Skill.COOKING, 70));
-		BOOSTS.put(Skill.CRAFTING, new Boost("a mushroom pie", 4, 0, Skill.COOKING, 60));
-		BOOSTS.put(Skill.FLETCHING, new Boost("a dragonfruit pie", 4, 0, Skill.COOKING, 73));
-		BOOSTS.put(Skill.HERBLORE, new Boost("a botanical pie", 4, 0, Skill.COOKING, 52));
-		BOOSTS.put(Skill.SLAYER, new Boost("a wild pie", 5, 0, Skill.COOKING, 85));
-		BOOSTS.put(Skill.FARMING, new Boost("a garden pie", 3, 0, Skill.COOKING, 34));
-		BOOSTS.put(Skill.HUNTER, new Boost("a hunter potion", 3, 0, Skill.HERBLORE, 53));
-		BOOSTS.put(Skill.MINING, new Boost("a dwarven stout", 1, 0, null, 0));
-		BOOSTS.put(Skill.SMITHING, new Boost("a dwarven stout", 1, 0, null, 0));
+		BOOSTS.put(Skill.AGILITY, new Boost("a summer pie", 5, 0, Skill.COOKING, 95,
+			ItemID.SUMMER_PIE, ItemID.HALF_SUMMER_PIE));
+		BOOSTS.put(Skill.ATTACK, new Boost("a super attack", 5, 15, Skill.HERBLORE, 45,
+			ItemID._4DOSE2ATTACK, ItemID._3DOSE2ATTACK, ItemID._2DOSE2ATTACK, ItemID._1DOSE2ATTACK));
+		BOOSTS.put(Skill.STRENGTH, new Boost("a super strength", 5, 15, Skill.HERBLORE, 55,
+			ItemID._4DOSE2STRENGTH, ItemID._3DOSE2STRENGTH, ItemID._2DOSE2STRENGTH, ItemID._1DOSE2STRENGTH));
+		BOOSTS.put(Skill.DEFENCE, new Boost("a super defence", 5, 15, Skill.HERBLORE, 66,
+			ItemID._4DOSE2DEFENSE, ItemID._3DOSE2DEFENSE, ItemID._2DOSE2DEFENSE, ItemID._1DOSE2DEFENSE));
+		BOOSTS.put(Skill.RANGED, new Boost("a ranging potion", 4, 10, Skill.HERBLORE, 72,
+			ItemID._4DOSERANGERSPOTION, ItemID._3DOSERANGERSPOTION, ItemID._2DOSERANGERSPOTION, ItemID._1DOSERANGERSPOTION));
+		BOOSTS.put(Skill.MAGIC, new Boost("a magic potion", 4, 0, Skill.HERBLORE, 76,
+			ItemID._4DOSE1MAGIC, ItemID._3DOSE1MAGIC, ItemID._2DOSE1MAGIC, ItemID._1DOSE1MAGIC));
+		BOOSTS.put(Skill.FISHING, new Boost("an admiral pie", 5, 0, Skill.COOKING, 70,
+			ItemID.ADMIRAL_PIE, ItemID.HALF_ADMIRAL_PIE));
+		BOOSTS.put(Skill.CRAFTING, new Boost("a mushroom pie", 4, 0, Skill.COOKING, 60,
+			ItemID.MUSHROOM_PIE, ItemID.HALF_MUSHROOM_PIE));
+		BOOSTS.put(Skill.FLETCHING, new Boost("a dragonfruit pie", 4, 0, Skill.COOKING, 73,
+			ItemID.DRAGONFRUIT_PIE, ItemID.HALF_DRAGONFRUIT_PIE));
+		BOOSTS.put(Skill.HERBLORE, new Boost("a botanical pie", 4, 0, Skill.COOKING, 52,
+			ItemID.BOTANICAL_PIE, ItemID.HALF_BOTANICAL_PIE));
+		BOOSTS.put(Skill.SLAYER, new Boost("a wild pie", 5, 0, Skill.COOKING, 85,
+			ItemID.WILD_PIE, ItemID.HALF_WILD_PIE));
+		BOOSTS.put(Skill.FARMING, new Boost("a garden pie", 3, 0, Skill.COOKING, 34,
+			ItemID.GARDEN_PIE, ItemID.HALF_GARDEN_PIE));
+		BOOSTS.put(Skill.HUNTER, new Boost("a hunter potion", 3, 0, Skill.HERBLORE, 53,
+			ItemID._4DOSEHUNTING, ItemID._3DOSEHUNTING, ItemID._2DOSEHUNTING, ItemID._1DOSEHUNTING));
+		BOOSTS.put(Skill.MINING, new Boost("a dwarven stout", 1, 0, null, 0, ItemID.DWARVEN_STOUT));
+		BOOSTS.put(Skill.SMITHING, new Boost("a dwarven stout", 1, 0, null, 0, ItemID.DWARVEN_STOUT));
 	}
 
 	private Boosts()

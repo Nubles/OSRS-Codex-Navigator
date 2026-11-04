@@ -56,6 +56,7 @@ public final class CodexData
 	private final Map<String, List<String>> diariesNeeding = new HashMap<>();
 	private Map<String, Map<String, Integer>> boostable = Collections.emptyMap();
 	private Map<String, Map<String, Double>> questXp = Collections.emptyMap();
+	private QuestItems questItems = QuestItems.none();
 
 	/** quest-xp.json: per quest, the set experience it rewards by skill name, from the OSRS Wiki. */
 	private static final class RawXp
@@ -91,6 +92,7 @@ public final class CodexData
 				CodexData data = new CodexData(raw.quests, raw.diaries, raw.combatAchievementTasks);
 				data.boostable = loadBoosts(gson);
 				data.questXp = loadQuestXp(gson);
+				data.questItems = QuestItems.load(gson);
 				return data;
 			}
 		}
@@ -139,6 +141,18 @@ public final class CodexData
 	{
 		Map<String, Double> xp = questXp.get(quest);
 		return xp == null ? Collections.emptyMap() : xp;
+	}
+
+	/** What each quest asks you to bring, from the OSRS Wiki; empty for quests not bundled yet. */
+	public QuestItems questItems()
+	{
+		return questItems;
+	}
+
+	/** Replaces the quest item lists, for tests. */
+	public void setQuestItems(QuestItems value)
+	{
+		questItems = value == null ? QuestItems.none() : value;
 	}
 
 	/** Replaces the quest experience rewards, for tests. */

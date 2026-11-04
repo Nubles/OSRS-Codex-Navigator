@@ -7,6 +7,7 @@ import com.codex.navigator.core.Goal;
 import com.codex.navigator.core.Hazards;
 import com.codex.navigator.core.Plan;
 import com.codex.navigator.core.Planner;
+import com.codex.navigator.core.QuestPrep;
 import com.codex.navigator.core.SkillGap;
 import com.codex.navigator.core.Step;
 import com.codex.navigator.data.CodexData;
@@ -73,6 +74,7 @@ final class DetailView
 
 		if (!plan.isComplete())
 		{
+			prep(stack, nav, plan);
 			FastestView.add(stack, nav, nav.fastest(goal), nav.fastestExpanded(), nav::toggleFastest);
 		}
 
@@ -195,6 +197,24 @@ final class DetailView
 		}
 		card.add(list, BorderLayout.CENTER);
 		stack.add(card);
+	}
+
+	/**
+	 * Getting ready: for a quest, the quest itself; for a diary tier or the cape, the next quest on its path, named on
+	 * the card. Nothing for a level goal.
+	 */
+	private static void prep(StackPanel stack, Navigation nav, Plan plan)
+	{
+		Goal goal = plan.getGoal();
+		boolean own = goal.getType() == Goal.Type.QUEST;
+		String quest = own ? goal.getName() : QuestPrep.nextQuest(plan);
+		QuestPrep prep = QuestPrep.of(nav.planner(), quest, nav.account(), nav.holdings());
+		if (prep == null || !nav.account().isLoggedIn())
+		{
+			return;
+		}
+		stack.add(new SectionHeader(own ? "Prepare" : "Next quest", prep.isListed() ? CompassView.itemsCount(prep) : null));
+		stack.add(PrepCard.build(prep, !own, own ? null : q -> nav.open(Goal.quest(q)), System.currentTimeMillis()));
 	}
 
 	/** The quests and diary tiers that list this quest as a requirement: what finishing it opens up. */

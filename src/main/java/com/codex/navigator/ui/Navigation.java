@@ -66,6 +66,9 @@ interface Navigation
 	/** Shows the fastest path's whole order, or folds it back to its first steps. */
 	void toggleFastest();
 
+	/** What the account carries and banks, for the quest prep lists; never null. */
+	com.codex.navigator.core.Holdings holdings();
+
 	/** What became of the last save or copy ("Saved as ..."), shown under the buttons, or null. */
 	String shareNote();
 }

@@ -2,6 +2,8 @@ package com.codex.navigator;
 
 import com.codex.navigator.core.AccountSnapshot;
 import com.codex.navigator.core.GoalStore;
+import com.codex.navigator.core.Holdings;
+import com.codex.navigator.core.HoldingsWatch;
 import com.codex.navigator.core.Pace;
 import com.codex.navigator.core.Plan;
 import com.codex.navigator.core.Planner;
@@ -39,6 +41,8 @@ import javax.inject.Inject;
 import javax.swing.SwingUtilities;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
+import net.runelite.api.Item;
+import net.runelite.api.ItemContainer;
 import net.runelite.api.GameState;
 import net.runelite.api.Player;
 import net.runelite.api.Quest;
@@ -47,9 +51,11 @@ import net.runelite.api.Skill;
 import net.runelite.api.WorldType;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
+import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.events.ScriptPostFired;
 import net.runelite.api.events.StatChanged;
 import net.runelite.api.events.VarbitChanged;
+import net.runelite.api.gameval.InventoryID;
 import net.runelite.api.gameval.VarPlayerID;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.client.callback.ClientThread;
@@ -62,6 +68,7 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ClientShutdown;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.events.RuneScapeProfileChanged;
+import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.SkillIconManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
@@ -152,6 +159,9 @@ public class CodexNavigatorPlugin extends Plugin
 	private SkillIconManager skillIconManager;
 
 	@Inject
+	private ItemManager itemManager;
+
+	@Inject
 	private ChatMessageManager chatMessageManager;
 
 	@Inject
@@ -164,6 +174,8 @@ public class CodexNavigatorPlugin extends Plugin
 	private ScheduledExecutorService executor;
 
 	private final FocusOverlay overlay = new FocusOverlay();
+	/** What the account carries and banks, for the quest prep lists; never saved. */
+	private final HoldingsWatch holdings = new HoldingsWatch();
 	/** The levels the pinned goals still need, as the lane last worked them out; read by the skills tab. */
 	private volatile SkillNeeds skillNeeds = SkillNeeds.none();
 	private SkillTabWidgets skillTab;
@@ -333,12 +345,14 @@ public class CodexNavigatorPlugin extends Plugin
 		skillTip = new SkillTabTooltip(client, () -> skillNeeds, config::skillTabBars);
 		overlayManager.add(skillTip);
 		readPlayTime();
+		readStewardBank();
 
 		clientThread.invokeLater(() ->
 		{
 			if (client.getGameState() == GameState.LOGGED_IN)
 			{
 				markLogin();
+				readCarried();
 				refresh();
 			}
 		});
@@ -364,6 +378,7 @@ public class CodexNavigatorPlugin extends Plugin
 		questsByName.clear();
 		questCache.clear();
 		snapshot = AccountSnapshot.empty();
+		holdings.clear();
 		gate.reset();
 		heldBack = null;
 		offlinePins = null;
@@ -440,6 +455,9 @@ public class CodexNavigatorPlugin extends Plugin
 		dirty = true;
 		loadGoals();
 		readPlayTime();
+		// A pack or bank seen belongs to the account it was seen on.
+		holdings.clear();
+		readStewardBank();
 	}
 
 	@Subscribe
@@ -468,6 +486,13 @@ public class CodexNavigatorPlugin extends Plugin
 		{
 			// Marked one-life (or not) in Guardian: suggestions change order.
 			clientThread.invokeLater(() -> dirty = true);
+			return;
+		}
+		if (Holdings.STEWARD_GROUP.equals(event.getGroup()) && Holdings.STEWARD_BANK_KEY.equals(event.getKey())
+			&& (event.getProfile() == null || event.getProfile().equals(configManager.getRSProfileKey())))
+		{
+			// Bank Steward saved the bank afresh (or stopped sharing it).
+			readStewardBank();
 			return;
 		}
 		if (PlayTime.GROUP.equals(event.getGroup()) && PlayTime.JOURNAL.equals(event.getKey())
@@ -502,6 +527,74 @@ public class CodexNavigatorPlugin extends Plugin
 		if (target != null)
 		{
 			SwingUtilities.invokeLater(target::refreshViews);
+		}
+	}
+
+	@Subscribe
+	public void onItemContainerChanged(ItemContainerChanged event)
+	{
+		int id = event.getContainerId();
+		if (id == InventoryID.INV)
+		{
+			holdings.pack(counts(event.getItemContainer()));
+		}
+		else if (id == InventoryID.WORN)
+		{
+			holdings.worn(counts(event.getItemContainer()));
+		}
+		else if (id == InventoryID.BANK)
+		{
+			holdings.bank(counts(event.getItemContainer()), System.currentTimeMillis());
+		}
+		else
+		{
+			return;
+		}
+		showHoldings();
+	}
+
+	/** Reads the pack and worn items once, as at a login or plugin start when no change event has come yet. */
+	private void readCarried()
+	{
+		holdings.pack(counts(client.getItemContainer(InventoryID.INV)));
+		holdings.worn(counts(client.getItemContainer(InventoryID.WORN)));
+		showHoldings();
+	}
+
+	/** Item counts by canonical id (noted forms and placeholders folded in, as Bank Steward saves them). */
+	private Map<Integer, Long> counts(ItemContainer container)
+	{
+		Map<Integer, Long> out = new HashMap<>();
+		if (container == null)
+		{
+			return out;
+		}
+		for (Item item : container.getItems())
+		{
+			if (item == null || item.getId() <= 0 || item.getQuantity() <= 0)
+			{
+				continue;
+			}
+			out.merge(itemManager.canonicalize(item.getId()), (long) item.getQuantity(), Long::sum);
+		}
+		return out;
+	}
+
+	/** Reads Codex Bank Steward's shared bank for this profile; nothing when it is absent or unreadable. */
+	private void readStewardBank()
+	{
+		holdings.steward(Holdings.readShared(gson,
+			configManager.getRSProfileConfiguration(Holdings.STEWARD_GROUP, Holdings.STEWARD_BANK_KEY)));
+		showHoldings();
+	}
+
+	private void showHoldings()
+	{
+		NavigatorPanel target = panel;
+		if (target != null)
+		{
+			Holdings now = holdings.holdings();
+			SwingUtilities.invokeLater(() -> target.setHoldings(now));
 		}
 	}
 
