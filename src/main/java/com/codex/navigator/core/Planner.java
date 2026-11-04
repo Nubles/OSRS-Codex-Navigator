@@ -81,6 +81,8 @@ public final class Planner
 				return planLevel(goal, account);
 			case COMBAT:
 				return planCombat(goal, account);
+			case CHOMPY:
+				return planChompy(goal, account);
 			case QUEST_CAPE:
 			default:
 				return planQuestCape(goal, account);
@@ -151,6 +153,56 @@ public final class Planner
 			next = combatStep(tasks, tier, need - points, account.isLoggedIn());
 		}
 		return new Plan(goal, title, subtitle, complete, progress, new ArrayList<>(), new ArrayList<>(), next, 0, 0);
+	}
+
+	/**
+	 * A chompy bird hat: Big Chompy Bird Hunting first (its own path, as a quest goal plans it), then the kills, timed
+	 * at this player's own kill rate once one has been learned. Kills are only known once the ogre bow has been checked.
+	 */
+	private Plan planChompy(Goal goal, AccountSnapshot account)
+	{
+		ChompyHunt.Hat hat = ChompyHunt.hat(goal.getName());
+		if (hat == null)
+		{
+			return unknown(goal);
+		}
+		ChompyHunt.View hunt = account.chompy();
+		String title = hat.getName() + " hat";
+		String subtitle = "Chompy bird hat · " + formatXp(hat.getKills()) + "\u00a0kills";
+		boolean complete = hunt.isKnown() && hunt.getKills() >= hat.getKills();
+		QuestDef quest = data.quest(ChompyHunt.QUEST);
+		if (!complete && quest != null && account.knowsQuest(quest.name)
+			&& !account.questDone(quest.name) && hunt.getKills() <= 0)
+		{
+			// The quest stands in the way: plan it as its own goal would be planned, then the kills on top.
+			Set<String> closure = new LinkedHashSet<>();
+			collect(quest.name, closure);
+			Plan questPlan = build(goal, title, subtitle, false, closure, new EnumMap<>(Skill.class), 0, 0, false, account);
+			return new Plan(goal, title, subtitle, false, questPlan.getProgress() * 0.25, questPlan.getPath(),
+				questPlan.getSkills(), questPlan.getNext(), questPlan.getQuestsDone(), questPlan.getQuestsTotal(),
+				questPlan.getQuestPointTarget(), questPlan.getCombatTarget(), questPlan.getHoursLeft());
+		}
+		double progress = complete ? 1 : !hunt.isKnown() ? 0 : Math.min(0.99, hunt.getKills() / (double) hat.getKills());
+		Step next = complete ? null : chompyStep(hunt, hat);
+		return new Plan(goal, title, subtitle, complete, progress, new ArrayList<>(), new ArrayList<>(), next, 0, 0, 0, 0,
+			complete ? 0 : hunt.hoursTo(hat.getKills()));
+	}
+
+	/** "Kill 120 more chompy birds", with the time at this player's rate, or how to read the count. */
+	static Step chompyStep(ChompyHunt.View hunt, ChompyHunt.Hat hat)
+	{
+		if (!hunt.isKnown())
+		{
+			return new Step(Step.Kind.CHOMPY, Step.Status.UNKNOWN, "Check kills on your ogre bow",
+				"The bow's count is the game's; the Codex adds each kill after it"
+					+ (hunt.getUnsynced() > 0 ? " (" + hunt.getUnsynced() + " seen so far)" : ""), null, null);
+		}
+		int left = hat.getKills() - hunt.getKills();
+		String detail = hunt.getPerHour() > 0
+			? Effort.format(left / hunt.getPerHour()).substring(1) + " at your " + Math.round(hunt.getPerHour()) + " an hour"
+			: "Hunt a while and the Codex learns your kill rate";
+		return new Step(Step.Kind.CHOMPY, Step.Status.READY, "Kill " + formatXp(left) + " more chompy "
+			+ (left == 1 ? "bird" : "birds") + " for " + hat.getName(), detail, null, null);
 	}
 
 	/** "Earn 37 more points", with the nearest task when the game's list is known. */

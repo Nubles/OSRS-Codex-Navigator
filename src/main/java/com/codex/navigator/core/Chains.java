@@ -79,6 +79,15 @@ public final class Chains
 				}
 				return best == null ? null : Goal.quest(best.name);
 			}
+			case CHOMPY:
+			{
+				// The next hat the kills do not reach yet, past this one.
+				ChompyHunt.Hat own = ChompyHunt.hat(goal.getName());
+				ChompyHunt.View hunt = account.chompy();
+				int kills = Math.max(hunt.getKills(), own == null ? 0 : own.getKills());
+				ChompyHunt.Hat next = ChompyHunt.nextHat(kills);
+				return next == null ? null : Goal.chompy(next.getName());
+			}
 			case COMBAT:
 			{
 				// The next tier whose reward the points do not reach yet.

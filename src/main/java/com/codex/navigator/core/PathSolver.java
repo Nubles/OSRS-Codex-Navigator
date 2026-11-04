@@ -47,7 +47,8 @@ public final class PathSolver
 	/** True for goals the solver orders: a quest, a diary tier or the quest cape. */
 	public static boolean solves(Goal goal)
 	{
-		return goal != null && goal.getType() != Goal.Type.SKILL && goal.getType() != Goal.Type.COMBAT;
+		return goal != null && goal.getType() != Goal.Type.SKILL && goal.getType() != Goal.Type.COMBAT
+			&& goal.getType() != Goal.Type.CHOMPY;
 	}
 
 	/** One step of the order. */

@@ -120,6 +120,15 @@ public final class SessionPlan
 		double left = budget;
 		for (int i = 0; i < MAX_STEPS && left >= MIN_STEP_HOURS; i++)
 		{
+			// A hat leading the pins is hunted first, at this player's own rate.
+			Item hunt = hunt(planner, pinned, now, left, true);
+			if (hunt != null)
+			{
+				items.add(hunt);
+				now = afterHunt(now, hunt, left);
+				left -= hunt.getHours();
+				continue;
+			}
 			Route route = Route.build(planner, pinned, now);
 			Route.Leg whole = null;
 			Route.Leg train = null;
@@ -150,7 +159,16 @@ public final class SessionPlan
 			}
 			if (train == null)
 			{
-				break;
+				// Nothing to quest or train: a pinned hat further down takes what is left.
+				hunt = hunt(planner, pinned, now, left, false);
+				if (hunt == null)
+				{
+					break;
+				}
+				items.add(hunt);
+				now = afterHunt(now, hunt, left);
+				left -= hunt.getHours();
+				continue;
 			}
 			// Nothing else fits: spend what is left on the best training step, as far as it gets.
 			Skill skill = train.getStep().getSkill();
@@ -175,6 +193,57 @@ public final class SessionPlan
 			}
 		}
 		return new SessionPlan(items, gains, budget - left);
+	}
+
+	/**
+	 * Hunting chompy birds for a pinned hat, as long as the hat or the time allows, at the kill rate learned from this
+	 * player; null when no hat is pinned that can be timed. With {@code leading}, only a hat that is the first
+	 * unfinished pin counts.
+	 */
+	private static Item hunt(Planner planner, List<Goal> pinned, AccountSnapshot now, double left, boolean leading)
+	{
+		ChompyHunt.View hunt = now.chompy();
+		for (Goal goal : pinned)
+		{
+			Plan plan = planner.plan(goal, now);
+			if (plan.isComplete())
+			{
+				continue;
+			}
+			Step next = plan.getNext();
+			if (goal.getType() == Goal.Type.CHOMPY && next != null && next.getKind() == Step.Kind.CHOMPY
+				&& hunt.getPerHour() > 0 && plan.getHoursLeft() > 0)
+			{
+				ChompyHunt.Hat hat = ChompyHunt.hat(goal.getName());
+				double hours = Math.min(left, plan.getHoursLeft());
+				int kills = (int) Math.floor(hours * hunt.getPerHour() + 1e-9);
+				if (kills <= 0)
+				{
+					return null;
+				}
+				boolean whole = kills >= hat.getKills() - hunt.getKills();
+				String title = whole ? next.getTitle() : "Kill " + kills + " chompy birds toward " + hat.getName();
+				Step step = new Step(Step.Kind.CHOMPY, Step.Status.READY, title,
+					"At your " + Math.round(hunt.getPerHour()) + " an hour", null, null);
+				List<Goal> serves = new ArrayList<>();
+				serves.add(goal);
+				return new Item(step, whole ? plan.getHoursLeft() : hours, serves, !whole);
+			}
+			if (leading)
+			{
+				return null;
+			}
+		}
+		return null;
+	}
+
+	/** The account after a hunt: the kills it makes added to the count. */
+	private static AccountSnapshot afterHunt(AccountSnapshot account, Item hunt, double left)
+	{
+		ChompyHunt.View v = account.chompy();
+		double made = Math.min(left, hunt.getHours()) * v.getPerHour();
+		int kills = hunt.isPartial() ? (int) Math.floor(made + 1e-9) : (int) Math.ceil(made - 1e-6);
+		return account.toBuilder().chompy(v.plus(kills)).build();
 	}
 
 	/** The account as it would be after a whole step: the quest finished, or the level reached. */

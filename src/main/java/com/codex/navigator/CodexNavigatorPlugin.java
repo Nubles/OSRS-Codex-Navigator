@@ -1,6 +1,7 @@
 package com.codex.navigator;
 
 import com.codex.navigator.core.AccountSnapshot;
+import com.codex.navigator.core.ChompyHunt;
 import com.codex.navigator.core.CombatTasks;
 import com.codex.navigator.core.GoalStore;
 import com.codex.navigator.core.Holdings;
@@ -52,6 +53,7 @@ import net.runelite.api.Quest;
 import net.runelite.api.QuestState;
 import net.runelite.api.Skill;
 import net.runelite.api.WorldType;
+import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.ItemContainerChanged;
@@ -79,11 +81,12 @@ import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.Filepath;
+import net.runelite.client.util.Text;
 
 @PluginDescriptor(
 	name = "Codex Navigator",
-	description = "An account compass: every quest, diary and combat achievement tier, with the path to whatever you want next",
-	tags = {"quest", "diary", "goal", "planner", "progress", "account", "achievement", "codex"}
+	description = "An account compass: every quest, diary, combat achievement tier and chompy hat, with the path to whatever you want next",
+	tags = {"quest", "diary", "goal", "planner", "progress", "account", "achievement", "codex", "chompy"}
 )
 public class CodexNavigatorPlugin extends Plugin
 {
@@ -95,6 +98,8 @@ public class CodexNavigatorPlugin extends Plugin
 	/** Worlds whose stats are not the account's own, or that do not save: nothing is learned there. */
 	private static final Set<WorldType> NO_LEARNING = EnumSet.of(WorldType.LAST_MAN_STANDING, WorldType.PVP_ARENA,
 		WorldType.BETA_WORLD, WorldType.NOSAVE_MODE, WorldType.TOURNAMENT_WORLD, WorldType.FRESH_START_WORLD);
+	/** This account's chompy kills and learned kill rate ({@link ChompyHunt.Log}), per RuneScape profile. */
+	static final String CHOMPY_KEY = "chompyV1";
 	/** The pinned goals with progress, next step and what they still need, for other plugins to read. */
 	static final String BOARD_KEY = "goalBoard";
 	/** Varbits can change many times a second; refresh at most this often while they do. */
@@ -193,6 +198,10 @@ public class CodexNavigatorPlugin extends Plugin
 	/** The RuneScape profile {@link #pace} was loaded from and is saved back to. */
 	private String paceProfile;
 	private int lastPaceSave;
+	/** Chompy kills from the game's chat lines, and the time between them. Touched on the client thread only. */
+	private final ChompyHunt.Log chompy = new ChompyHunt.Log();
+	/** The RuneScape profile {@link #chompy} was loaded from and is saved back to. */
+	private String chompyProfile;
 
 	private GoalStore goals;
 	private Planner planner;
@@ -324,6 +333,7 @@ public class CodexNavigatorPlugin extends Plugin
 		goals.addListener(() -> clientThread.invokeLater(this::writeBoard));
 		loadGoals();
 		loadPace();
+		loadChompy();
 
 		panel = new NavigatorPanel(planner, recommender, goals, skillIconManager, config::includeMiniquests);
 		panel.setShare(new ShareActions()
@@ -373,6 +383,8 @@ public class CodexNavigatorPlugin extends Plugin
 		savePace();
 		pace.load(null);
 		paceProfile = null;
+		chompy.load(gson, null);
+		chompyProfile = null;
 		overlayManager.remove(overlay);
 		overlayManager.remove(skillTip);
 		SkillTabWidgets tab = skillTab;
@@ -438,10 +450,12 @@ public class CodexNavigatorPlugin extends Plugin
 			hopped |= state == GameState.HOPPING;
 			// The time away is not training; the next drop in each skill starts a fresh bout.
 			pace.pause();
+			chompy.pause();
 		}
 		else if (state == GameState.LOGIN_SCREEN)
 		{
 			pace.pause();
+			chompy.pause();
 			savePace();
 			questCache.clear();
 			lastQuestPoints = -1;
@@ -457,6 +471,7 @@ public class CodexNavigatorPlugin extends Plugin
 		// What was learned belongs to the profile it was learned on, which is the one being left.
 		savePace();
 		loadPace();
+		loadChompy();
 		work.forget();
 		boardHeld = true;
 		// Publish afresh for the new profile even if the read happens to match, so its board is written.
@@ -480,6 +495,24 @@ public class CodexNavigatorPlugin extends Plugin
 		{
 			pace.observe(event.getSkill(), event.getXp(), System.currentTimeMillis());
 		}
+	}
+
+	@Subscribe
+	public void onChatMessage(ChatMessage event)
+	{
+		ChatMessageType type = event.getType();
+		if (type != ChatMessageType.GAMEMESSAGE && type != ChatMessageType.SPAM && type != ChatMessageType.MESBOX)
+		{
+			return;
+		}
+		ChompyHunt.Heard heard = ChompyHunt.hear(Text.removeTags(event.getMessage()));
+		if (heard == null || chompyProfile == null || !Collections.disjoint(client.getWorldType(), NO_LEARNING))
+		{
+			return;
+		}
+		chompy.heard(heard, System.currentTimeMillis(), config.learnPace());
+		saveChompy();
+		dirty = true;
 	}
 
 	@Subscribe
@@ -525,7 +558,7 @@ public class CodexNavigatorPlugin extends Plugin
 			return;
 		}
 		if (!CodexNavigatorConfig.GROUP.equals(event.getGroup()) || GOALS_KEY.equals(event.getKey())
-			|| BOARD_KEY.equals(event.getKey()) || PACE_KEY.equals(event.getKey())
+			|| BOARD_KEY.equals(event.getKey()) || PACE_KEY.equals(event.getKey()) || CHOMPY_KEY.equals(event.getKey())
 			|| event.getKey().endsWith(Saved.UNREADABLE))
 		{
 			return;
@@ -760,6 +793,33 @@ public class CodexNavigatorPlugin extends Plugin
 		}
 	}
 
+	/** Loads this profile's chompy kills and kill rate; nothing when logged out. */
+	private void loadChompy()
+	{
+		chompyProfile = configManager.getRSProfileKey();
+		String raw = chompyProfile == null ? null : configManager.getConfiguration(CodexNavigatorConfig.GROUP, chompyProfile, CHOMPY_KEY);
+		int read = chompy.load(gson, raw);
+		if (raw != null && read < 4)
+		{
+			// Part of it could not be read: keep the whole value aside before the next kill writes over it.
+			String aside = CHOMPY_KEY + Saved.UNREADABLE;
+			if (!raw.equals(configManager.getConfiguration(CodexNavigatorConfig.GROUP, chompyProfile, aside)))
+			{
+				configManager.setConfiguration(CodexNavigatorConfig.GROUP, chompyProfile, aside, raw);
+			}
+		}
+	}
+
+	/** Saves the chompy log to the profile it belongs to when it changed; a kill is rare enough to save each one. */
+	private void saveChompy()
+	{
+		String profile = chompyProfile;
+		if (profile != null && chompy.takeChanged())
+		{
+			configManager.setConfiguration(CodexNavigatorConfig.GROUP, profile, CHOMPY_KEY, chompy.toJson(gson));
+		}
+	}
+
 	/**
 	 * Keeps a saved value of which only {@code kept} entries could be read under its key plus
 	 * {@link Saved#UNREADABLE}, before the next save writes over it, so a damaged or newer-version value is never
@@ -872,6 +932,7 @@ public class CodexNavigatorPlugin extends Plugin
 		}
 		b.combatAchievementPoints(client.getVarbitValue(VarbitID.CA_POINTS));
 		b.combatTasks(readCombatTasks());
+		b.chompy(chompy.view());
 		if (config.learnPace())
 		{
 			b.pace(pace.factors()).paceHours(pace.hoursLearned());
