@@ -1,0 +1,418 @@
+{
+ "source": "OSRS Wiki, Quest experience rewards (https://oldschool.runescape.wiki/w/Quest_experience_rewards), set experience tables Agility to Hitpoints, read 2026-11-04. Lamps and skill-choice rewards are left out; skills after Hitpoints are not listed yet, so their training is never shortened.",
+ "skills": [
+  "Agility",
+  "Attack",
+  "Construction",
+  "Cooking",
+  "Crafting",
+  "Defence",
+  "Farming",
+  "Firemaking",
+  "Fishing",
+  "Fletching",
+  "Herblore",
+  "Hitpoints"
+ ],
+ "quests": {
+  "A Ruff Situation": {
+   "Crafting": 1000.0
+  },
+  "A Soul's Bane": {
+   "Defence": 500.0,
+   "Hitpoints": 500.0
+  },
+  "Animal Magnetism": {
+   "Crafting": 1000.0,
+   "Fletching": 1000.0
+  },
+  "At First Light": {
+   "Construction": 800.0,
+   "Herblore": 500.0
+  },
+  "Beneath Cursed Sands": {
+   "Agility": 50000.0
+  },
+  "Between a Rock...": {
+   "Defence": 5000.0
+  },
+  "Big Chompy Bird Hunting": {
+   "Cooking": 1470.0,
+   "Fletching": 262.0
+  },
+  "Cabin Fever": {
+   "Agility": 7000.0,
+   "Crafting": 7000.0
+  },
+  "Cold War": {
+   "Agility": 5000.0,
+   "Construction": 1500.0,
+   "Crafting": 2000.0
+  },
+  "Cook's Assistant": {
+   "Cooking": 300.0
+  },
+  "Crab Quest": {
+   "Fishing": 3000.0
+  },
+  "Current Affairs": {
+   "Fishing": 1000.0
+  },
+  "Daddy's Home": {
+   "Construction": 400.0
+  },
+  "Darkness of Hallowvale": {
+   "Agility": 7000.0,
+   "Construction": 2000.0
+  },
+  "Death Plateau": {
+   "Attack": 3000.0
+  },
+  "Death on the Isle": {
+   "Agility": 7500.0,
+   "Crafting": 5000.0
+  },
+  "Devious Minds": {
+   "Fletching": 5000.0
+  },
+  "Dragon Slayer I": {
+   "Defence": 18650.0
+  },
+  "Dragon Slayer II": {
+   "Agility": 50000.0
+  },
+  "Dream Mentor": {
+   "Hitpoints": 15000.0
+  },
+  "Druidic Ritual": {
+   "Herblore": 250.0
+  },
+  "Dwarf Cannon": {
+   "Crafting": 750.0
+  },
+  "Eadgar's Ruse": {
+   "Herblore": 11000.0
+  },
+  "Elemental Workshop I": {
+   "Crafting": 5000.0
+  },
+  "Elemental Workshop II": {
+   "Crafting": 7500.0
+  },
+  "Enakhra's Lament": {
+   "Crafting": 7000.0,
+   "Firemaking": 7000.0
+  },
+  "Enlightened Journey": {
+   "Crafting": 2000.0,
+   "Farming": 3000.0,
+   "Firemaking": 4000.0
+  },
+  "Fairytale I - Growing Pains": {
+   "Attack": 2000.0,
+   "Farming": 3500.0
+  },
+  "Fairytale II - Cure a Queen": {
+   "Herblore": 3500.0
+  },
+  "Fallen From Grace": {
+   "Crafting": 10000.0
+  },
+  "Fight Arena": {
+   "Attack": 12175.0
+  },
+  "Fishing Contest": {
+   "Fishing": 2437.0
+  },
+  "Forgettable Tale...": {
+   "Cooking": 5000.0,
+   "Farming": 5000.0
+  },
+  "Garden of Tranquillity": {
+   "Farming": 5000.0
+  },
+  "Gertrude's Cat": {
+   "Cooking": 1525.0
+  },
+  "Getting Ahead": {
+   "Construction": 3200.0,
+   "Crafting": 4000.0
+  },
+  "Goblin Diplomacy": {
+   "Crafting": 200.0
+  },
+  "Grim Tales": {
+   "Agility": 25000.0,
+   "Farming": 10000.0,
+   "Herblore": 15000.0,
+   "Hitpoints": 5000.0
+  },
+  "Heroes' Quest": {
+   "Attack": 3075.0,
+   "Cooking": 2825.0,
+   "Defence": 3075.0,
+   "Firemaking": 1575.0,
+   "Fishing": 2725.0,
+   "Herblore": 1325.0,
+   "Hitpoints": 3075.0
+  },
+  "Holy Grail": {
+   "Defence": 15300.0
+  },
+  "Icthlarin's Little Helper": {
+   "Agility": 4000.0
+  },
+  "In Aid of the Myreque": {
+   "Attack": 2000.0,
+   "Crafting": 2000.0,
+   "Defence": 2000.0
+  },
+  "In Search of the Myreque": {
+   "Attack": 600.0,
+   "Crafting": 600.0,
+   "Defence": 600.0,
+   "Hitpoints": 600.0
+  },
+  "Jungle Potion": {
+   "Herblore": 775.0
+  },
+  "King's Ransom": {
+   "Defence": 33000.0
+  },
+  "Land of the Goblins": {
+   "Agility": 8000.0,
+   "Fishing": 8000.0,
+   "Herblore": 8000.0
+  },
+  "Making Friends with My Arm": {
+   "Agility": 50000.0,
+   "Construction": 10000.0,
+   "Firemaking": 40000.0
+  },
+  "Making History": {
+   "Crafting": 1000.0
+  },
+  "Meat and Greet": {
+   "Cooking": 8000.0
+  },
+  "Misthalin Mystery": {
+   "Crafting": 600.0
+  },
+  "Monkey Madness II": {
+   "Agility": 60000.0
+  },
+  "Mountain Daughter": {
+   "Attack": 1000.0
+  },
+  "Mourning's End Part II": {
+   "Agility": 60000.0
+  },
+  "Murder Mystery": {
+   "Crafting": 1406.0
+  },
+  "My Arm's Big Adventure": {
+   "Farming": 5000.0,
+   "Herblore": 10000.0
+  },
+  "Nature Spirit": {
+   "Crafting": 3000.0,
+   "Defence": 2000.0,
+   "Hitpoints": 2000.0
+  },
+  "Observatory Quest": {
+   "Crafting": 2250.0
+  },
+  "Olaf's Quest": {
+   "Defence": 12000.0
+  },
+  "Perilous Moons": {
+   "Fishing": 5000.0
+  },
+  "Rag and Bone Man I": {
+   "Cooking": 500.0
+  },
+  "Recipe for Disaster - Culinaromancer": {
+   "Hitpoints": 4000.0
+  },
+  "Recipe for Disaster - Evil Dave": {
+   "Cooking": 7000.0
+  },
+  "Recipe for Disaster - King Awowogei": {
+   "Agility": 10000.0,
+   "Cooking": 10000.0
+  },
+  "Recipe for Disaster - Lumbridge Guide": {
+   "Cooking": 2500.0
+  },
+  "Recipe for Disaster - Mountain Dwarf": {
+   "Cooking": 1000.0
+  },
+  "Recipe for Disaster - Pirate Pete": {
+   "Cooking": 1000.0,
+   "Crafting": 1000.0,
+   "Fishing": 1000.0
+  },
+  "Recipe for Disaster - Sir Amik Varze": {
+   "Cooking": 4000.0
+  },
+  "Recipe for Disaster - Skrach Uglogwee": {
+   "Cooking": 1500.0,
+   "Crafting": 1500.0
+  },
+  "Recipe for Disaster - Wartface & Bentnoze": {
+   "Cooking": 1000.0,
+   "Crafting": 1000.0,
+   "Farming": 1000.0
+  },
+  "Recruitment Drive": {
+   "Agility": 1000.5,
+   "Herblore": 1000.5
+  },
+  "Regicide": {
+   "Agility": 13750.0
+  },
+  "Royal Trouble": {
+   "Agility": 5000.0,
+   "Hitpoints": 5000.0
+  },
+  "Rum Deal": {
+   "Farming": 7000.0,
+   "Fishing": 7000.0
+  },
+  "Scrambled!": {
+   "Construction": 5000.0,
+   "Cooking": 5000.0
+  },
+  "Sea Slug": {
+   "Fishing": 7175.0
+  },
+  "Secrets of the North": {
+   "Agility": 60000.0
+  },
+  "Shades of Mort'ton": {
+   "Crafting": 2000.0,
+   "Herblore": 2000.0
+  },
+  "Shadows of Custodia": {
+   "Construction": 3000.0
+  },
+  "Sheep Shearer": {
+   "Crafting": 150.0
+  },
+  "Shilo Village": {
+   "Crafting": 3875.0
+  },
+  "Song of the Elves": {
+   "Agility": 40000.0,
+   "Construction": 40000.0,
+   "Farming": 40000.0,
+   "Herblore": 40000.0
+  },
+  "Swan Song": {
+   "Fishing": 50000.0
+  },
+  "Tai Bwo Wannai Trio": {
+   "Attack": 2500.0,
+   "Cooking": 5000.0,
+   "Fishing": 5000.0
+  },
+  "Tears of Guthix": {
+   "Crafting": 1000.0
+  },
+  "Temple of Ikov": {
+   "Fletching": 8000.0
+  },
+  "The Curse of Arrav": {
+   "Agility": 40000.0
+  },
+  "The Depths of Despair": {
+   "Agility": 1500.0
+  },
+  "The Dig Site": {
+   "Herblore": 2000.0
+  },
+  "The Eyes of Glouphrie": {
+   "Construction": 250.0
+  },
+  "The Final Dawn": {
+   "Fletching": 25000.0
+  },
+  "The Fremennik Exiles": {
+   "Crafting": 50000.0
+  },
+  "The Fremennik Isles": {
+   "Construction": 5000.0,
+   "Crafting": 5000.0
+  },
+  "The Fremennik Trials": {
+   "Agility": 2812.4,
+   "Attack": 2812.4,
+   "Crafting": 2812.4,
+   "Defence": 2812.4,
+   "Fishing": 2812.4,
+   "Fletching": 2812.4,
+   "Hitpoints": 2812.4
+  },
+  "The Garden of Death": {
+   "Farming": 10000.0
+  },
+  "The Giant Dwarf": {
+   "Crafting": 2500.0,
+   "Firemaking": 1500.0
+  },
+  "The Golem": {
+   "Crafting": 1000.0
+  },
+  "The Grand Tree": {
+   "Agility": 7900.0,
+   "Attack": 18400.0
+  },
+  "The Great Brain Robbery": {
+   "Construction": 2000.0,
+   "Crafting": 3000.0
+  },
+  "The Hand in the Sand": {
+   "Crafting": 9000.0
+  },
+  "The Heart of Darkness": {
+   "Agility": 8000.0
+  },
+  "The Slug Menace": {
+   "Crafting": 3500.0
+  },
+  "Tower of Life": {
+   "Construction": 1000.0,
+   "Crafting": 500.0
+  },
+  "Tree Gnome Village": {
+   "Attack": 11450.0
+  },
+  "Troll Romance": {
+   "Agility": 8000.0
+  },
+  "Underground Pass": {
+   "Agility": 3000.0,
+   "Attack": 3000.0
+  },
+  "Vampyre Slayer": {
+   "Attack": 4825.0
+  },
+  "Waterfall Quest": {
+   "Attack": 13750.0
+  },
+  "What Lies Below": {
+   "Defence": 2000.0
+  },
+  "While Guthix Sleeps": {
+   "Farming": 75000.0,
+   "Herblore": 75000.0
+  },
+  "Witch's House": {
+   "Hitpoints": 6325.0
+  },
+  "Zogre Flesh Eaters": {
+   "Fletching": 2000.0,
+   "Herblore": 2000.0
+  }
+ }
+}

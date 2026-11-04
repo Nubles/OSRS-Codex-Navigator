@@ -253,6 +253,15 @@ public class GoalsAndTimeTest
 		double hours = regicide.get("hoursLeft").getAsDouble();
 		assertEquals(hours, Math.round(hours * 2) / 2.0, 0);
 		assertEquals("diary", list.get(1).getAsJsonObject().get("type").getAsString());
+		// The focus carries its fastest order (added in a later version; readers that predate it ignore it), the
+		// other goals do not.
+		JsonArray fastest = regicide.getAsJsonArray("fastest");
+		assertEquals("Start Regicide", fastest.get(fastest.size() - 1).getAsString());
+		assertTrue(fastest.toString().contains("Train Agility to 56"));
+		double fastestHours = regicide.get("fastestHours").getAsDouble();
+		assertEquals(fastestHours, Math.round(fastestHours * 2) / 2.0, 0);
+		assertTrue(regicide.getAsJsonObject("gatedBy").has("Agility"));
+		assertFalse(list.get(1).getAsJsonObject().has("fastest"));
 	}
 
 	private static void assertNotEquals(Object a, Object b)

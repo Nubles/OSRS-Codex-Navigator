@@ -59,6 +59,7 @@ public class NavigatorPanel extends PluginPanel implements Navigation
 	private Goal detailGoal;
 	private boolean showCompleted;
 	private boolean showMetLevels;
+	private boolean showAllFastest;
 	private String visible = TABS[0];
 	private boolean active;
 	/** Two hours: an ordinary evening. */
@@ -197,6 +198,39 @@ public class NavigatorPanel extends PluginPanel implements Navigation
 	}
 
 	@Override
+	public com.codex.navigator.core.PathSolver.Solution fastest(Goal goal)
+	{
+		if (!com.codex.navigator.core.PathSolver.solves(goal) || !account.isLoggedIn())
+		{
+			return null;
+		}
+		return planner.solver().solveCached(goal, account);
+	}
+
+	@Override
+	public void setAsGoalBoard(Goal goal)
+	{
+		goals.makeFocus(goal);
+		if (detailGoal != null)
+		{
+			replace(detail, buildDetail());
+		}
+	}
+
+	@Override
+	public boolean fastestExpanded()
+	{
+		return showAllFastest;
+	}
+
+	@Override
+	public void toggleFastest()
+	{
+		showAllFastest = !showAllFastest;
+		replace(detail, buildDetail());
+	}
+
+	@Override
 	public void showTab(int tab)
 	{
 		detailGoal = null;
@@ -235,6 +269,7 @@ public class NavigatorPanel extends PluginPanel implements Navigation
 		detailGoal = goal;
 		showCompleted = false;
 		showMetLevels = false;
+		showAllFastest = false;
 		visible = DETAIL;
 		stale.remove(DETAIL);
 		detail.setViewportView(buildDetail());

@@ -54,6 +54,18 @@ interface Navigation
 	/** The name to print on cards, or null when the player turned names off or is logged out. */
 	String cardName();
 
+	/** The fastest order to a quest, diary tier or the quest cape, or null for a level goal or a finished one. */
+	com.codex.navigator.core.PathSolver.Solution fastest(Goal goal);
+
+	/** Makes the goal the focus, so the goal board other plugins read leads with it and its fastest order. */
+	void setAsGoalBoard(Goal goal);
+
+	/** True while the fastest path's whole order is shown rather than its first steps. */
+	boolean fastestExpanded();
+
+	/** Shows the fastest path's whole order, or folds it back to its first steps. */
+	void toggleFastest();
+
 	/** What became of the last save or copy ("Saved as ..."), shown under the buttons, or null. */
 	String shareNote();
 }

@@ -71,6 +71,11 @@ final class DetailView
 				+ "in-game Achievement Diary journal, and the tier ticks off here once the game marks it complete."));
 		}
 
+		if (!plan.isComplete())
+		{
+			FastestView.add(stack, nav, nav.fastest(goal), nav.fastestExpanded(), nav::toggleFastest);
+		}
+
 		List<Step> path = plan.getPath();
 		if (!path.isEmpty() && !(path.size() == 1 && goal.getType() == Goal.Type.QUEST))
 		{

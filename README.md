@@ -18,6 +18,7 @@ Part of the **Codex** suite of RuneLite plugins, which share one look: warm ink,
 - **Goals.** Pin any quest, diary tier, the quest cape or a level. The first pin is your focus. Each goal shows its progress, next step and the play left. A finished goal tells you in the chatbox and offers the next in line to pin. With several goals pinned, their paths merge into one route, shared steps once. **Next session** fills one to four hours from your goals.
 - **Level goals.** "Aiming for a level?" opens a skill grid that offers the levels worth aiming for: the next ones that open a quest or diary tier, the next round ten, and 99.
 - **Atlas.** Search and filter every quest, see each area's diary tiers as seals, and track combat achievement tiers.
+- **Fastest path.** On the path page of any quest, diary tier or the quest cape, Navigator solves the quickest order to it from where your account stands: every quest that can be started comes first, since the experience it rewards only ever shortens training later, and when none can, it opens the quest that costs the least training next, takes quest points from the quickest quests outside the goal when a quest asks for more, and trains a diary's own levels last. It shows the total ("~306 h in all", quests and training apart), how much quest experience the order banks and the hours that saves against training every level up front, the **critical path** drawn as one spine (the chain of steps that wait on each other, with its longest wait), the skills that **gate** the goal most with what each opens, and the numbered order with each quest's reward. **Set as goal board** makes the goal your focus; the goal board other plugins read then carries its fastest order.
 - **Path pages.** Open any goal for every level, quest point and combat level it still needs, every quest on the way as a timeline (done, in progress, ready, or blocked and by what), and what finishing it leads to.
 - **Your pace.** Navigator learns how fast you really train each skill from the experience you gain while it runs, and times every estimate with it.
 - **In-game plaque.** A small overlay with your focus and its next step; with nothing pinned it suggests the best quest to start.
@@ -26,6 +27,7 @@ Part of the **Codex** suite of RuneLite plugins, which share one look: warm ink,
   <img src="docs/screenshots/10-road.png" width="225" alt="The road to Desert Treasure II, with a date">
   <img src="docs/screenshots/6-detail-quest.png" width="225" alt="A quest's path page">
   <img src="docs/screenshots/8-detail-cape.png" width="225" alt="The quest cape's path page">
+  <img src="docs/screenshots/12-fastest-cape.png" width="225" alt="The fastest path to the quest cape">
 </p>
 
 <p align="center">
@@ -38,6 +40,7 @@ Part of the **Codex** suite of RuneLite plugins, which share one look: warm ink,
 - **Diaries.** The game tells plugins which diary tiers are complete, not which of their tasks you have done. Once every level and quest a tier needs is met, Navigator says **Tasks** rather than a percentage it cannot measure.
 - **Free worlds.** On a free world only free quests are suggested and diaries are left out.
 - **Time estimates.** Times assume steady, ordinary training and a typical first play-through of each quest, until Navigator has seen 15 minutes of your own training in a skill. They are for comparing one choice with another, so they read as "about".
+- **Quest experience.** The fastest path counts the set experience quests reward, from the OSRS Wiki's quest experience rewards tables, for Agility, Attack, Construction, Cooking, Crafting, Defence, Farming, Firemaking, Fishing, Fletching, Herblore and Hitpoints. Lamps and rewards you choose a skill for are left out, and so far the other skills' rewards are too, which only ever makes an estimate a little long.
 - **Boosts.** A level counts as boostable only where Quest Helper marks it so, and only for plain, repeatable boosts (pies, potions, the dwarven stout). Ironmen are only offered boosts they can make or buy in a shop.
 - **Logged out.** Goals you pin while logged out join your account's goals at your next login.
 
@@ -87,13 +90,16 @@ Codex Navigator saves two keys per RuneScape profile in the `codexnavigator` con
       "next": "Start Plague City",
       "hoursLeft": 4.5,
       "skills": { "Agility": 56, "Ranged": 25 },
-      "quests": ["Plague City", "Biohazard", "Underground Pass", "Regicide"]
+      "quests": ["Plague City", "Biohazard", "Underground Pass", "Regicide"],
+      "fastest": ["Start Plague City", "Start Biohazard", "Train Ranged to 25", "Start Underground Pass", "Train Agility to 56", "Start Regicide"],
+      "fastestHours": 7.5,
+      "gatedBy": { "Agility": 3.0, "Ranged": 0.5 }
     }
   ]
 }
 ```
 
-`type` is `quest`, `diary`, `cape` or `skill` (a level goal: its `skills` holds the one level, its `quests` is empty). `skills` lists only unmet levels, by skill name. `quests` lists unfinished quests on the way, prerequisites first. `progress` is rounded to two decimals and `hoursLeft` to the half hour. `next` is absent once a goal is complete, and `focus` is absent with nothing pinned.
+`type` is `quest`, `diary`, `cape` or `skill` (a level goal: its `skills` holds the one level, its `quests` is empty). `skills` lists only unmet levels, by skill name. `quests` lists unfinished quests on the way, prerequisites first. `progress` is rounded to two decimals and `hoursLeft` to the half hour. `next` is absent once a goal is complete, and `focus` is absent with nothing pinned. The focus goal alone, when it is a quest, a diary tier or the cape and not yet complete, also carries `fastest` (the fastest order as plain steps, quest rewards banked before training), `fastestHours` (to the half hour) and `gatedBy` (hours of training per gating skill, most first); every other goal leaves them out.
 
 ## Data
 

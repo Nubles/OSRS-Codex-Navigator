@@ -37,6 +37,20 @@ public final class Planner
 		return data;
 	}
 
+	private volatile PathSolver solver;
+
+	/** The fastest-path solver over this planner, shared so its last answer is reused. */
+	public PathSolver solver()
+	{
+		PathSolver s = solver;
+		if (s == null)
+		{
+			s = new PathSolver(this);
+			solver = s;
+		}
+		return s;
+	}
+
 	public static Skill skill(String name)
 	{
 		try
