@@ -43,7 +43,13 @@ public final class Effort
 		rate(Skill.RUNECRAFT, 8_000, 35_000, 70_000);
 		rate(Skill.HUNTER, 8_000, 60_000, 120_000);
 		rate(Skill.CONSTRUCTION, 20_000, 150_000, 400_000);
-		rate(Skill.SAILING, 10_000, 50_000, 100_000);
+		// Sailing, from the OSRS Wiki's Sailing training guide (read 2026-11-04; the guide calls its rates provisional).
+		// At 22 sea charting gives about 10,000 an hour, and from 15 small shipwrecks give 2,000-3,200; 3,000 at level 1
+		// makes the line pass 10,000 at 22. Near 50: The Tempor Tantrum 19,342-24,519 (levels 30-54), the Summer Shore
+		// courier route about 20,000. Near 90: the Merchant shipwreck 70,000-90,000 (rune hooks) and 80,000-95,000 (dragon);
+		// the line also meets the Pirate (64, 35,000-38,000) and Mercenary (73, 55,000-60,000) shipwrecks on the way.
+		// The faster Barracuda Trials (The Gwenith Glide 113,538+) and Lunar Isle couriers are left out, as for other skills.
+		rate(Skill.SAILING, 3_000, 20_000, 80_000);
 	}
 
 	private Effort()
