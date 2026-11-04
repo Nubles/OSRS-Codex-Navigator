@@ -18,7 +18,8 @@
      "ids": [
       1927
      ],
-     "duringQuest": true
+     "duringQuest": true,
+     "note": "or bring a bucket and milk a cow"
     },
     {
      "name": "Pot of flour",
@@ -27,7 +28,8 @@
       1933,
       2516
      ],
-     "duringQuest": true
+     "duringQuest": true,
+     "note": "or bring a pot and mill some"
     }
    ],
    "recommended": []
@@ -107,7 +109,22 @@
      "note": "given at the start"
     }
    ],
-   "recommended": []
+   "recommended": [
+    {
+     "name": "Lumbridge teleport",
+     "qty": 1,
+     "ids": [
+      8008
+     ]
+    },
+    {
+     "name": "Varrock teleport",
+     "qty": 1,
+     "ids": [
+      8007
+     ]
+    }
+   ]
   },
   "Druidic Ritual": {
    "items": [
@@ -237,7 +254,8 @@
       7744,
       8241,
       8520
-     ]
+     ],
+     "note": "one sits on the bar of the Burthorpe pub"
     }
    ],
    "recommended": [
@@ -256,11 +274,19 @@
     {
      "name": "Games necklace",
      "qty": 1,
+     "or": [
+      "Combat bracelet"
+     ],
      "ids": [
       3861,
       3863,
       3865,
-      3867
+      3867,
+      11118,
+      11120,
+      11122,
+      11124,
+      11126
      ]
     },
     {
@@ -677,7 +703,7 @@
      "ids": [
       2961
      ],
-     "note": "crafted from a silver bar at 18 Crafting"
+     "note": "a silver bar in a sickle mould, 18 Crafting"
     },
     {
      "name": "Ghostspeak amulet",
@@ -695,6 +721,21 @@
      "ids": [
       19619
      ]
+    },
+    {
+     "name": "Prayer potion",
+     "qty": 1,
+     "ids": [
+      139,
+      141,
+      143,
+      2434,
+      20393,
+      20394,
+      20395,
+      20396
+     ],
+     "note": "for a low Prayer level"
     },
     {
      "name": "Stamina potion",
@@ -770,14 +811,22 @@
       1929,
       6712,
       9659
-     ]
+     ],
+     "note": "four uses"
     },
     {
-     "name": "Chocolate dust",
+     "name": "Hangover cure",
      "qty": 1,
+     "or": [
+      "Chocolate dust",
+      "Chocolate bar"
+     ],
      "ids": [
+      1504,
+      1973,
       1975
-     ]
+     ],
+     "note": "or its parts: chocolate dust (grind a bar), milk and snape grass"
     },
     {
      "name": "Bucket of milk",
@@ -965,7 +1014,16 @@
      "duringQuest": true
     }
    ],
-   "recommended": []
+   "recommended": [
+    {
+     "name": "Ring of charos(a)",
+     "qty": 1,
+     "ids": [
+      6465
+     ],
+     "note": "to choose the kitten's colour"
+    }
+   ]
   },
   "Big Chompy Bird Hunting": {
    "items": [
@@ -994,7 +1052,8 @@
      "ids": [
       314,
       11525
-     ]
+     ],
+     "note": "or 50 coins for 25 from Fycie"
     },
     {
      "name": "Knife",
@@ -1003,7 +1062,8 @@
       946,
       5605,
       28413
-     ]
+     ],
+     "note": "or 10 coins for a knife and chisel from Bugs"
     },
     {
      "name": "Chisel",
@@ -1012,7 +1072,8 @@
       1755,
       5601,
       28414
-     ]
+     ],
+     "note": "or 10 coins for a knife and chisel from Bugs"
     },
     {
      "name": "Wolf bones",
@@ -1123,6 +1184,13 @@
     {
      "name": "Food",
      "qty": 1
+    },
+    {
+     "name": "Feldip hills teleport",
+     "qty": 1,
+     "ids": [
+      12404
+     ]
     }
    ]
   },
@@ -1278,6 +1346,21 @@
     {
      "name": "Food",
      "qty": 1
+    },
+    {
+     "name": "Plank",
+     "qty": 1,
+     "ids": [
+      960
+     ],
+     "duringQuest": true
+    },
+    {
+     "name": "West ardougne teleport",
+     "qty": 1,
+     "ids": [
+      19623
+     ]
     }
    ]
   },
@@ -1389,6 +1472,13 @@
       23587,
       23589
      ]
+    },
+    {
+     "name": "Digsite teleport",
+     "qty": 1,
+     "ids": [
+      12403
+     ]
     }
    ]
   },
@@ -1441,7 +1531,8 @@
      "qty": 1,
      "ids": [
       1139
-     ]
+     ],
+     "note": "or the black armour set"
     }
    ],
    "recommended": [
@@ -1452,6 +1543,13 @@
     {
      "name": "Armour",
      "qty": 1
+    },
+    {
+     "name": "Falador teleport",
+     "qty": 1,
+     "ids": [
+      8009
+     ]
     }
    ]
   },
@@ -1523,6 +1621,28 @@
      "ids": [
       995
      ]
+    },
+    {
+     "name": "Law rune",
+     "qty": 1,
+     "ids": [
+      563,
+      6434,
+      11695
+     ],
+     "note": "with an air rune, for Telekinetic Grab at 33 Magic; or 10,000 coins"
+    },
+    {
+     "name": "Air rune",
+     "qty": 1,
+     "ids": [
+      556,
+      6422,
+      7558,
+      9693,
+      11688
+     ],
+     "note": "for Telekinetic Grab"
     }
    ],
    "recommended": [
@@ -1691,7 +1811,7 @@
    "recommended": [
     {
      "name": "Prayer potion",
-     "qty": 1,
+     "qty": 3,
      "ids": [
       139,
       141,
@@ -1701,7 +1821,8 @@
       20394,
       20395,
       20396
-     ]
+     ],
+     "note": "3 to 5"
     },
     {
      "name": "Stamina potion",
@@ -1719,14 +1840,26 @@
     },
     {
      "name": "Ring of recoil",
-     "qty": 1,
+     "qty": 7,
      "ids": [
       2550
-     ]
+     ],
+     "note": "only to fight Koschei's final form"
     },
     {
      "name": "Food",
      "qty": 1
+    },
+    {
+     "name": "Camelot teleport",
+     "qty": 1,
+     "or": [
+      "Rellekka teleport"
+     ],
+     "ids": [
+      8010,
+      11744
+     ]
     }
    ]
   },
@@ -1819,6 +1952,13 @@
     {
      "name": "Food",
      "qty": 1
+    },
+    {
+     "name": "Fenkenstrain's castle teleport",
+     "qty": 1,
+     "ids": [
+      19621
+     ]
     }
    ]
   },
@@ -1970,7 +2110,7 @@
     {
      "name": "Bow",
      "qty": 1,
-     "note": "yew or better, for ice arrows"
+     "note": "yew or better, for ice arrows; or any thrown weapon"
     },
     {
      "name": "Limpwurt root",
@@ -2036,6 +2176,21 @@
     {
      "name": "Food",
      "qty": 1
+    },
+    {
+     "name": "Ava's accumulator",
+     "qty": 1,
+     "ids": [
+      10499,
+      23609
+     ]
+    },
+    {
+     "name": "Ardougne teleport",
+     "qty": 1,
+     "ids": [
+      8011
+     ]
     }
    ]
   },
@@ -2072,10 +2227,16 @@
     {
      "name": "Dusty key",
      "qty": 1,
-     "ids": [
-      1590
+     "or": [
+      "Knife"
      ],
-     "duringQuest": true
+     "ids": [
+      946,
+      1590,
+      5605,
+      28413
+     ],
+     "note": "or 60 Sailing; depends on the lava eel spot you use"
     },
     {
      "name": "Harralander potion (unf)",
@@ -2110,7 +2271,7 @@
      "ids": [
       1165
      ],
-     "note": "Black Arm Gang"
+     "note": "Black Arm Gang; not trimmed"
     },
     {
      "name": "Black platebody",
@@ -2118,7 +2279,7 @@
      "ids": [
       1125
      ],
-     "note": "Black Arm Gang"
+     "note": "Black Arm Gang; not trimmed"
     },
     {
      "name": "Black platelegs",
@@ -2126,7 +2287,7 @@
      "ids": [
       1077
      ],
-     "note": "Black Arm Gang"
+     "note": "Black Arm Gang; not trimmed"
     }
    ],
    "recommended": [
@@ -2236,7 +2397,7 @@
       2511,
       24650
      ],
-     "note": "two, with a tinderbox"
+     "note": "one; bring two and a tinderbox"
     },
     {
      "name": "Grain",
@@ -2342,7 +2503,15 @@
      "duringQuest": true
     }
    ],
-   "recommended": []
+   "recommended": [
+    {
+     "name": "Varrock teleport",
+     "qty": 1,
+     "ids": [
+      8007
+     ]
+    }
+   ]
   },
   "Ernest the Chicken": {
    "items": [
@@ -2375,6 +2544,13 @@
     {
      "name": "Food",
      "qty": 1
+    },
+    {
+     "name": "Draynor manor teleport",
+     "qty": 1,
+     "ids": [
+      19615
+     ]
     }
    ]
   },
@@ -2405,6 +2581,18 @@
       1550
      ],
      "duringQuest": true
+    },
+    {
+     "name": "Combat equipment",
+     "qty": 1,
+     "note": "Magic if you use the safespot"
+    },
+    {
+     "name": "Varrock teleport",
+     "qty": 1,
+     "ids": [
+      8007
+     ]
     }
    ]
   },
@@ -2490,7 +2678,8 @@
       1937,
       6712,
       9659
-     ]
+     ],
+     "duringQuest": true
     },
     {
      "name": "Pot of flour",
@@ -2533,10 +2722,27 @@
       20587
      ],
      "duringQuest": true,
-     "note": "Ned makes one for 18 coins"
+     "note": "Ned sells one during the quest"
+    },
+    {
+     "name": "Coins",
+     "qty": 40,
+     "ids": [
+      995
+     ],
+     "note": "30 to 40 for the Al Kharid toll gate if you walk"
     }
    ],
-   "recommended": []
+   "recommended": [
+    {
+     "name": "Lumbridge teleport",
+     "qty": 1,
+     "ids": [
+      8008
+     ],
+     "note": "for a furnace"
+    }
+   ]
   },
   "Doric's Quest": {
    "items": [
@@ -2563,7 +2769,28 @@
      ]
     }
    ],
-   "recommended": []
+   "recommended": [
+    {
+     "name": "Any pickaxe",
+     "qty": 1,
+     "ids": [
+      1265,
+      1267,
+      1269,
+      1271,
+      1273,
+      1275,
+      11920,
+      12297,
+      12797,
+      13243,
+      23276,
+      23680,
+      23863
+     ],
+     "note": "only to mine the ores yourself, at 15 Mining"
+    }
+   ]
   },
   "Witch's Potion": {
    "items": [
@@ -2648,6 +2875,13 @@
     {
      "name": "Food",
      "qty": 1
+    },
+    {
+     "name": "Falador teleport",
+     "qty": 1,
+     "ids": [
+      8009
+     ]
     }
    ]
   },
@@ -2677,7 +2911,8 @@
      "qty": 60,
      "ids": [
       995
-     ]
+     ],
+     "note": "30 with a Ring of charos(a)"
     },
     {
      "name": "Banana",
@@ -2772,11 +3007,40 @@
       23276,
       23680,
       23863
-     ]
+     ],
+     "note": "with 10 Mining, beats the Ancient Guardian without a fight"
     },
     {
      "name": "Food",
      "qty": 1
+    },
+    {
+     "name": "Falador teleport",
+     "qty": 1,
+     "ids": [
+      8009
+     ]
+    },
+    {
+     "name": "Energy potion",
+     "qty": 1,
+     "or": [
+      "Stamina potion"
+     ],
+     "ids": [
+      3008,
+      3010,
+      3012,
+      3014,
+      12625,
+      12627,
+      12629,
+      12631,
+      23583,
+      23585,
+      23587,
+      23589
+     ]
     }
    ]
   },
@@ -2835,7 +3099,8 @@
      "qty": 5,
      "ids": [
       995
-     ]
+     ],
+     "note": "10 if you buy a fishing rod from Jack"
     },
     {
      "name": "Garlic",
@@ -2854,7 +3119,8 @@
      "ids": [
       307,
       22846
-     ]
+     ],
+     "note": "not the oily rod"
     },
     {
      "name": "Red vine worm",
@@ -2869,6 +3135,13 @@
     {
      "name": "Food",
      "qty": 1
+    },
+    {
+     "name": "Camelot teleport",
+     "qty": 1,
+     "ids": [
+      8010
+     ]
     }
    ]
   },
@@ -2936,6 +3209,13 @@
     {
      "name": "Food",
      "qty": 1
+    },
+    {
+     "name": "Ardougne teleport",
+     "qty": 1,
+     "ids": [
+      8011
+     ]
     }
    ]
   },
@@ -3080,6 +3360,23 @@
     {
      "name": "Food",
      "qty": 1
+    },
+    {
+     "name": "Energy potion",
+     "qty": 1,
+     "ids": [
+      3008,
+      3010,
+      3012,
+      3014
+     ]
+    },
+    {
+     "name": "Nardah teleport",
+     "qty": 1,
+     "ids": [
+      12402
+     ]
     }
    ]
   },
@@ -3260,6 +3557,39 @@
     {
      "name": "Food",
      "qty": 1
+    },
+    {
+     "name": "Any axe",
+     "qty": 1,
+     "ids": [
+      1349,
+      1351,
+      1353,
+      1355,
+      1357,
+      1359,
+      1361,
+      6739,
+      13241,
+      23279,
+      23673,
+      23862
+     ],
+     "note": "to cook the rabbit anywhere"
+    },
+    {
+     "name": "Rimmington teleport",
+     "qty": 1,
+     "ids": [
+      11741
+     ]
+    },
+    {
+     "name": "West ardougne teleport",
+     "qty": 1,
+     "ids": [
+      19623
+     ]
     }
    ]
   },
@@ -3330,7 +3660,15 @@
       2972,
       2974
      ],
-     "note": "to fill the pouch"
+     "note": "to fill the pouch: 6 fungus, or 3 pears, or 3 stems"
+    },
+    {
+     "name": "Silver sickle (b)",
+     "qty": 1,
+     "ids": [
+      2963
+     ],
+     "note": "only to gather the fillings yourself"
     },
     {
      "name": "Hammer",
@@ -3356,7 +3694,8 @@
      "qty": 10,
      "ids": [
       995
-     ]
+     ],
+     "note": "or wear a Ring of charos(a)"
     }
    ],
    "recommended": [
@@ -3399,6 +3738,13 @@
       3010,
       3012,
       3014
+     ]
+    },
+    {
+     "name": "Ardougne teleport",
+     "qty": 1,
+     "ids": [
+      8011
      ]
     }
    ]
