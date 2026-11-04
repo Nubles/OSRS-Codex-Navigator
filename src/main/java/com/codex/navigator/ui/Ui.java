@@ -32,6 +32,12 @@ public final class Ui
 		return label("<html><div style='width:" + css + "px'>" + escape(text) + "</div></html>", font, color);
 	}
 
+	/** An amount of experience by the suite's number rule: "8,240", "57k", "1.3M". */
+	public static String amount(double xp)
+	{
+		return PaceCard.perHour(xp);
+	}
+
 	public static String escape(String text)
 	{
 		return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");

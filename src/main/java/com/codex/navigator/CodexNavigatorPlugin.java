@@ -9,10 +9,13 @@ import com.codex.navigator.core.PlayTime;
 import com.codex.navigator.core.PublishGate;
 import com.codex.navigator.core.Recommender;
 import com.codex.navigator.core.Saved;
+import com.codex.navigator.core.SkillNeeds;
 import com.codex.navigator.core.Step;
 import com.codex.navigator.data.CodexData;
 import com.codex.navigator.data.QuestDef;
 import com.codex.navigator.overlay.FocusOverlay;
+import com.codex.navigator.overlay.SkillTabTooltip;
+import com.codex.navigator.overlay.SkillTabWidgets;
 import com.codex.navigator.ui.Icons;
 import com.codex.navigator.ui.NavigatorPanel;
 import com.codex.navigator.ui.ShareActions;
@@ -44,6 +47,7 @@ import net.runelite.api.Skill;
 import net.runelite.api.WorldType;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
+import net.runelite.api.events.ScriptPostFired;
 import net.runelite.api.events.StatChanged;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.gameval.VarPlayerID;
@@ -99,6 +103,11 @@ public class CodexNavigatorPlugin extends Plugin
 	static final String GUARDIAN_ONE_LIFE_KEY = "oneLifeAccount";
 	/** RuneLite's name for the world flag Hardcore Worlds carry; matched by name so an older client reads false. */
 	private static final String HARDCORE_WORLD_TYPE = "HARDCORE_MAIN";
+	/**
+	 * The client script that writes the skills tab's total level (RuneLite's own SkillTabTotalLevel.rs2asm, id 396).
+	 * It runs once the tab's tiles are built, so it is when the bars are laid into a fresh tab.
+	 */
+	static final int SKILL_TAB_TOTAL_SCRIPT = 396;
 
 	static final String[] DIARY_AREAS = {"Ardougne", "Desert", "Falador", "Fremennik", "Kandarin", "Karamja",
 		"Kourend", "Lumbridge", "Morytania", "Varrock", "Western", "Wilderness"};
@@ -155,6 +164,12 @@ public class CodexNavigatorPlugin extends Plugin
 	private ScheduledExecutorService executor;
 
 	private final FocusOverlay overlay = new FocusOverlay();
+	/** The levels the pinned goals still need, as the lane last worked them out; read by the skills tab. */
+	private volatile SkillNeeds skillNeeds = SkillNeeds.none();
+	private SkillTabWidgets skillTab;
+	private SkillTabTooltip skillTip;
+	/** Set when experience moved, so the skills tab bars follow it on the next tick. */
+	private boolean skillTabDirty;
 	private final Map<String, Quest> questsByName = new HashMap<>();
 	/** Last quest states read from the client; reused between the throttled quest reads. */
 	private final Map<String, QuestState> questCache = new HashMap<>();
@@ -230,6 +245,12 @@ public class CodexNavigatorPlugin extends Plugin
 			{
 				return config.suggestWithoutFocus();
 			}
+
+			@Override
+			public boolean skillTabBars()
+			{
+				return config.skillTabBars();
+			}
 		}, new GoalWork.Out()
 		{
 			@Override
@@ -255,6 +276,19 @@ public class CodexNavigatorPlugin extends Plugin
 			public void overlay(FocusOverlay.View view)
 			{
 				overlay.setView(view);
+			}
+
+			@Override
+			public void skills(SkillNeeds needs)
+			{
+				skillNeeds = needs;
+				clientThread.invokeLater(() ->
+				{
+					if (!self[0].isClosed())
+					{
+						drawSkillTab();
+					}
+				});
 			}
 		});
 		self[0] = lane;
@@ -295,6 +329,9 @@ public class CodexNavigatorPlugin extends Plugin
 			.build();
 		clientToolbar.addNavigation(navButton);
 		overlayManager.add(overlay);
+		skillTab = new SkillTabWidgets(client);
+		skillTip = new SkillTabTooltip(client, () -> skillNeeds, config::skillTabBars);
+		overlayManager.add(skillTip);
 		readPlayTime();
 
 		clientThread.invokeLater(() ->
@@ -316,6 +353,12 @@ public class CodexNavigatorPlugin extends Plugin
 		pace.load(null);
 		paceProfile = null;
 		overlayManager.remove(overlay);
+		overlayManager.remove(skillTip);
+		SkillTabWidgets tab = skillTab;
+		clientThread.invokeLater(tab::remove);
+		skillTab = null;
+		skillTip = null;
+		skillNeeds = SkillNeeds.none();
 		clientToolbar.removeNavigation(navButton);
 		overlay.setView(null);
 		questsByName.clear();
@@ -403,6 +446,7 @@ public class CodexNavigatorPlugin extends Plugin
 	public void onStatChanged(StatChanged event)
 	{
 		dirty = true;
+		skillTabDirty = true;
 		if (config.learnPace() && client.getGameState() == GameState.LOGGED_IN && paceProfile != null
 			&& Collections.disjoint(client.getWorldType(), NO_LEARNING))
 		{
@@ -465,6 +509,11 @@ public class CodexNavigatorPlugin extends Plugin
 	public void onGameTick(GameTick event)
 	{
 		tick++;
+		if (skillTabDirty)
+		{
+			skillTabDirty = false;
+			drawSkillTab();
+		}
 		if (tick - lastPaceSave >= PACE_SAVE_TICKS)
 		{
 			savePace();
@@ -489,6 +538,36 @@ public class CodexNavigatorPlugin extends Plugin
 			heldBack = null;
 			publish(next, true);
 		}
+	}
+
+	@Subscribe
+	public void onScriptPostFired(ScriptPostFired event)
+	{
+		if (event.getScriptId() == SKILL_TAB_TOTAL_SCRIPT)
+		{
+			drawSkillTab();
+		}
+	}
+
+	/**
+	 * Lays the goal bars into the skills tab from the live experience, or takes them out when both settings are off.
+	 * Client thread only.
+	 */
+	private void drawSkillTab()
+	{
+		SkillTabWidgets tab = skillTab;
+		if (tab == null)
+		{
+			return;
+		}
+		boolean goals = config.skillTabBars();
+		boolean plain = config.skillTabNextLevel();
+		if (!goals && !plain)
+		{
+			tab.remove();
+			return;
+		}
+		tab.update(goals ? skillNeeds : SkillNeeds.none(), plain);
 	}
 
 	/** True once the varbits sent at login have had time to arrive. */

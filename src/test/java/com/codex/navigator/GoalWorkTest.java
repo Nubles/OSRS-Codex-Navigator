@@ -12,6 +12,7 @@ import com.codex.navigator.core.Plan;
 import com.codex.navigator.core.Planner;
 import com.codex.navigator.core.PublishGate;
 import com.codex.navigator.core.Recommender;
+import com.codex.navigator.core.SkillNeeds;
 import com.codex.navigator.data.CodexData;
 import com.codex.navigator.data.DiaryDef;
 import com.codex.navigator.data.QuestDef;
@@ -47,6 +48,7 @@ public class GoalWorkTest
 		final List<String> finished = Collections.synchronizedList(new ArrayList<>());
 		volatile FocusOverlay.View view;
 		volatile int views;
+		volatile SkillNeeds skills;
 
 		@Override
 		public void board(String profile, String json)
@@ -68,6 +70,12 @@ public class GoalWorkTest
 		{
 			this.view = view;
 			views++;
+		}
+
+		@Override
+		public void skills(SkillNeeds needs)
+		{
+			skills = needs;
 		}
 	}
 
@@ -326,5 +334,50 @@ public class GoalWorkTest
 		executor.runAll();
 		assertEquals(1, sink.views);
 		assertNull(sink.view);
+	}
+
+	@Test
+	public void theSkillsTabHearsWhatThePinsNeedOnlyWhileItsBarsAreOn()
+	{
+		boolean[] bars = {true};
+		GoalWork.Settings settings = new GoalWork.Settings()
+		{
+			@Override
+			public boolean showOverlay()
+			{
+				return true;
+			}
+
+			@Override
+			public boolean includeMiniquests()
+			{
+				return true;
+			}
+
+			@Override
+			public boolean suggestWithoutFocus()
+			{
+				return true;
+			}
+
+			@Override
+			public boolean skillTabBars()
+			{
+				return bars[0];
+			}
+		};
+		Held executor = new Held();
+		Sink sink = new Sink();
+		GoalWork work = new GoalWork(PLANNER, RECOMMENDER, GSON, executor, settings, sink);
+		GoalStore store = new GoalStore();
+		store.toggle(Goal.level(Skill.AGILITY, 70));
+		work.overlay(TestAccounts.mid(DATA).build(), store);
+		executor.runAll();
+		assertEquals(70, sink.skills.get(Skill.AGILITY).getTarget());
+
+		bars[0] = false;
+		work.overlay(TestAccounts.mid(DATA).build(), store);
+		executor.runAll();
+		assertTrue(sink.skills.isEmpty());
 	}
 }
