@@ -79,6 +79,13 @@ public final class Chains
 				}
 				return best == null ? null : Goal.quest(best.name);
 			}
+			case COMBAT:
+			{
+				// The next tier whose reward the points do not reach yet.
+				int tier = account.combatTasks().nextTier(account.getCombatAchievementPoints());
+				int own = CombatTasks.tierOf(goal.getName());
+				return tier > own ? Goal.combat(CombatTasks.tierName(tier)) : null;
+			}
 			case SKILL:
 			{
 				// The next round ten past both the goal and the level now, then 99.

@@ -4,7 +4,6 @@ import com.codex.navigator.core.AccountSnapshot;
 import com.codex.navigator.core.Goal;
 import com.codex.navigator.core.Plan;
 import com.codex.navigator.core.Step;
-import com.codex.navigator.data.CodexData;
 import com.codex.navigator.data.DiaryDef;
 import com.codex.navigator.data.QuestDef;
 import java.awt.BorderLayout;
@@ -242,26 +241,6 @@ final class AtlasView extends JPanel
 
 	private StackPanel combat()
 	{
-		StackPanel stack = new StackPanel(6, 8);
-		AccountSnapshot account = nav.account();
-		CodexData data = nav.planner().getData();
-		stack.add(new SectionHeader("Combat achievements", account.getCombatAchievementPoints() + " pts"));
-		for (String tier : CodexData.COMBAT_ACHIEVEMENT_TIERS)
-		{
-			int total = data.combatAchievementTasks(tier);
-			int done = Math.min(total, account.combatAchievementsDone(tier));
-			Card card = new Card(new BorderLayout(0, 5));
-			JPanel line = new JPanel(new BorderLayout());
-			line.setOpaque(false);
-			line.add(Ui.label(tier, Theme.title(), done >= total && total > 0 ? Theme.GREEN : Theme.GOLD_BRIGHT), BorderLayout.WEST);
-			line.add(Ui.label(done + " / " + total + " tasks", Theme.small(), Theme.TEXT_MUTED), BorderLayout.EAST);
-			card.add(line, BorderLayout.NORTH);
-			ProgressBar bar = new ProgressBar(5);
-			bar.setProgress(total == 0 ? 0 : done / (double) total, total > 0 && done >= total, true);
-			card.add(bar, BorderLayout.CENTER);
-			stack.add(card);
-		}
-		stack.add(GoalCard.hint("Task counts come from the game. The in-game Combat Achievements window has each task's details."));
-		return stack;
+		return CombatView.atlas(nav);
 	}
 }

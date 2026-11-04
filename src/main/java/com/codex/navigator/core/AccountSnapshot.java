@@ -32,6 +32,7 @@ public final class AccountSnapshot
 	private final boolean oneLife;
 	private final Map<Skill, Double> pace;
 	private final Map<Skill, Double> paceHours;
+	private final CombatTasks combatTasks;
 
 	private AccountSnapshot(Builder b)
 	{
@@ -50,6 +51,7 @@ public final class AccountSnapshot
 		oneLife = b.oneLife;
 		pace = Collections.unmodifiableMap(new EnumMap<>(b.pace));
 		paceHours = Collections.unmodifiableMap(new EnumMap<>(b.paceHours));
+		combatTasks = b.combatTasks == null ? CombatTasks.EMPTY : b.combatTasks;
 	}
 
 	public static AccountSnapshot empty()
@@ -178,6 +180,12 @@ public final class AccountSnapshot
 		return paceHours.getOrDefault(skill, 0.0);
 	}
 
+	/** The combat achievement tasks, task by task, as the game lists them; empty until the game's list is read. */
+	public CombatTasks combatTasks()
+	{
+		return combatTasks;
+	}
+
 	/**
 	 * A builder holding everything in this snapshot, for asking "what if": a plan for an evening adds the
 	 * quests and experience it expects and plans again.
@@ -193,6 +201,7 @@ public final class AccountSnapshot
 		b.combatAchievementsDone.putAll(combatAchievementsDone);
 		b.pace.putAll(pace);
 		b.paceHours.putAll(paceHours);
+		b.combatTasks = combatTasks;
 		return b;
 	}
 
@@ -210,7 +219,7 @@ public final class AccountSnapshot
 	public int structureSignature()
 	{
 		return Objects.hash(loggedIn, playerName, levels, quests, diariesDone, combatAchievementsDone,
-			questPoints, combatLevel, combatAchievementPoints, members, ironman, oneLife);
+			questPoints, combatLevel, combatAchievementPoints, members, ironman, oneLife, combatTasks.signature());
 	}
 
 	public static final class Builder
@@ -230,6 +239,7 @@ public final class AccountSnapshot
 		private boolean oneLife;
 		private final Map<Skill, Double> pace = new EnumMap<>(Skill.class);
 		private final Map<Skill, Double> paceHours = new EnumMap<>(Skill.class);
+		private CombatTasks combatTasks;
 
 		public Builder loggedIn(boolean value)
 		{
@@ -329,6 +339,12 @@ public final class AccountSnapshot
 			{
 				paceHours.putAll(value);
 			}
+			return this;
+		}
+
+		public Builder combatTasks(CombatTasks value)
+		{
+			combatTasks = value;
 			return this;
 		}
 

@@ -4,7 +4,7 @@ import java.util.Locale;
 import java.util.Objects;
 import net.runelite.api.Skill;
 
-/** Something the player wants: a quest, a diary tier, the quest cape or a level in a skill. */
+/** Something the player wants: a quest, a diary tier, the quest cape, a level in a skill or a combat achievement tier. */
 public final class Goal
 {
 	public enum Type
@@ -13,7 +13,9 @@ public final class Goal
 		DIARY("diary"),
 		QUEST_CAPE("cape"),
 		/** A level in one skill, named like {@code Agility 70}. */
-		SKILL("skill");
+		SKILL("skill"),
+		/** A combat achievement tier's reward, named by its tier like {@code Hard}. */
+		COMBAT("ca");
 
 		private final String prefix;
 
@@ -52,6 +54,13 @@ public final class Goal
 			return null;
 		}
 		return new Goal(Type.SKILL, skill.getName() + " " + level);
+	}
+
+	/** A combat achievement tier goal, such as the Hard tier's reward; null for a name that is no tier. */
+	public static Goal combat(String tier)
+	{
+		int rank = CombatTasks.tierOf(tier);
+		return rank == 0 ? null : new Goal(Type.COMBAT, CombatTasks.tierName(rank));
 	}
 
 	/** The skill of a level goal, or null for any other goal. */
@@ -134,6 +143,10 @@ public final class Goal
 					// Rebuilt from its parts, so "skill:agility 70" and other spellings land on one goal.
 					Goal parsed = new Goal(Type.SKILL, name);
 					return level(parsed.getSkill(), parsed.getLevel());
+				}
+				if (type == Type.COMBAT)
+				{
+					return combat(name);
 				}
 				return name.isEmpty() ? null : new Goal(type, name);
 			}
