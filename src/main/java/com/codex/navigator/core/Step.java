@@ -14,6 +14,8 @@ public final class Step
 		DIARY_TASKS,
 		/** Combat achievement tasks to earn a tier's points: the game rates them, not the Codex. */
 		COMBAT_TASKS,
+		/** Chompy birds still to kill for a hat. */
+		CHOMPY,
 		CHECK
 	}
 

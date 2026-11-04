@@ -33,6 +33,7 @@ public final class AccountSnapshot
 	private final Map<Skill, Double> pace;
 	private final Map<Skill, Double> paceHours;
 	private final CombatTasks combatTasks;
+	private final ChompyHunt.View chompy;
 
 	private AccountSnapshot(Builder b)
 	{
@@ -52,6 +53,7 @@ public final class AccountSnapshot
 		pace = Collections.unmodifiableMap(new EnumMap<>(b.pace));
 		paceHours = Collections.unmodifiableMap(new EnumMap<>(b.paceHours));
 		combatTasks = b.combatTasks == null ? CombatTasks.EMPTY : b.combatTasks;
+		chompy = b.chompy == null ? ChompyHunt.View.NONE : b.chompy;
 	}
 
 	public static AccountSnapshot empty()
@@ -186,6 +188,12 @@ public final class AccountSnapshot
 		return combatTasks;
 	}
 
+	/** This account's chompy kills and learned kill rate; {@link ChompyHunt.View#NONE} until the bow has been checked. */
+	public ChompyHunt.View chompy()
+	{
+		return chompy;
+	}
+
 	/**
 	 * A builder holding everything in this snapshot, for asking "what if": a plan for an evening adds the
 	 * quests and experience it expects and plans again.
@@ -202,6 +210,7 @@ public final class AccountSnapshot
 		b.pace.putAll(pace);
 		b.paceHours.putAll(paceHours);
 		b.combatTasks = combatTasks;
+		b.chompy = chompy;
 		return b;
 	}
 
@@ -219,7 +228,7 @@ public final class AccountSnapshot
 	public int structureSignature()
 	{
 		return Objects.hash(loggedIn, playerName, levels, quests, diariesDone, combatAchievementsDone,
-			questPoints, combatLevel, combatAchievementPoints, members, ironman, oneLife, combatTasks.signature());
+			questPoints, combatLevel, combatAchievementPoints, members, ironman, oneLife, combatTasks.signature(), chompy);
 	}
 
 	public static final class Builder
@@ -240,6 +249,7 @@ public final class AccountSnapshot
 		private final Map<Skill, Double> pace = new EnumMap<>(Skill.class);
 		private final Map<Skill, Double> paceHours = new EnumMap<>(Skill.class);
 		private CombatTasks combatTasks;
+		private ChompyHunt.View chompy;
 
 		public Builder loggedIn(boolean value)
 		{
@@ -345,6 +355,12 @@ public final class AccountSnapshot
 		public Builder combatTasks(CombatTasks value)
 		{
 			combatTasks = value;
+			return this;
+		}
+
+		public Builder chompy(ChompyHunt.View value)
+		{
+			chompy = value;
 			return this;
 		}
 

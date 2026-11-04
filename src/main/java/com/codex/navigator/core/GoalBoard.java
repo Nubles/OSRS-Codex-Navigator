@@ -26,7 +26,7 @@ public final class GoalBoard
 		String key;
 		/**
 		 * quest, diary, cape, skill (a level goal, keyed like {@code skill:Agility 70}) or combat (a combat achievement
-		 * tier's reward, keyed like {@code ca:Hard}).
+		 * tier's reward, keyed like {@code ca:Hard}) or chompy (a chompy bird hat, keyed like {@code chompy:Ogre forester}).
 		 */
 		String type;
 		String title;
@@ -119,6 +119,8 @@ public final class GoalBoard
 				return "skill";
 			case COMBAT:
 				return "combat";
+			case CHOMPY:
+				return "chompy";
 			default:
 				return "cape";
 		}

@@ -70,8 +70,21 @@ final class DetailView
 			CombatView.goal(stack, nav, goal);
 			return stack;
 		}
+		if (goal.getType() == Goal.Type.CHOMPY)
+		{
+			ChompyView.goal(stack, nav, goal);
+			if (!ChompyView.questPending(nav.account()) || plan.isComplete())
+			{
+				return stack;
+			}
+			// Big Chompy Bird Hunting still to do: its levels, prep and path follow, as on the quest's own page.
+		}
 
 		requirements(stack, nav, plan, showMet, toggleMet);
+		if (goal.getType() == Goal.Type.DIARY)
+		{
+			ChompyView.diaryTask(stack, nav, goal.getName());
+		}
 		if (goal.getType() == Goal.Type.DIARY && !plan.isComplete())
 		{
 			stack.add(GoalCard.hint("The Codex checks a diary's levels and quests. Its tasks are listed in the "

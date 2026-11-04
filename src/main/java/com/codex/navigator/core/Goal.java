@@ -4,7 +4,10 @@ import java.util.Locale;
 import java.util.Objects;
 import net.runelite.api.Skill;
 
-/** Something the player wants: a quest, a diary tier, the quest cape, a level in a skill or a combat achievement tier. */
+/**
+ * Something the player wants: a quest, a diary tier, the quest cape, a level in a skill, a combat achievement tier or a
+ * chompy bird hat.
+ */
 public final class Goal
 {
 	public enum Type
@@ -15,7 +18,9 @@ public final class Goal
 		/** A level in one skill, named like {@code Agility 70}. */
 		SKILL("skill"),
 		/** A combat achievement tier's reward, named by its tier like {@code Hard}. */
-		COMBAT("ca");
+		COMBAT("ca"),
+		/** A chompy bird hat from Rantz, named by the hat like {@code Ogre forester}. */
+		CHOMPY("chompy");
 
 		private final String prefix;
 
@@ -61,6 +66,13 @@ public final class Goal
 	{
 		int rank = CombatTasks.tierOf(tier);
 		return rank == 0 ? null : new Goal(Type.COMBAT, CombatTasks.tierName(rank));
+	}
+
+	/** A chompy bird hat goal, such as the Ogre forester hat; null for a name that is no hat. */
+	public static Goal chompy(String hat)
+	{
+		ChompyHunt.Hat h = ChompyHunt.hat(hat);
+		return h == null ? null : new Goal(Type.CHOMPY, h.getName());
 	}
 
 	/** The skill of a level goal, or null for any other goal. */
@@ -147,6 +159,10 @@ public final class Goal
 				if (type == Type.COMBAT)
 				{
 					return combat(name);
+				}
+				if (type == Type.CHOMPY)
+				{
+					return chompy(name);
 				}
 				return name.isEmpty() ? null : new Goal(type, name);
 			}

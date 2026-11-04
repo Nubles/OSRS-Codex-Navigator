@@ -107,7 +107,7 @@ public interface CodexNavigatorConfig extends Config
 	@ConfigItem(
 		keyName = "learnPace",
 		name = "Learn my pace",
-		description = "Times training estimates by how fast you really train each skill, learned while you play",
+		description = "Times training estimates by how fast you really train each skill, and chompy hats by how fast you hunt, learned while you play",
 		position = 2,
 		section = planning
 	)
