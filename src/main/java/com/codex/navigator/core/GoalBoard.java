@@ -38,6 +38,15 @@ public final class GoalBoard
 		Map<String, Integer> skills = new LinkedHashMap<>();
 		/** Unfinished quests on the way, prerequisites first, the goal's own quest last. */
 		List<String> quests = new ArrayList<>();
+		/**
+		 * The focus goal only, when it is a quest, a diary tier or the cape: the fastest order as plain steps ("Start
+		 * Regicide", "Train Agility to 56"), quest experience banked before training. Absent for every other goal.
+		 */
+		List<String> fastest;
+		/** With {@link #fastest}: about how many hours that order takes, to the half hour. */
+		Double fastestHours;
+		/** With {@link #fastest}: the hours of training each gating skill takes in that order, most first. */
+		Map<String, Double> gatedBy;
 	}
 
 	int version = VERSION;
@@ -78,6 +87,16 @@ public final class GoalBoard
 				if (step.getKind() == Step.Kind.QUEST && step.getStatus() != Step.Status.DONE)
 				{
 					e.quests.add(step.getQuest());
+				}
+			}
+			if (goal.equals(pinned.get(0)) && !e.complete)
+			{
+				PathSolver.Solution fastest = planner.solver().solveCached(goal, account);
+				if (fastest != null && !fastest.isEmpty())
+				{
+					e.fastest = PathSolver.lines(fastest);
+					e.fastestHours = Math.round(fastest.getHours() * 2) / 2.0;
+					e.gatedBy = PathSolver.gateHours(fastest);
 				}
 			}
 			board.goals.add(e);
@@ -133,5 +152,11 @@ public final class GoalBoard
 	public String next(int i)
 	{
 		return goals.get(i).next;
+	}
+
+	/** The fastest order of the goal at this index, or null (it is set for the focus goal only). */
+	public List<String> fastest(int i)
+	{
+		return goals.get(i).fastest;
 	}
 }

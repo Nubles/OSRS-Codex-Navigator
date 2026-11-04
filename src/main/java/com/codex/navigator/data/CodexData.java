@@ -55,6 +55,13 @@ public final class CodexData
 	private final Map<String, List<String>> questsNeeding = new HashMap<>();
 	private final Map<String, List<String>> diariesNeeding = new HashMap<>();
 	private Map<String, Map<String, Integer>> boostable = Collections.emptyMap();
+	private Map<String, Map<String, Double>> questXp = Collections.emptyMap();
+
+	/** quest-xp.json: per quest, the set experience it rewards by skill name, from the OSRS Wiki. */
+	private static final class RawXp
+	{
+		Map<String, Map<String, Double>> quests;
+	}
 
 	public CodexData(List<QuestDef> questList, List<DiaryDef> diaryList, Map<String, Integer> caTasks)
 	{
@@ -83,6 +90,7 @@ public final class CodexData
 				Raw raw = gson.fromJson(reader, Raw.class);
 				CodexData data = new CodexData(raw.quests, raw.diaries, raw.combatAchievementTasks);
 				data.boostable = loadBoosts(gson);
+				data.questXp = loadQuestXp(gson);
 				return data;
 			}
 		}
@@ -107,6 +115,36 @@ public final class CodexData
 				return raw == null || raw.quests == null ? Collections.emptyMap() : raw.quests;
 			}
 		}
+	}
+
+	/** The quest experience rewards; none if the file is missing, which only makes training estimates longer. */
+	private static Map<String, Map<String, Double>> loadQuestXp(Gson gson) throws IOException
+	{
+		try (InputStream in = CodexData.class.getResourceAsStream("/com/codex/navigator/quest-xp.json"))
+		{
+			if (in == null)
+			{
+				return Collections.emptyMap();
+			}
+			try (Reader reader = new InputStreamReader(in, StandardCharsets.UTF_8))
+			{
+				RawXp raw = gson.fromJson(reader, RawXp.class);
+				return raw == null || raw.quests == null ? Collections.emptyMap() : raw.quests;
+			}
+		}
+	}
+
+	/** The set experience a quest rewards, by skill name ("Agility": 13750.0); empty when none is known. */
+	public Map<String, Double> questXp(String quest)
+	{
+		Map<String, Double> xp = questXp.get(quest);
+		return xp == null ? Collections.emptyMap() : xp;
+	}
+
+	/** Replaces the quest experience rewards, for tests. */
+	public void setQuestXp(Map<String, Map<String, Double>> value)
+	{
+		questXp = value == null ? Collections.emptyMap() : value;
 	}
 
 	/** Replaces the boostable requirements, for tests. */
