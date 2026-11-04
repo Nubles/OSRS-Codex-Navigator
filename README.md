@@ -17,7 +17,8 @@ Part of the **Codex** suite of RuneLite plugins, which share one look: warm ink,
 - **The road.** Under your focus, the way there drawn as a road on an old map: every quest a stone, gold behind you, a glowing stone for the next one and a flag at the goal. Click a stone to open its quest. **Save road card** or **Copy** makes a picture of it to share.
 - **Goals.** Pin any quest, diary tier, the quest cape or a level. The first pin is your focus. Each goal shows its progress, next step and the play left. A finished goal tells you in the chatbox and offers the next in line to pin. With several goals pinned, their paths merge into one route, shared steps once. **Next session** fills one to four hours from your goals.
 - **Level goals.** "Aiming for a level?" opens a skill grid that offers the levels worth aiming for: the next ones that open a quest or diary tier, the next round ten, and 99.
-- **Atlas.** Search and filter every quest, see each area's diary tiers as seals, and track combat achievement tiers.
+- **Atlas.** Search and filter every quest, see each area's diary tiers as seals, and track combat achievements.
+- **Combat achievements.** Navigator reads every task from the game itself, the way its own Combat Achievements window lists them, along with which are done, your points and the points each tier's reward needs. The Atlas shows the tiers as seals on one track, the points to your next reward and what it brings, and the **nearest tasks** for your account: the bosses you already fight first (by the kill counts RuneLite and Codex Boss Pilot have saved, so "38 of 50 kills" toward a kill count task), then those where you have done tasks before, then the easier tier. Pin a tier ("Hard combat achievements") like any other goal: it shows the points still to earn and the nearest task as its next step, and tells you when the reward is reached. **Your bosses** lists the bosses you fight with their kill count and tasks done.
 - **Fastest path.** On the path page of any quest, diary tier or the quest cape, Navigator solves the quickest order to it from where your account stands: every quest that can be started comes first, since the experience it rewards only ever shortens training later, and when none can, it opens the quest that costs the least training next, takes quest points from the quickest quests outside the goal when a quest asks for more, and trains a diary's own levels last. It shows the total ("~306 h in all", quests and training apart), how much quest experience the order banks and the hours that saves against training every level up front, the **critical path** drawn as one spine (the chain of steps that wait on each other, with its longest wait), the skills that **gate** the goal most with what each opens, and the numbered order with each quest's reward. **Set as goal board** makes the goal your focus; the goal board other plugins read then carries its fastest order.
 - **Quest prep.** Under your focus, the next quest on its way made ready, the way Quest Helper lists a quest's items but checked against your own account: what still stands in the way and about how long each takes (a quest, a level, or "train to 51, then a summer pie"), the levels a pie or potion covers on the day, and every item the quest's OSRS Wiki page says to bring, marked **with you**, **in bank**, **to get** or **in quest** (the quest hands it out). A kind of thing ("Food", "Any bow") is listed but never ticked, and without a bank seen the card says so instead of calling items missing. A quest's own page carries the same card. Item lists are bundled for 56 quests so far, the free quests and those most paths cross; the rest say the list is not bundled yet.
 - **Path pages.** Open any goal for every level, quest point and combat level it still needs, every quest on the way as a timeline (done, in progress, ready, or blocked and by what), and what finishing it leads to.
@@ -43,11 +44,17 @@ Part of the **Codex** suite of RuneLite plugins, which share one look: warm ink,
 </p>
 
 <p align="center">
+  <img src="docs/screenshots/16-combat-achievements.png" width="225" alt="Combat achievements: the next reward, the nearest tasks and your bosses">
+  <img src="docs/screenshots/17-combat-tier-goal.png" width="225" alt="A combat achievement tier as a goal">
+</p>
+
+<p align="center">
   <img src="docs/screenshots/13-skills-tab.png" width="476" alt="Goal bars in the skills tab, with the hover note">
 </p>
 
 ## Good to know
 
+- **Combat achievements.** Tasks are done in game, so a tier goal has no time estimate. Kill counts are only those already saved on this computer by RuneLite's chat commands (from the game's "kill count is" messages) or by Codex Boss Pilot; Navigator never looks them up online.
 - **Diaries.** The game tells plugins which diary tiers are complete, not which of their tasks you have done. Once every level and quest a tier needs is met, Navigator says **Tasks** rather than a percentage it cannot measure.
 - **Free worlds.** On a free world only free quests are suggested and diaries are left out.
 - **Time estimates.** Times assume steady, ordinary training and a typical first play-through of each quest, until Navigator has seen 15 minutes of your own training in a skill. They are for comparing one choice with another, so they read as "about".
@@ -75,6 +82,7 @@ Navigator works on its own. With these installed it knows more, and only ever re
 
 - **[Codex Session Chronicle](https://github.com/Nubles/OSRS-Codex-Session-Chronicle):** how much you have played over the last two weeks, which turns each goal's hours into a day on the calendar ("Around 3 Nov at your 40 min a day"). Without it, no dates are shown.
 - **[Codex Guardian](https://github.com/Nubles/OSRS-Codex-Guardian):** an account you marked one-life there gets Hardcore care, as hardcore ironmen and Hardcore World accounts do anyway.
+- **[Codex Boss Pilot](https://github.com/Nubles/OSRS-Codex-Boss-Pilot):** the kill counts in its logbook, so the nearest combat achievement tasks know which bosses you fight. Without it, RuneLite's own saved kill counts are used.
 - **[Codex Bank Steward](https://github.com/Nubles/OSRS-Codex-Bank-Steward):** the bank as it last saw it (its shared `bankV1`), so quest prep can say what is in the bank before you open it this session. Without it, prep checks the bank once you open it.
 
 Your pinned goals are shared the other way: Bank Steward, Annals, Plunder Pilot, Pest Control Pilot and Minigame Pilot read them to point their own suggestions at what you are working toward.

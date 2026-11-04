@@ -65,6 +65,12 @@ final class DetailView
 			stack.add(risks);
 		}
 
+		if (goal.getType() == Goal.Type.COMBAT)
+		{
+			CombatView.goal(stack, nav, goal);
+			return stack;
+		}
+
 		requirements(stack, nav, plan, showMet, toggleMet);
 		if (goal.getType() == Goal.Type.DIARY && !plan.isComplete())
 		{

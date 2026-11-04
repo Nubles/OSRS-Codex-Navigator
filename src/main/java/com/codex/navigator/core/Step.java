@@ -12,6 +12,8 @@ public final class Step
 		QUEST_POINTS,
 		COMBAT,
 		DIARY_TASKS,
+		/** Combat achievement tasks to earn a tier's points: the game rates them, not the Codex. */
+		COMBAT_TASKS,
 		CHECK
 	}
 

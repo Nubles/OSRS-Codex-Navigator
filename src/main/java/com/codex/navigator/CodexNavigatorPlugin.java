@@ -1,9 +1,11 @@
 package com.codex.navigator;
 
 import com.codex.navigator.core.AccountSnapshot;
+import com.codex.navigator.core.CombatTasks;
 import com.codex.navigator.core.GoalStore;
 import com.codex.navigator.core.Holdings;
 import com.codex.navigator.core.HoldingsWatch;
+import com.codex.navigator.core.KillCounts;
 import com.codex.navigator.core.Pace;
 import com.codex.navigator.core.Plan;
 import com.codex.navigator.core.Planner;
@@ -31,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -223,6 +226,10 @@ public class CodexNavigatorPlugin extends Plugin
 	private boolean boardDeferred;
 	/** Set by a world hop, so the login after it waits for varbits like any other. */
 	private boolean hopped;
+	/** The game's combat achievement task list, read once from its cache; empty until read. */
+	private List<CombatTasks.Task> combatTaskList = Collections.emptyList();
+	/** Kill counts for the combat achievement monsters, from Boss Pilot and RuneLite; read again when either saves. */
+	private KillCounts.Read killCounts;
 
 	@Provides
 	CodexNavigatorConfig provideConfig(ConfigManager configManager)
@@ -378,6 +385,8 @@ public class CodexNavigatorPlugin extends Plugin
 		questsByName.clear();
 		questCache.clear();
 		snapshot = AccountSnapshot.empty();
+		combatTaskList = Collections.emptyList();
+		killCounts = null;
 		holdings.clear();
 		gate.reset();
 		heldBack = null;
@@ -455,7 +464,8 @@ public class CodexNavigatorPlugin extends Plugin
 		dirty = true;
 		loadGoals();
 		readPlayTime();
-		// A pack or bank seen belongs to the account it was seen on.
+		// A pack or bank seen belongs to the account it was seen on, and so do kill counts.
+		killCounts = null;
 		holdings.clear();
 		readStewardBank();
 	}
@@ -493,6 +503,18 @@ public class CodexNavigatorPlugin extends Plugin
 		{
 			// Bank Steward saved the bank afresh (or stopped sharing it).
 			readStewardBank();
+			return;
+		}
+		if ((KillCounts.BOSS_PILOT_GROUP.equals(event.getGroup()) && KillCounts.BOSS_PILOT_KEY.equals(event.getKey())
+			|| KillCounts.RUNELITE_GROUP.equals(event.getGroup()))
+			&& (event.getProfile() == null || event.getProfile().equals(configManager.getRSProfileKey())))
+		{
+			// A kill count was saved: the nearest combat achievement tasks may move.
+			clientThread.invokeLater(() ->
+			{
+				killCounts = null;
+				dirty = true;
+			});
 			return;
 		}
 		if (PlayTime.GROUP.equals(event.getGroup()) && PlayTime.JOURNAL.equals(event.getKey())
@@ -849,11 +871,39 @@ public class CodexNavigatorPlugin extends Plugin
 			b.combatAchievements(CodexData.COMBAT_ACHIEVEMENT_TIERS[i], client.getVarbitValue(COMBAT_ACHIEVEMENT_VARBITS[i]));
 		}
 		b.combatAchievementPoints(client.getVarbitValue(VarbitID.CA_POINTS));
+		b.combatTasks(readCombatTasks());
 		if (config.learnPace())
 		{
 			b.pace(pace.factors()).paceHours(pace.hoursLearned());
 		}
 		publish(b.build(), false);
+	}
+
+	/** The game's task list (read once), what is done, the game's tier thresholds and the kill counts known. */
+	private CombatTasks readCombatTasks()
+	{
+		if (combatTaskList.isEmpty())
+		{
+			combatTaskList = CombatTaskReader.tasks(client);
+			killCounts = null;
+		}
+		if (combatTaskList.isEmpty())
+		{
+			return CombatTasks.EMPTY;
+		}
+		if (killCounts == null)
+		{
+			Set<String> monsters = new LinkedHashSet<>();
+			for (CombatTasks.Task t : combatTaskList)
+			{
+				monsters.add(t.getMonster());
+			}
+			killCounts = KillCounts.read(monsters, gson,
+				configManager.getRSProfileConfiguration(KillCounts.BOSS_PILOT_GROUP, KillCounts.BOSS_PILOT_KEY),
+				key -> configManager.getRSProfileConfiguration(KillCounts.RUNELITE_GROUP, key, int.class));
+		}
+		return new CombatTasks(combatTaskList, CombatTaskReader.done(client), CombatTaskReader.thresholds(client),
+			killCounts.getKills(), killCounts.getSource());
 	}
 
 	/**

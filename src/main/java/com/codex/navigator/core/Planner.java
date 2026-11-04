@@ -79,6 +79,8 @@ public final class Planner
 				return planDiary(goal, account);
 			case SKILL:
 				return planLevel(goal, account);
+			case COMBAT:
+				return planCombat(goal, account);
 			case QUEST_CAPE:
 			default:
 				return planQuestCape(goal, account);
@@ -123,6 +125,57 @@ public final class Planner
 		addSkills(own, diary.skills);
 		return build(goal, diary.name + " Diary", "Achievement diary", account.diaryDone(diary.name),
 			closure, own, diary.questPoints, diary.combatLevel, true, account);
+	}
+
+	/**
+	 * A combat achievement tier's reward: reached once the account's points meet the game's threshold for it. Tasks are
+	 * done in game, so the plan has no path and no time estimate, only the points still to earn and the nearest task.
+	 */
+	private Plan planCombat(Goal goal, AccountSnapshot account)
+	{
+		int tier = CombatTasks.tierOf(goal.getName());
+		if (tier == 0)
+		{
+			return unknown(goal);
+		}
+		CombatTasks tasks = account.combatTasks();
+		int need = tasks.threshold(tier);
+		int points = account.getCombatAchievementPoints();
+		String title = CombatTasks.tierName(tier) + " combat achievements";
+		String subtitle = "Combat achievements · " + String.format(java.util.Locale.ENGLISH, "%,d", need) + "\u00a0pts";
+		boolean complete = account.isLoggedIn() && points >= need;
+		double progress = complete ? 1 : need <= 0 ? 0 : Math.min(0.99, points / (double) need);
+		Step next = null;
+		if (!complete)
+		{
+			next = combatStep(tasks, tier, need - points, account.isLoggedIn());
+		}
+		return new Plan(goal, title, subtitle, complete, progress, new ArrayList<>(), new ArrayList<>(), next, 0, 0);
+	}
+
+	/** "Earn 37 more points", with the nearest task when the game's list is known. */
+	static Step combatStep(CombatTasks tasks, int tier, int toGo, boolean loggedIn)
+	{
+		if (!loggedIn)
+		{
+			return new Step(Step.Kind.COMBAT_TASKS, Step.Status.UNKNOWN, "Log in to read your combat achievements",
+				null, null, null);
+		}
+		String detail;
+		List<CombatTasks.Near> nearest = tasks.nearest(0, 1);
+		if (!nearest.isEmpty())
+		{
+			CombatTasks.Task t = nearest.get(0).getTask();
+			boolean named = !t.hasMonster() || t.getName().contains(t.getMonster());
+			detail = "Nearest: " + t.getName() + (named ? "" : " at " + t.getMonster()) + ", "
+				+ t.getTierName() + " · " + nearest.get(0).getWhy();
+		}
+		else
+		{
+			detail = "Your Combat Achievements window lists the tasks";
+		}
+		return new Step(Step.Kind.COMBAT_TASKS, Step.Status.READY, "Earn " + toGo + (toGo == 1 ? " more point" : " more points")
+			+ " for " + CombatTasks.tierName(tier), detail, null, null);
 	}
 
 	/**

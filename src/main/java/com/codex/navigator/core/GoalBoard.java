@@ -24,7 +24,10 @@ public final class GoalBoard
 	{
 		/** The same key as the {@code goals} list, such as {@code quest:Dragon Slayer II} or {@code diary:Ardougne Easy}. */
 		String key;
-		/** quest, diary, cape or skill (a level goal, keyed like {@code skill:Agility 70}). */
+		/**
+		 * quest, diary, cape, skill (a level goal, keyed like {@code skill:Agility 70}) or combat (a combat achievement
+		 * tier's reward, keyed like {@code ca:Hard}).
+		 */
 		String type;
 		String title;
 		boolean complete;
@@ -114,6 +117,8 @@ public final class GoalBoard
 				return "diary";
 			case SKILL:
 				return "skill";
+			case COMBAT:
+				return "combat";
 			default:
 				return "cape";
 		}

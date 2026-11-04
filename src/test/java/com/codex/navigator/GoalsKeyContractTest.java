@@ -71,6 +71,11 @@ public class GoalsKeyContractTest
 		assertEquals("[\"diary:Ardougne Medium\",\"quest:Dragon Slayer II\",\"cape:Quest point cape\"]", json);
 		assertEquals(Arrays.asList("diary:Ardougne Medium", "quest:Dragon Slayer II", "cape:Quest point cape"),
 			stewardReadGoals(gson, json));
+		// A combat achievement tier goal is one more key of the same shape: the Steward keeps it and it covers no tasks.
+		store.toggle(Goal.combat("Hard"));
+		json = saved.get(saved.size() - 1);
+		assertEquals(Arrays.asList("diary:Ardougne Medium", "quest:Dragon Slayer II", "cape:Quest point cape", "ca:Hard"),
+			stewardReadGoals(gson, json));
 		// The board other plugins may read has a key of its own.
 		assertNotEquals("goals", CodexNavigatorPlugin.BOARD_KEY);
 	}
