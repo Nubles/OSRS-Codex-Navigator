@@ -7,6 +7,7 @@ import com.codex.navigator.core.Goal;
 import com.codex.navigator.core.Hazards;
 import com.codex.navigator.core.Plan;
 import com.codex.navigator.core.PlayTime;
+import com.codex.navigator.core.QuestPrep;
 import com.codex.navigator.core.Recommender;
 import com.codex.navigator.core.Road;
 import com.codex.navigator.core.SkillGap;
@@ -67,6 +68,7 @@ final class CompassView
 					stack.add(shareRow(nav, plan, road));
 				}
 			}
+			prep(stack, nav, plan);
 		}
 		else
 		{
@@ -142,6 +144,28 @@ final class CompassView
 			stack.add(PaceCard.build(nav));
 		}
 		return stack;
+	}
+
+	/**
+	 * The next quest on the focus's path, made ready: what still blocks it, the boosts it takes and what to bring.
+	 * Nothing for a level goal or once no quest is left on the way.
+	 */
+	private static void prep(StackPanel stack, Navigation nav, Plan plan)
+	{
+		QuestPrep prep = QuestPrep.of(nav.planner(), QuestPrep.nextQuest(plan), nav.account(), nav.holdings());
+		if (prep == null)
+		{
+			return;
+		}
+		stack.add(new SectionHeader("Prepare", prep.isListed() ? itemsCount(prep) : null));
+		stack.add(PrepCard.build(prep, true, q -> nav.open(Goal.quest(q)), System.currentTimeMillis()));
+	}
+
+	/** The header's count: "6 items", or "nothing to bring". */
+	static String itemsCount(QuestPrep prep)
+	{
+		int n = prep.getItems().size();
+		return n == 0 ? "nothing to bring" : n == 1 ? "1 item" : n + " items";
 	}
 
 	/**

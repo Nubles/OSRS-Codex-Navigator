@@ -19,6 +19,7 @@ Part of the **Codex** suite of RuneLite plugins, which share one look: warm ink,
 - **Level goals.** "Aiming for a level?" opens a skill grid that offers the levels worth aiming for: the next ones that open a quest or diary tier, the next round ten, and 99.
 - **Atlas.** Search and filter every quest, see each area's diary tiers as seals, and track combat achievement tiers.
 - **Fastest path.** On the path page of any quest, diary tier or the quest cape, Navigator solves the quickest order to it from where your account stands: every quest that can be started comes first, since the experience it rewards only ever shortens training later, and when none can, it opens the quest that costs the least training next, takes quest points from the quickest quests outside the goal when a quest asks for more, and trains a diary's own levels last. It shows the total ("~306 h in all", quests and training apart), how much quest experience the order banks and the hours that saves against training every level up front, the **critical path** drawn as one spine (the chain of steps that wait on each other, with its longest wait), the skills that **gate** the goal most with what each opens, and the numbered order with each quest's reward. **Set as goal board** makes the goal your focus; the goal board other plugins read then carries its fastest order.
+- **Quest prep.** Under your focus, the next quest on its way made ready, the way Quest Helper lists a quest's items but checked against your own account: what still stands in the way and about how long each takes (a quest, a level, or "train to 51, then a summer pie"), the levels a pie or potion covers on the day, and every item the quest's OSRS Wiki page says to bring, marked **with you**, **in bank**, **to get** or **in quest** (the quest hands it out). A kind of thing ("Food", "Any bow") is listed but never ticked, and without a bank seen the card says so instead of calling items missing. A quest's own page carries the same card. Item lists are bundled for 56 quests so far, the free quests and those most paths cross; the rest say the list is not bundled yet.
 - **Path pages.** Open any goal for every level, quest point and combat level it still needs, every quest on the way as a timeline (done, in progress, ready, or blocked and by what), and what finishing it leads to.
 - **Your pace.** Navigator learns how fast you really train each skill from the experience you gain while it runs, and times every estimate with it.
 - **In-game plaque.** A small overlay with your focus and its next step; with nothing pinned it suggests the best quest to start.
@@ -37,6 +38,11 @@ Part of the **Codex** suite of RuneLite plugins, which share one look: warm ink,
 </p>
 
 <p align="center">
+  <img src="docs/screenshots/14-quest-prep.png" width="225" alt="Quest prep: what blocks the next quest and what to bring">
+  <img src="docs/screenshots/15-quest-prep-unseen.png" width="225" alt="Quest prep with the bank not yet seen">
+</p>
+
+<p align="center">
   <img src="docs/screenshots/13-skills-tab.png" width="476" alt="Goal bars in the skills tab, with the hover note">
 </p>
 
@@ -46,7 +52,7 @@ Part of the **Codex** suite of RuneLite plugins, which share one look: warm ink,
 - **Free worlds.** On a free world only free quests are suggested and diaries are left out.
 - **Time estimates.** Times assume steady, ordinary training and a typical first play-through of each quest, until Navigator has seen 15 minutes of your own training in a skill. They are for comparing one choice with another, so they read as "about".
 - **Quest experience.** The fastest path counts the set experience quests reward, from the OSRS Wiki's quest experience rewards tables, for Agility, Attack, Construction, Cooking, Crafting, Defence, Farming, Firemaking, Fishing, Fletching, Herblore and Hitpoints. Lamps and rewards you choose a skill for are left out, and so far the other skills' rewards are too, which only ever makes an estimate a little long.
-- **Boosts.** A level counts as boostable only where Quest Helper marks it so, and only for plain, repeatable boosts (pies, potions, the dwarven stout). Ironmen are only offered boosts they can make or buy in a shop.
+- **Boosts.** A level counts as boostable only where Quest Helper or the quest's OSRS Wiki page marks it so, and only for plain, repeatable boosts (pies, potions, the dwarven stout). Ironmen are only offered boosts they can make or buy in a shop.
 - **Logged out.** Goals you pin while logged out join your account's goals at your next login.
 
 ## Settings that matter
@@ -69,12 +75,13 @@ Navigator works on its own. With these installed it knows more, and only ever re
 
 - **[Codex Session Chronicle](https://github.com/Nubles/OSRS-Codex-Session-Chronicle):** how much you have played over the last two weeks, which turns each goal's hours into a day on the calendar ("Around 3 Nov at your 40 min a day"). Without it, no dates are shown.
 - **[Codex Guardian](https://github.com/Nubles/OSRS-Codex-Guardian):** an account you marked one-life there gets Hardcore care, as hardcore ironmen and Hardcore World accounts do anyway.
+- **[Codex Bank Steward](https://github.com/Nubles/OSRS-Codex-Bank-Steward):** the bank as it last saw it (its shared `bankV1`), so quest prep can say what is in the bank before you open it this session. Without it, prep checks the bank once you open it.
 
 Your pinned goals are shared the other way: Bank Steward, Annals, Plunder Pilot, Pest Control Pilot and Minigame Pilot read them to point their own suggestions at what you are working toward.
 
 ## Privacy and rules
 
-Navigator only reads what the client already shows you (quest states, diary and combat achievement progress, levels) and draws its own panel and overlay. It does not click, change menus, send chat or touch the network; its one chatbox line is seen only by you. Pinned goals and your learned pace are saved per account in your RuneLite profile and never leave your computer. A damaged save loses only the entries that cannot be read, and a save it can read only in part (damaged, or from a newer version) is copied aside unchanged before anything is saved over it.
+Navigator only reads what the client already shows you (quest states, diary and combat achievement progress, levels, and your pack, worn items and bank for quest prep, kept in memory only) and draws its own panel and overlay. It does not click, change menus, send chat or touch the network; its one chatbox line is seen only by you. Pinned goals and your learned pace are saved per account in your RuneLite profile and never leave your computer. A damaged save loses only the entries that cannot be read, and a save it can read only in part (damaged, or from a newer version) is copied aside unchanged before anything is saved over it.
 
 ## For other plugins
 
@@ -112,7 +119,9 @@ Codex Navigator saves two keys per RuneScape profile in the `codexnavigator` con
 
 Quest and diary requirements are bundled in `src/main/resources/com/codex/navigator/codex-data.json`. They are generated from the [Fate Locked](https://github.com/Nubles/OSRS-Fate-Locked) dataset, with names mapped to RuneLite's `Quest` enum so progress can be read from the game. To regenerate the data, see `tools/build-codex-data.py`.
 
-Which skill requirements can be boosted comes from [Quest Helper](https://github.com/Zoinkwiz/quest-helper) (BSD 2-Clause, see `THIRD_PARTY_NOTICES.md`) and is bundled as `boosts.json`; `tools/build-boosts.py` rebuilds it.
+What each quest asks you to bring comes from the "Items required" and "Recommended" rows of each quest's OSRS Wiki page, kept in `tools/quest-items-source.py`; `tools/build-quest-items.py` matches every name to RuneLite's item ids and writes `quest-items.json`. Quest Helper's item lists were looked at for ideas only; none of its data or code is used for them.
+
+Which skill requirements can be boosted comes from [Quest Helper](https://github.com/Zoinkwiz/quest-helper) (BSD 2-Clause, see `THIRD_PARTY_NOTICES.md`) plus four the OSRS Wiki marks boostable that it does not, and is bundled as `boosts.json`; `tools/build-boosts.py` rebuilds it.
 
 ## Development
 

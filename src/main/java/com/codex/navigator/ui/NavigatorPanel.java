@@ -70,6 +70,7 @@ public class NavigatorPanel extends PluginPanel implements Navigation
 	private ShareActions share;
 	private BooleanSupplier nameOnCards = () -> true;
 	private String shareNote;
+	private com.codex.navigator.core.Holdings holdings = com.codex.navigator.core.Holdings.none();
 
 	public NavigatorPanel(Planner planner, Recommender recommender, GoalStore goals, SkillIconManager skillIcons,
 		BooleanSupplier includeMiniquests)
@@ -131,6 +132,25 @@ public class NavigatorPanel extends PluginPanel implements Navigation
 		account = snapshot;
 		crest.update(snapshot, planner.getData(), planner.capeQuests());
 		refreshViews();
+	}
+
+	/** Called on the Swing thread when what the account carries or banks changes; redraws only on a real change. */
+	public void setHoldings(com.codex.navigator.core.Holdings next)
+	{
+		com.codex.navigator.core.Holdings value = next == null ? com.codex.navigator.core.Holdings.none() : next;
+		if (value.sameAs(holdings))
+		{
+			holdings = value;
+			return;
+		}
+		holdings = value;
+		refreshViews();
+	}
+
+	@Override
+	public com.codex.navigator.core.Holdings holdings()
+	{
+		return holdings;
 	}
 
 	/** Marks every view out of date and rebuilds the one on screen, if the panel is open. */
