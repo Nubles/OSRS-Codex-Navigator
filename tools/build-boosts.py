@@ -28,10 +28,28 @@ SKILL_REQ = re.compile(r'new SkillRequirement\(Skill\.([A-Z]+),\s*(\d+),\s*(true
 
 # Requirements the quest's OSRS Wiki page marks "(boostable)" that Quest Helper does not, read 2026-11-04.
 WIKI_BOOSTABLE = {
+    'Barbarian Training': {'Fishing': 55},
+    'Between a Rock...': {'Defence': 30},
+    'Death to the Dorgeshuun': {'Thieving': 23},
+    "Enakhra's Lament": {'Magic': 39},
+    'Enlightened Journey': {'Firemaking': 20},
     'Jungle Potion': {'Herblore': 3},
+    "Shades of Mort'ton": {'Crafting': 20, 'Firemaking': 5},
     'Shilo Village': {'Agility': 32, 'Crafting': 20},
+    'Swan Song': {'Firemaking': 42},
+    'Tears of Guthix': {'Crafting': 20, 'Mining': 20},
     'The Dig Site': {'Thieving': 25},
+    'The Giant Dwarf': {'Crafting': 12, 'Firemaking': 16},
+    'The Golem': {'Crafting': 20},
     'Underground Pass': {'Ranged': 25},
+    'Watchtower': {'Magic': 14, 'Thieving': 15},
+}
+
+# Requirements Quest Helper marks boostable that the quest's OSRS Wiki page marks "(not boostable)", read
+# 2026-11-04. The wiki wins: telling a player to boost a requirement the game checks unboosted wastes the trip.
+WIKI_NOT_BOOSTABLE = {
+    'Barbarian Training': ['Farming', 'Smithing'],
+    'Troubled Tortugans': ['Crafting', 'Woodcutting'],
 }
 
 
@@ -68,6 +86,8 @@ def main(quest_helper, runelite):
     for quest in data['quests']:
         mark = dict(marks.get(quest['name'], {}))
         mark.update(WIKI_BOOSTABLE.get(quest['name'], {}))
+        for skill in WIKI_NOT_BOOSTABLE.get(quest['name'], []):
+            mark.pop(skill, None)
         kept = {s: lvl for s, lvl in sorted(quest['skills'].items()) if mark.get(s) == lvl}
         if kept:
             out[quest['name']] = kept

@@ -96,7 +96,9 @@ public class QuestPrepTest
 		assertEquals(QuestPrep.Have.MISSING, line(prep, "Silk").getHave());
 		// The shield is handed out in the quest: not having one is not a gap.
 		assertEquals(QuestPrep.Have.IN_QUEST, line(prep, "Anti-dragon shield").getHave());
-		assertEquals(5, prep.toGet());
+		// The law and air rune for Telekinetic Grab are missing too.
+		assertEquals(QuestPrep.Have.MISSING, line(prep, "Law rune").getHave());
+		assertEquals(7, prep.toGet());
 	}
 
 	@Test
