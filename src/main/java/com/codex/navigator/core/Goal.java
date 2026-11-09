@@ -56,7 +56,7 @@ public final class Goal
 	/** A level goal, such as 70 Agility; null for a skill without levels or a level outside 2 to 99. */
 	public static Goal level(Skill skill, int level)
 	{
-		if (skill == null || skill == Skill.OVERALL || level < 2 || level > 99)
+		if (skill == null || level < 2 || level > 99)
 		{
 			return null;
 		}
@@ -97,8 +97,7 @@ public final class Goal
 		}
 		try
 		{
-			Skill skill = Skill.valueOf(name.substring(0, space).toUpperCase(Locale.ROOT));
-			return skill == Skill.OVERALL ? null : skill;
+			return Skill.valueOf(name.substring(0, space).toUpperCase(Locale.ROOT));
 		}
 		catch (IllegalArgumentException e)
 		{

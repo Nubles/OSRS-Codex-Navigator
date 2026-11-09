@@ -19,6 +19,7 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
@@ -114,15 +115,7 @@ final class LevelPicker
 	/** Every skill with levels, in the order of the in-game skills tab's columns read across. */
 	static List<Skill> skills()
 	{
-		List<Skill> out = new ArrayList<>();
-		for (Skill skill : Skill.values())
-		{
-			if (skill != Skill.OVERALL)
-			{
-				out.add(skill);
-			}
-		}
-		return out;
+		return new ArrayList<>(Arrays.asList(Skill.values()));
 	}
 
 	/** The quests and diary tiers that ask for exactly this level in the skill and are not done. */
